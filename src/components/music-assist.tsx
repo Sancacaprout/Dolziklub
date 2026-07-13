@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type MusicCandidate } from "@/lib/music-matching";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -19,10 +19,10 @@ function Confidence({ value }: { value: MusicCandidate["confidence"] }) {
   return <span className={`music-confidence music-confidence--${value}`}>{label}</span>;
 }
 
-function CandidateList({ candidates, selectedId, onSelect }: { candidates: MusicCandidate[]; selectedId?: string; onSelect: (candidate: MusicCandidate) => void }) {
-  return <div className="music-results" aria-live="polite">{candidates.map((candidate) => <article key={candidate.id} className={`music-candidate${selectedId === candidate.id ? " is-selected" : ""}`}>
-    {candidate.thumbnailUrl ? <img src={candidate.thumbnailUrl} alt="" /> : <span className="music-candidate__cover">DOL<br />ZIKLUB</span>}
-    <div className="music-candidate__body"><div><Confidence value={candidate.confidence} /><b>{candidate.title}</b><span>{candidate.channelTitle || candidate.artist}</span><small>{candidate.resourceType === "playlist" ? "Playlist" : "Vidéo"}{candidate.itemCount ? ` · ${candidate.itemCount} morceaux` : " · YouTube"}</small></div><div className="music-candidate__actions"><a className="sheet-entry-action" href={candidate.youtubeMusicUrl} target="_blank" rel="noopener noreferrer">Écouter ↗</a><button type="button" className="sheet-entry-action" onClick={() => onSelect(candidate)}>{selectedId === candidate.id ? "Choisi" : "Choisir"}</button></div></div>
+function CandidateList({ candidates, selectedId, onSelect, compact = false }: { candidates: MusicCandidate[]; selectedId?: string; onSelect: (candidate: MusicCandidate) => void; compact?: boolean }) {
+  return <div className={`music-results${compact ? " music-results--autocomplete" : ""}`} aria-live="polite">{candidates.map((candidate) => <article key={candidate.id} className={`music-candidate${selectedId === candidate.id ? " is-selected" : ""}`}>
+    {candidate.thumbnailUrl ? <img src={candidate.thumbnailUrl} alt={`Pochette de ${candidate.title}`} /> : <span className="music-candidate__cover">DOL<br />ZIKLUB</span>}
+    <div className="music-candidate__body"><div><Confidence value={candidate.confidence} /><b>{candidate.title}</b><span>— {candidate.artist || candidate.channelTitle}</span><small>{candidate.resourceType === "playlist" ? "Playlist" : "Vidéo"}{candidate.itemCount ? ` · ${candidate.itemCount} morceaux` : " · YouTube"}</small></div><div className="music-candidate__actions"><a className="sheet-entry-action" href={candidate.youtubeMusicUrl} target="_blank" rel="noopener noreferrer">Écouter ↗</a><button type="button" className="sheet-entry-action" onClick={() => onSelect(candidate)}>{selectedId === candidate.id ? "Choisi" : "Choisir"}</button></div></div>
   </article>)}</div>;
 }
 
@@ -30,13 +30,28 @@ export function AlbumLookup({ title, artist, selected, onSelect, disabled }: { t
   const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
-  const search = async () => {
-    if (!title.trim() || !artist.trim()) { setState("error"); setMessage("Renseigne d’abord le titre et l’artiste."); return; }
+  const requestId = useRef(0);
+  const canSuggest = title.trim().length >= 3;
+  const search = useCallback(async (automatic = false) => {
+    if (title.trim().length < 3) { if (!automatic) { setState("error"); setMessage("Écris au moins trois lettres du titre."); } return; }
+    const currentRequest = ++requestId.current;
     setState("loading"); setMessage("");
-    try { const result = await musicRequest("/api/music/search-albums", { title, artist }); setCandidates(result.candidates ?? []); setState("idle"); setMessage(result.candidates?.length ? "Nous pensons avoir trouvé ces albums. Choisis uniquement le bon résultat." : "Aucun résultat suffisamment fiable. Tu peux continuer manuellement."); }
-    catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "La recherche est indisponible."); }
-  };
-  return <section className="music-assist"><div className="music-assist__bar"><div><span className="eyebrow">ASSISTANCE MUSICALE</span><p>La recherche suggère ; tu confirmes toujours avant l’enregistrement.</p></div><button type="button" className="sheet-entry-action" disabled={disabled || state === "loading"} onClick={() => void search()}>{state === "loading" ? "Recherche…" : "Rechercher l’album"}</button></div>{message && <p className={`music-assist__message${state === "error" ? " is-error" : ""}`}>{message}</p>}{candidates.length > 0 && <CandidateList candidates={candidates} selectedId={selected?.id} onSelect={onSelect} />}{(candidates.length > 0 || selected) && <button type="button" className="music-manual" onClick={() => onSelect(null)}>Aucun de ces résultats · renseigner manuellement</button>}</section>;
+    try {
+      const result = await musicRequest("/api/music/search-albums", { title, artist });
+      if (currentRequest !== requestId.current) return;
+      setCandidates(result.candidates ?? []); setState("idle");
+      setMessage(result.candidates?.length ? "Choisis l’album correspondant." : "Aucun résultat fiable. Tu peux continuer manuellement.");
+    } catch (error) {
+      if (currentRequest !== requestId.current) return;
+      setState("error"); setMessage(error instanceof Error ? error.message : "La recherche est indisponible.");
+    }
+  }, [title, artist]);
+  useEffect(() => {
+    if (title.trim().length < 3) return;
+    const timer = window.setTimeout(() => void search(true), 750);
+    return () => window.clearTimeout(timer);
+  }, [title, search]);
+  return <section className="music-assist music-assist--autocomplete"><div className="music-assist__bar"><div><span className="eyebrow">ASSISTANCE MUSICALE</span><p>Commence à écrire le titre : les albums apparaissent ici.</p></div><button type="button" className="sheet-entry-action" disabled={disabled || state === "loading" || !canSuggest} onClick={() => void search()}>{state === "loading" ? "Recherche…" : "Actualiser"}</button></div>{canSuggest && message && <p className={`music-assist__message${state === "error" ? " is-error" : ""}`}>{message}</p>}{canSuggest && candidates.length > 0 && <CandidateList compact candidates={candidates} selectedId={selected?.id} onSelect={onSelect} />}{canSuggest && (candidates.length > 0 || selected) && <button type="button" className="music-manual" onClick={() => onSelect(null)}>Aucun de ces résultats · renseigner manuellement</button>}</section>;
 }
 
 export function TrackLookup({ label, title, artist, albumTitle, selected, onTitleChange, onSelect, disabled }: { label: string; title: string; artist: string; albumTitle: string; selected: MusicCandidate | null; onTitleChange: (value: string) => void; onSelect: (candidate: MusicCandidate | null) => void; disabled?: boolean }) {

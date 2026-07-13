@@ -14,6 +14,12 @@ test("favorise un album officiel plutôt qu'une réaction hors sujet", () => {
   assert.equal(classifyConfidence(official), "high");
 });
 
+test("retrouve un album avec son seul titre pour l’autocomplétion", () => {
+  const score = scoreMusicCandidate({ title: "Currents", artist: "", candidateTitle: "Tame Impala - Currents", candidateArtist: "Tame Impala", channelTitle: "Tame Impala - Topic", resourceType: "playlist", thumbnailUrl: "https://example.test/currents.jpg", itemCount: 13 });
+  assert.ok(score >= 57);
+  assert.notEqual(classifyConfidence(score), "low");
+});
+
 test("construit les liens YouTube Music vérifiables et la recherche de secours", () => {
   assert.deepEqual(musicUrls("playlist", "OLAK5uy_k123", "Blonde Frank Ocean"), { youtubeMusicUrl: "https://music.youtube.com/playlist?list=OLAK5uy_k123", youtubeUrl: "https://www.youtube.com/playlist?list=OLAK5uy_k123" });
   assert.match(musicUrls("search", null, "Land Kekra").youtubeMusicUrl, /music\.youtube\.com\/search/);

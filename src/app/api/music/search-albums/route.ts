@@ -9,11 +9,12 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const title = cleanText(body?.title, 200);
   const artist = cleanText(body?.artist, 150);
-  if (!title || !artist) return error("Le titre et l’artiste sont requis.", 400);
+  if (!title) return error("Écris au moins le titre de l’album.", 400);
   try {
     if (!await consumeSearchQuota(user.id, "album")) return error("Trop de recherches : réessaie dans quelques minutes.", 429);
     return NextResponse.json(await searchYouTubeMusic("album", title, artist));
-  } catch {
+  } catch (searchError) {
+    if (searchError instanceof Error && searchError.message === "service_unavailable") return error("La recherche YouTube n’est pas encore configurée sur le serveur. Tu peux continuer manuellement.", 503);
     return error("La recherche musicale est momentanément indisponible. Tu peux continuer manuellement.", 503);
   }
 }

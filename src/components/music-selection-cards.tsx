@@ -21,7 +21,22 @@ export function ProposalAssistantCard({ entry, coverUrl, saving, onSave, onDelet
   const [match, setMatch] = useState<MusicCandidate | null | undefined>(undefined);
   const filled = isFilled(entry);
   const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); onSave({ entryId: entry.id, title, artist, file, match }); };
-  return <article className="review-card proposal-card"><div className="review-card__album">{coverUrl ? <img src={coverUrl} alt="Pochette proposée" width={90} height={90} /> : <span className="proposal-card__placeholder">POC HETTE</span>}<span className="eyebrow">{filled ? "PROPOSITION MODIFIABLE" : "À PROPOSER"}</span><h3>{filled ? entry.album_title : "Tes choix, ton disque."}</h3><p>{filled ? "Tu peux corriger ou retirer cet album tant que son écoute n’a pas reçu de verdict." : "Renseigne l’album, l’artiste et, si tu veux, sa pochette."}</p></div><form className="review-form" onSubmit={submit}><label><span>Titre de l’album</span><input required maxLength={180} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Titre de l’album" /></label><label><span>Artiste</span><input required maxLength={180} value={artist} onChange={(event) => setArtist(event.target.value)} placeholder="Nom de l’artiste" /></label><AlbumLookup title={title} artist={artist} selected={match ?? null} disabled={saving} onSelect={(candidate) => { setMatch(candidate); if (candidate) { setTitle(candidate.title); setArtist(candidate.artist); } }} /><label className="proposal-cover-field"><span>Pochette manuelle (facultative)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>{match?.id && <p className="music-confirmation">Résultat choisi : <b>{match.title}</b> · {match.confidence === "high" ? "correspondance élevée" : "à vérifier avant d’enregistrer"}.</p>}<div className="proposal-actions"><button type="submit" className="button" disabled={saving}>{saving ? "Enregistrement…" : filled ? "Modifier mon album" : "Confirmer l’album"}</button>{filled && <button type="button" className="sheet-entry-action sheet-entry-action--delete" disabled={saving} onClick={() => { if (confirm("Retirer cet album de ta proposition ?")) onDelete(entry.id); }}>Supprimer l’album</button>}</div></form></article>;
+  return <article className="review-card proposal-card">
+    <div className="review-card__album">
+      {coverUrl ? <img src={coverUrl} alt="Pochette proposée" width={90} height={90} /> : <span className="proposal-card__placeholder">POCHETTE</span>}
+      <span className="eyebrow">{filled ? "PROPOSITION MODIFIABLE" : "À PROPOSER"}</span>
+      <h3>{filled ? entry.album_title : "Tes choix, ton disque."}</h3>
+      <p>{filled ? "Tu peux corriger ou retirer cet album tant que son écoute n’a pas reçu de verdict." : "Écris le titre : les suggestions t’aident à choisir la bonne fiche."}</p>
+    </div>
+    <form className="review-form" onSubmit={submit}>
+      <label><span>Titre de l’album</span><input required maxLength={180} value={title} onChange={(event) => { setTitle(event.target.value); setMatch(undefined); }} placeholder="Ex. Currents" /></label>
+      <AlbumLookup title={title} artist={artist} selected={match ?? null} disabled={saving} onSelect={(candidate) => { setMatch(candidate); if (candidate) { setTitle(candidate.title); setArtist(candidate.artist); } }} />
+      <label><span>Artiste</span><input required maxLength={180} value={artist} onChange={(event) => { setArtist(event.target.value); setMatch(undefined); }} placeholder="Nom de l’artiste" /></label>
+      <label className="proposal-cover-field"><span>Pochette manuelle (facultative)</span><input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>
+      {match?.id && <p className="music-confirmation">Résultat choisi : <b>{match.title}</b> — {match.artist}.</p>}
+      <div className="proposal-actions"><button type="submit" className="button" disabled={saving}>{saving ? "Enregistrement…" : filled ? "Modifier mon album" : "Confirmer l’album"}</button>{filled && <button type="button" className="sheet-entry-action sheet-entry-action--delete" disabled={saving} onClick={() => { if (confirm("Retirer cet album de ta proposition ?")) onDelete(entry.id); }}>Supprimer l’album</button>}</div>
+    </form>
+  </article>;
 }
 
 export function ReviewAssistantCard({ entry, existing, coverUrl, saving, onSave }: { entry: AssistedEntry; existing?: AssistedReview; coverUrl: string | null; saving: boolean; onSave: (payload: AssistedReviewPayload) => void }) {

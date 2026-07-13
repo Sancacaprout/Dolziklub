@@ -74,9 +74,10 @@ export async function searchYouTubeMusic(searchType: "album" | "track", title: s
     if (!resourceType || !resourceId || !candidateTitle) return [];
     const channelTitle = item.snippet?.channelTitle?.trim() ?? "";
     const thumbnailUrl = item.snippet?.thumbnails?.high?.url ?? item.snippet?.thumbnails?.medium?.url ?? item.snippet?.thumbnails?.default?.url ?? null;
-    const score = scoreMusicCandidate({ title, artist, candidateTitle, candidateArtist: channelTitle, channelTitle, resourceType, thumbnailUrl });
+    const detectedArtist = artist || channelTitle.replace(/\s*[-–—]\s*(topic|vevo)$/i, "").trim();
+    const score = scoreMusicCandidate({ title, artist, candidateTitle, candidateArtist: detectedArtist, channelTitle, resourceType, thumbnailUrl });
     const urls = musicUrls(resourceType, resourceId, requestQuery);
-    return [{ id: `${resourceType}:${resourceId}`, title: candidateTitle, artist, channelTitle, thumbnailUrl, resourceType, resourceId, ...urls, itemCount: null, score, confidence: classifyConfidence(score), source: "youtube_search" }];
+    return [{ id: `${resourceType}:${resourceId}`, title: candidateTitle, artist: detectedArtist, channelTitle, thumbnailUrl, resourceType, resourceId, ...urls, itemCount: null, score, confidence: classifyConfidence(score), source: "youtube_search" }];
   }).sort((left, right) => right.score - left.score);
   await storeCache(searchType, query, candidates);
   return { candidates, cached: false };
