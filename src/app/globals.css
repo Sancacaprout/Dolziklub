@@ -115,7 +115,7 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 @media (max-width:700px) { .meme-modal-actions { align-items:stretch; flex-direction:column-reverse; }.meme-comment { flex-direction:column; }.meme-comment__delete { width:max-content; } }
 
 /* Active draw workflow: proposal and review stay visually distinct and tightly scoped. */
-.draw-section--live { border-top:6px solid var(--blue); padding-top:1.2rem; }
+.draw-section--live { padding-top:1.2rem; }
 .sheet-row--action { cursor:pointer; }.sheet-row--action:hover { background:#fff5d8; }
 .sheet-entry-action { border:1px solid var(--ink); border-radius:0; padding:.46rem .55rem; background:var(--acid); color:var(--ink); font:500 .65rem var(--font-mono),monospace; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; }.sheet-entry-action:hover { background:var(--blue); color:#fff; }.sheet-entry-action--delete { background:var(--red); color:#fff; }
 .proposal-workspace { background:var(--ink); }.proposal-workspace h2 { color:#fff; }.proposal-card .review-card__album { display:grid; align-content:start; gap:.55rem; }.proposal-card .review-card__album img,.review-card__album img { width:90px; aspect-ratio:1; object-fit:cover; border:1px solid var(--ink); background:#fff; }.proposal-card__placeholder { display:grid; width:90px; aspect-ratio:1; place-items:center; border:1px dashed var(--ink); background:#fff8; font:.63rem var(--font-mono),monospace; letter-spacing:.08em; }.proposal-cover-field { grid-column:1/-1; }.proposal-cover-field input { padding:.5rem; }
