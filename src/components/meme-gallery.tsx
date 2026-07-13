@@ -26,7 +26,8 @@ function getVisitorId() {
 }
 
 function ThumbIcon({ down = false }: { down?: boolean }) {
-  return <svg className={`meme-thumb meme-thumb--${down ? "down" : "up"}`} viewBox="0 0 24 24" aria-hidden="true"><path d={down ? "M17 14V2h3a2 2 0 0 1 2 2v7.5a3 3 0 0 1-.88 2.12L16.5 18H8a2 2 0 0 1-2-2v-2m11 0H8m0 0V2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4" : "M7 10v12H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3m0 0 4-8h3a2 2 0 0 1 2 2v5h3a3 3 0 0 1 2.88 3.88l-2 7A3 3 0 0 1 17 22H7"} /></svg>;
+  const path = "M7 10v12H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3m0 0 4-8h3a2 2 0 0 1 2 2v5h3a3 3 0 0 1 2.88 3.88l-2 7A3 3 0 0 1 17 22H7";
+  return <svg className={`meme-thumb meme-thumb--${down ? "down" : "up"}`} viewBox="0 0 24 24" aria-hidden="true"><path d={path} transform={down ? "rotate(180 12 12)" : undefined} /></svg>;
 }
 
 function ReactionButtons({ likes, dislikes, ownReaction, onReact, compact = false }: { likes: number; dislikes: number; ownReaction?: number; onReact: (value: 1 | -1) => void; compact?: boolean }) {
