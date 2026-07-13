@@ -1,4 +1,9 @@
 import { albums } from "@/data/albums";
 import { members } from "@/data/members";
+import { ClubLiveMetrics } from "@/components/club-live-metrics";
 import { getClubStats } from "@/lib/statistics";
-export default function RankingsPage() { const stats = getClubStats(albums); return <main className="page"><p className="eyebrow">TABLEAU D’HONNEUR</p><h1>Les chiffres<br/><em>ne mentent pas.</em></h1><p className="page-lede">Le panneau de contrôle du goût collectif. Il attend encore les notes source pour sortir les classements réels.</p><div className="poster-stats"><div><b>{stats.total}</b><span>albums archivés</span></div><div><b>{members.length}</b><span>membres identifiés</span></div><div><b>{stats.rated || "—"}</b><span>notes récupérées</span></div><div><b>{stats.averageRating?.toFixed(1) ?? "—"}</b><span>moyenne du club</span></div></div><section className="ranking-placeholder"><p className="eyebrow">À VENIR AVEC LA FEUILLE HISTORIQUE</p><h2>Les 5/5, les grosses déconvenues, les critiques les plus généreux et les échanges les plus récurrents apparaîtront ici.</h2><p>Les albums non notés sont volontairement exclus des moyennes : pas de faux zéro, pas de faux classement.</p></section></main>; }
+
+export default function RankingsPage() {
+  const stats = getClubStats(albums);
+  return <main className="page"><p className="eyebrow">TABLEAU D’HONNEUR</p><h1>Les chiffres<br/><em>ne mentent pas.</em></h1><p className="page-lede">Le panneau de contrôle du goût collectif.</p><ClubLiveMetrics variant="poster" baseAlbums={stats.total} baseReviews={stats.rated} baseRatingSum={(stats.averageRating ?? 0) * stats.rated} baseMembers={members.length} /><section className="ranking-placeholder"><p className="eyebrow">ARCHIVE VIVANTE</p><h2>Les indicateurs se mettent à jour dès qu’un album est proposé ou qu’un verdict est rendu.</h2><p>Les albums sans note restent exclus des moyennes.</p></section></main>;
+}

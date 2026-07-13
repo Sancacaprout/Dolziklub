@@ -1,38 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlbumCard } from "@/components/album-card";
 import { getMemberDisplayName, members } from "@/data/members";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Album } from "@/types/album";
 
-function GridIcon() {
-  return <svg className="view-toggle__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>;
-}
-
-function ListIcon() {
-  return <svg className="view-toggle__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14" /></svg>;
-}
-
+type LiveEntry = { id: string; draw_number: number; position: number; proposed_by_name: string | null; listened_by_name: string | null; album_title: string | null; album_artist: string | null; cover_path: string | null };
 const memberName = (value: string | null) => getMemberDisplayName(value).toLocaleLowerCase("fr");
+function coverUrl(path: string | null) { return path ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path).data.publicUrl : "/album-a-venir.png"; }
+function liveAlbum(entry: LiveEntry): Album { return { id: `live-${entry.id}`, slug: `live-${entry.id}`, title: entry.album_title!, artist: entry.album_artist!, cover: coverUrl(entry.cover_path), releaseYear: null, origin: null, language: null, genres: [], projectType: null, proposedBy: entry.proposed_by_name, listenedBy: entry.listened_by_name, rating: null, shortReview: null, detailedReview: null, bestTrack: { title: null, url: null }, worstTrack: { title: null, url: null }, albumUrl: null, artistDescription: null, albumDescription: null, status: "pending" }; }
+function GridIcon() { return <svg className="view-toggle__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>; }
+function ListIcon() { return <svg className="view-toggle__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h14" /></svg>; }
 
 export function AlbumExplorer({ albums }: { albums: Album[] }) {
-  const [query, setQuery] = useState("");
-  const [view, setView] = useState<"grid" | "list">("grid");
-  const [sort, setSort] = useState<"latest" | "oldest" | "pending" | "title" | "rating" | "proposed" | "listened">("latest");
-  const [member, setMember] = useState("");
-  const results = useMemo(() => albums
-    .filter((album) => `${album.title} ${album.artist} ${album.genres.join(" ")}`.toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr")))
-    .filter((album) => !member || [album.proposedBy, album.listenedBy].some((name) => memberName(name) === member))
-    .sort((a, b) => {
-      const archivePosition = (album: Album) => Number(album.id.replace("archive-", ""));
-      if (sort === "latest") return archivePosition(b) - archivePosition(a);
-      if (sort === "oldest") return archivePosition(a) - archivePosition(b);
-      if (sort === "pending") return Number(a.status !== "pending") - Number(b.status !== "pending") || archivePosition(b) - archivePosition(a);
-      if (sort === "rating") return (b.rating ?? -1) - (a.rating ?? -1);
-      if (sort === "proposed") return memberName(a.proposedBy).localeCompare(memberName(b.proposedBy), "fr") || a.title.localeCompare(b.title, "fr");
-      if (sort === "listened") return memberName(a.listenedBy).localeCompare(memberName(b.listenedBy), "fr") || a.title.localeCompare(b.title, "fr");
-      return a.title.localeCompare(b.title, "fr");
-    }), [albums, member, query, sort]);
-
-  return <><div className="filter-bar"><label>Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Album, artiste, genre…" /></label><label>Tri<select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="latest">Plus récent</option><option value="oldest">Plus ancien</option><option value="pending">En attente d’écoute</option><option value="title">Alphabétique</option><option value="rating">Note</option><option value="proposed">Proposé par</option><option value="listened">Écouté par</option></select></label><label>Membre<select value={member} onChange={(event) => setMember(event.target.value)}><option value="">Tous les membres</option>{members.map((clubMember) => <option key={clubMember.slug} value={clubMember.displayName.toLocaleLowerCase("fr")}>{clubMember.displayName}</option>)}</select></label><div className="view-toggle"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")} aria-pressed={view === "grid"}><GridIcon /><span>Grille</span></button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")} aria-pressed={view === "list"}><ListIcon /><span>Liste</span></button></div></div><p className="result-count">{results.length} archive{results.length > 1 ? "s" : ""} retrouvée{results.length > 1 ? "s" : ""}</p>{results.length ? <div className={view === "grid" ? "album-grid" : "album-list"}>{results.map((album) => <AlbumCard key={album.id} album={album} list={view === "list"} />)}</div> : <div className="empty-state"><b>Aucun disque dans ce bac.</b><p>Essaie un autre titre, un artiste ou un membre.</p><button onClick={() => { setQuery(""); setMember(""); }}>Réinitialiser</button></div>}</>;
+  const configured = isSupabaseConfigured(); const [live, setLive] = useState<LiveEntry[]>([]); const [query, setQuery] = useState(""); const [view, setView] = useState<"grid" | "list">("grid"); const [sort, setSort] = useState<"latest" | "oldest" | "pending" | "title" | "rating" | "proposed" | "listened">("latest"); const [member, setMember] = useState("");
+  useEffect(() => { if (!configured) return; const timer = setTimeout(() => { void getSupabaseBrowserClient().from("club_draw_entries").select("id, draw_number, position, proposed_by_name, listened_by_name, album_title, album_artist, cover_path").not("album_title", "is", null).not("album_artist", "is", null).order("draw_number", { ascending: false }).order("position", { ascending: true }).then((result: { data: unknown }) => setLive((result.data ?? []) as LiveEntry[])); }, 0); return () => clearTimeout(timer); }, [configured]);
+  const merged = useMemo(() => [...live.map(liveAlbum), ...albums], [albums, live]);
+  const results = useMemo(() => merged.filter((album) => `${album.title} ${album.artist} ${album.genres.join(" ")}`.toLocaleLowerCase("fr").includes(query.toLocaleLowerCase("fr"))).filter((album) => !member || [album.proposedBy, album.listenedBy].some((name) => memberName(name) === member)).sort((a, b) => { const position = (album: Album) => album.id.startsWith("live-") ? 1_000_000 : Number(album.id.replace("archive-", "")); if (sort === "latest") return position(b) - position(a); if (sort === "oldest") return position(a) - position(b); if (sort === "pending") return Number(a.status !== "pending") - Number(b.status !== "pending") || position(b) - position(a); if (sort === "rating") return (b.rating ?? -1) - (a.rating ?? -1); if (sort === "proposed") return memberName(a.proposedBy).localeCompare(memberName(b.proposedBy), "fr") || a.title.localeCompare(b.title, "fr"); if (sort === "listened") return memberName(a.listenedBy).localeCompare(memberName(b.listenedBy), "fr") || a.title.localeCompare(b.title, "fr"); return a.title.localeCompare(b.title, "fr"); }), [member, merged, query, sort]);
+  return <><div className="filter-bar"><label>Rechercher<input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Album, artiste, genre…" /></label><label>Tri<select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="latest">Plus récent</option><option value="oldest">Plus ancien</option><option value="pending">En attente d’écoute</option><option value="title">Alphabétique</option><option value="rating">Note</option><option value="proposed">Proposé par</option><option value="listened">Écouté par</option></select></label><label>Membre<select value={member} onChange={(event) => setMember(event.target.value)}><option value="">Tous les membres</option>{members.map((clubMember) => <option key={clubMember.slug} value={clubMember.displayName.toLocaleLowerCase("fr")}>{clubMember.displayName}</option>)}</select></label><div className="view-toggle"><button className={view === "grid" ? "active" : ""} onClick={() => setView("grid")}><GridIcon /><span>Grille</span></button><button className={view === "list" ? "active" : ""} onClick={() => setView("list")}><ListIcon /><span>Liste</span></button></div></div><p className="result-count">{results.length} archive{results.length > 1 ? "s" : ""} retrouvée{results.length > 1 ? "s" : ""}</p>{results.length ? <div className={view === "grid" ? "album-grid" : "album-list"}>{results.map((album) => <AlbumCard key={album.id} album={album} list={view === "list"} />)}</div> : <div className="empty-state"><b>Aucun disque dans ce bac.</b><p>Essaie un autre titre, un artiste ou un membre.</p><button onClick={() => { setQuery(""); setMember(""); }}>Réinitialiser</button></div>}</>;
 }
