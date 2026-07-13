@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { albums as archivedAlbums } from "@/data/albums";
 import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { RatingDisplay } from "@/components/rating-display";
@@ -54,6 +55,7 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
 function isHistoricalListener(album: Album, member: SignedMember) {
   return [member.username, member.displayName].some((name) => normalizedMember(name) === normalizedMember(album.listenedBy));
 }
+function archiveForEntry(entry: Pick<DrawEntry, "album_title" | "album_artist">) { return archivedAlbums.find((album) => normalizedMember(album.title) === normalizedMember(entry.album_title) && normalizedMember(album.artist) === normalizedMember(entry.album_artist)); }
 
 function MemberSelect({ value, onChange, label, options = roster, disabled = false }: { value: string | null; onChange: (next: string) => void; label: string; options?: typeof roster; disabled?: boolean }) {
   return <select value={value ?? ""} disabled={disabled} onChange={(event) => onChange(event.target.value)} aria-label={label}><option value="">—</option>{options.map((member) => <option key={member.username} value={member.username}>{member.displayName}</option>)}</select>;
@@ -157,25 +159,31 @@ function LegacyReviewCard({ entry, existing, saving, onSave }: { entry: DrawEntr
 }
 
 const ProposalCard = ({ entry, saving, onSave, onDelete }: { entry: DrawEntry; saving: boolean; onSave: (payload: ProposalPayload) => void; onDelete: (entryId: string) => void }) => <ProposalAssistantCard entry={entry} coverUrl={coverUrl(entry.cover_path)} saving={saving} onSave={onSave} onDelete={onDelete} />;
-const ReviewCard = ({ entry, existing, saving, onSave }: { entry: DrawEntry; existing?: ReviewRecord; saving: boolean; onSave: (payload: ReviewPayload) => void }) => <ReviewAssistantCard entry={entry} existing={existing} coverUrl={coverUrl(entry.cover_path)} saving={saving} onSave={onSave} />;
+const ReviewCard = ({ entry, existing, saving, onSave }: { entry: DrawEntry; existing?: ReviewRecord; saving: boolean; onSave: (payload: ReviewPayload) => void }) => <ReviewAssistantCard entry={entry} existing={existing} coverUrl={coverUrl(entry.cover_path) ?? archiveForEntry(entry)?.cover ?? null} saving={saving} onSave={onSave} />;
 void LegacyProposalCard;
 void LegacyReviewCard;
 
 function HistoricalPendingReviews({ albums, member }: { albums: Album[]; member: SignedMember | null }) {
   const configured = isSupabaseConfigured();
   const [records, setRecords] = useState<ArchivedReview[]>([]);
+  const [activeEntries, setActiveEntries] = useState<Array<Pick<DrawEntry, "album_title" | "album_artist">>>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const loadRecords = useCallback(async () => {
     if (!configured) return;
-    const { data } = await getSupabaseBrowserClient().from("archived_album_reviews").select("album_id, review, rating, best_track, worst_track, is_modified");
-    setRecords((data ?? []) as ArchivedReview[]);
+    const [reviewResult, entryResult] = await Promise.all([
+      getSupabaseBrowserClient().from("archived_album_reviews").select("album_id, review, rating, best_track, worst_track, is_modified"),
+      getSupabaseBrowserClient().from("club_draw_entries").select("album_title, album_artist"),
+    ]);
+    setRecords((reviewResult.data ?? []) as ArchivedReview[]);
+    setActiveEntries((entryResult.data ?? []) as Array<Pick<DrawEntry, "album_title" | "album_artist">>);
   }, [configured]);
   useEffect(() => { const timer = window.setTimeout(() => void loadRecords(), 0); return () => window.clearTimeout(timer); }, [loadRecords]);
   if (!member) return null;
   const recordMap = new Map(records.map((record) => [record.album_id, record]));
   const pending = albums.filter((album) => {
     if (!isHistoricalListener(album, member)) return false;
+    if (activeEntries.some((entry) => !isEmptyAlbumSlot(entry) && normalizedMember(entry.album_title) === normalizedMember(album.title) && normalizedMember(entry.album_artist) === normalizedMember(album.artist))) return false;
     const record = recordMap.get(album.id);
     const effectiveRating = record?.is_modified ? record.rating : album.rating;
     return effectiveRating === null;
