@@ -1,0 +1,86 @@
+export type MatchConfidence = "high" | "medium" | "low";
+
+export type MusicResourceType = "playlist" | "video" | "search";
+
+export type MusicCandidate = {
+  id: string;
+  title: string;
+  artist: string;
+  channelTitle: string;
+  thumbnailUrl: string | null;
+  resourceType: MusicResourceType;
+  resourceId: string | null;
+  youtubeMusicUrl: string;
+  youtubeUrl: string;
+  itemCount: number | null;
+  confidence: MatchConfidence;
+  score: number;
+  source: "youtube_search";
+};
+
+const noiseWords = new Set(["official", "audio", "video", "full", "album", "playlist", "music", "topic"]);
+const weakerWords = ["reaction", "review", "cover", "slowed", "reverb", "nightcore", "remix", "instrumental", "lyrics", "live", "sped up"];
+
+export function normalizeMusicText(input: string) {
+  return input
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[’'`]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function terms(input: string) {
+  return normalizeMusicText(input).split(" ").filter(Boolean);
+}
+
+function overlap(left: string, right: string) {
+  const a = terms(left).filter((term) => !noiseWords.has(term));
+  const b = new Set(terms(right));
+  if (!a.length || !b.size) return 0;
+  return a.filter((term) => b.has(term)).length / a.length;
+}
+
+function includesExact(left: string, right: string) {
+  const a = normalizeMusicText(left);
+  const b = normalizeMusicText(right);
+  return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
+}
+
+export function classifyConfidence(score: number): MatchConfidence {
+  if (score >= 78) return "high";
+  if (score >= 48) return "medium";
+  return "low";
+}
+
+export function scoreMusicCandidate(input: { title: string; artist: string; resourceType: MusicResourceType; channelTitle?: string; candidateTitle: string; candidateArtist?: string; thumbnailUrl?: string | null; itemCount?: number | null }) {
+  const searchable = `${input.candidateTitle} ${input.candidateArtist ?? ""} ${input.channelTitle ?? ""}`;
+  let score = overlap(input.title, input.candidateTitle) * 45;
+  score += overlap(input.artist, searchable) * 30;
+  if (includesExact(input.title, input.candidateTitle)) score += 12;
+  if (includesExact(input.artist, searchable)) score += 8;
+  if (input.resourceType === "playlist") score += 5;
+  if (/\b(topic|official)\b/i.test(input.channelTitle ?? "")) score += 6;
+  if (input.thumbnailUrl) score += 3;
+  if (input.itemCount && input.itemCount > 1 && input.itemCount < 80) score += 3;
+  if (weakerWords.some((word) => normalizeMusicText(searchable).includes(word))) score -= 13;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+export function musicUrls(resourceType: MusicResourceType, resourceId: string | null, query: string) {
+  const safeQuery = encodeURIComponent(query.trim());
+  if (!resourceId || resourceType === "search") {
+    return { youtubeMusicUrl: `https://music.youtube.com/search?q=${safeQuery}`, youtubeUrl: `https://www.youtube.com/results?search_query=${safeQuery}` };
+  }
+  if (resourceType === "playlist") {
+    return { youtubeMusicUrl: `https://music.youtube.com/playlist?list=${encodeURIComponent(resourceId)}`, youtubeUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(resourceId)}` };
+  }
+  return { youtubeMusicUrl: `https://music.youtube.com/watch?v=${encodeURIComponent(resourceId)}`, youtubeUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(resourceId)}` };
+}
+
+export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
+  return `${searchType}:v1:${parts.map(normalizeMusicText).join("|")}`;
+}

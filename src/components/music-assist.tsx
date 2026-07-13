@@ -1,0 +1,53 @@
+"use client";
+/* eslint-disable @next/next/no-img-element */
+
+import { useState } from "react";
+import { type MusicCandidate } from "@/lib/music-matching";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+async function musicRequest(path: string, body: Record<string, unknown>) {
+  const { data } = await getSupabaseBrowserClient().auth.getSession();
+  if (!data.session?.access_token) throw new Error("Connexion requise.");
+  const response = await fetch(path, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify(body) });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "La recherche est indisponible.");
+  return payload as { candidates?: MusicCandidate[] };
+}
+
+function Confidence({ value }: { value: MusicCandidate["confidence"] }) {
+  const label = value === "high" ? "Correspondance élevée" : value === "medium" ? "À vérifier" : "Correspondance faible";
+  return <span className={`music-confidence music-confidence--${value}`}>{label}</span>;
+}
+
+function CandidateList({ candidates, selectedId, onSelect }: { candidates: MusicCandidate[]; selectedId?: string; onSelect: (candidate: MusicCandidate) => void }) {
+  return <div className="music-results" aria-live="polite">{candidates.map((candidate) => <article key={candidate.id} className={`music-candidate${selectedId === candidate.id ? " is-selected" : ""}`}>
+    {candidate.thumbnailUrl ? <img src={candidate.thumbnailUrl} alt="" /> : <span className="music-candidate__cover">DOL<br />ZIKLUB</span>}
+    <div className="music-candidate__body"><div><Confidence value={candidate.confidence} /><b>{candidate.title}</b><span>{candidate.channelTitle || candidate.artist}</span><small>{candidate.resourceType === "playlist" ? "Playlist" : "Vidéo"}{candidate.itemCount ? ` · ${candidate.itemCount} morceaux` : " · YouTube"}</small></div><div className="music-candidate__actions"><a className="sheet-entry-action" href={candidate.youtubeMusicUrl} target="_blank" rel="noopener noreferrer">Écouter ↗</a><button type="button" className="sheet-entry-action" onClick={() => onSelect(candidate)}>{selectedId === candidate.id ? "Choisi" : "Choisir"}</button></div></div>
+  </article>)}</div>;
+}
+
+export function AlbumLookup({ title, artist, selected, onSelect, disabled }: { title: string; artist: string; selected: MusicCandidate | null; onSelect: (candidate: MusicCandidate | null) => void; disabled?: boolean }) {
+  const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const search = async () => {
+    if (!title.trim() || !artist.trim()) { setState("error"); setMessage("Renseigne d’abord le titre et l’artiste."); return; }
+    setState("loading"); setMessage("");
+    try { const result = await musicRequest("/api/music/search-albums", { title, artist }); setCandidates(result.candidates ?? []); setState("idle"); setMessage(result.candidates?.length ? "Nous pensons avoir trouvé ces albums. Choisis uniquement le bon résultat." : "Aucun résultat suffisamment fiable. Tu peux continuer manuellement."); }
+    catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "La recherche est indisponible."); }
+  };
+  return <section className="music-assist"><div className="music-assist__bar"><div><span className="eyebrow">ASSISTANCE MUSICALE</span><p>La recherche suggère ; tu confirmes toujours avant l’enregistrement.</p></div><button type="button" className="sheet-entry-action" disabled={disabled || state === "loading"} onClick={() => void search()}>{state === "loading" ? "Recherche…" : "Rechercher l’album"}</button></div>{message && <p className={`music-assist__message${state === "error" ? " is-error" : ""}`}>{message}</p>}{candidates.length > 0 && <CandidateList candidates={candidates} selectedId={selected?.id} onSelect={onSelect} />}{(candidates.length > 0 || selected) && <button type="button" className="music-manual" onClick={() => onSelect(null)}>Aucun de ces résultats · renseigner manuellement</button>}</section>;
+}
+
+export function TrackLookup({ label, title, artist, albumTitle, selected, onTitleChange, onSelect, disabled }: { label: string; title: string; artist: string; albumTitle: string; selected: MusicCandidate | null; onTitleChange: (value: string) => void; onSelect: (candidate: MusicCandidate | null) => void; disabled?: boolean }) {
+  const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const search = async () => {
+    if (!title.trim()) { setState("error"); setMessage("Écris d’abord le titre du morceau."); return; }
+    setState("loading"); setMessage("");
+    try { const result = await musicRequest("/api/music/search-tracks", { title, artist, albumTitle }); setCandidates(result.candidates ?? []); setState("idle"); setMessage(result.candidates?.length ? "Choisis le morceau qui correspond vraiment à ton verdict." : "Aucun résultat certain : tu peux garder le titre saisi sans lien."); }
+    catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "La recherche est indisponible."); }
+  };
+  return <label className="track-lookup"><span>{label}</span><div className="track-lookup__input"><input maxLength={160} value={title} onChange={(event) => { onTitleChange(event.target.value); onSelect(null); }} placeholder={label === "La pépite" ? "Ton meilleur morceau" : "Le morceau le moins convaincant"} /><button type="button" className="sheet-entry-action" disabled={disabled || state === "loading"} onClick={() => void search()}>{state === "loading" ? "…" : "Trouver"}</button></div>{message && <small className={state === "error" ? "is-error" : ""}>{message}</small>}{candidates.length > 0 && <CandidateList candidates={candidates} selectedId={selected?.id} onSelect={(candidate) => { onTitleChange(candidate.title); onSelect(candidate); }} />}</label>;
+}
