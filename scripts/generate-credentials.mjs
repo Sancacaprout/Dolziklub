@@ -7,6 +7,7 @@ const roster = JSON.parse(readFileSync(new URL("../src/data/members.json", impor
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%*+-_";
 const internalDomain = "auth.dolziklub.local";
 const apply = process.argv.includes("--apply");
+const reconcile = process.argv.includes("--reconcile");
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
@@ -23,7 +24,7 @@ function writePrivateReadme(lines) {
   writeFileSync(`${outputDirectory}/README.txt`, `${lines.join("\n")}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
-if (!apply) {
+if (!apply && !reconcile) {
   writePrivateReadme([
     "DOL ZIKLUB — dossier privé d’identifiants.",
     "Aucun compte n’a été créé : exécutez `npm run generate:credentials -- --apply` seulement après la migration Supabase.",
@@ -49,6 +50,40 @@ const supabase = createClient(url, serviceRoleKey, { auth: { autoRefreshToken: f
 const created = [];
 const skipped = [];
 
+const syncMetadata = async (userId, member) => {
+  const app_metadata = { role: member.role, username: member.username, display_name: member.displayName };
+  const { error: userError } = await supabase.auth.admin.updateUserById(userId, { app_metadata });
+  if (userError) return userError.message;
+  const { error: profileError } = await supabase.from("member_profiles").update({
+    username: member.username,
+    display_name: member.displayName,
+    role: member.role,
+  }).eq("id", userId);
+  return profileError?.message ?? null;
+};
+
+if (reconcile) {
+  const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (error) {
+    console.error(`Impossible de lire les comptes existants : ${error.message}`);
+    process.exit(1);
+  }
+  for (const member of roster) {
+    if (!member.username) continue;
+    const user = data.users.find((candidate) => candidate.email === internalEmail(member.username));
+    if (!user) {
+      skipped.push(`${member.displayName} : compte introuvable`);
+      continue;
+    }
+    const errorMessage = await syncMetadata(user.id, member);
+    if (errorMessage) skipped.push(`${member.displayName} : ${errorMessage}`);
+    else created.push(`${member.displayName} (@${member.username})`);
+  }
+  console.log(`Synchronisation terminée : ${created.length} compte(s) mis à jour, ${skipped.length} ignoré(s).`);
+  if (skipped.length) process.exitCode = 1;
+  process.exit();
+}
+
 for (const member of roster) {
   if (!member.username) {
     skipped.push(`${member.displayName} : identifiant manquant`);
@@ -68,6 +103,11 @@ for (const member of roster) {
 
   if (error || !data.user) {
     skipped.push(`${member.displayName} : ${error?.message ?? "création impossible"}`);
+    continue;
+  }
+  const metadataError = await syncMetadata(data.user.id, member);
+  if (metadataError) {
+    skipped.push(`${member.displayName} : métadonnées non synchronisées (${metadataError})`);
     continue;
   }
 
