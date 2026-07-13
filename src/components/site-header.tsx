@@ -1,0 +1,9 @@
+"use client";
+import Link from "next/link";
+import { useState } from "react";
+
+const links = [["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
+export function SiteHeader() {
+  const [open, setOpen] = useState(false);
+  return <header className="site-header"><Link href="/" className="logo" onClick={() => setOpen(false)}>DOL <i>ZIKLUB</i></Link><button className="menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="main-nav">Menu</button><nav id="main-nav" className={open ? "open" : ""}>{links.map(([label, href]) => <Link key={href} href={href} onClick={() => setOpen(false)}>{label}</Link>)}<Link className="random-link" href="/hasard" onClick={() => setOpen(false)}>Album au hasard ↗</Link></nav></header>;
+}

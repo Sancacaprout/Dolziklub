@@ -1,0 +1,2 @@
+import Link from "next/link";
+export function Footer() { return <footer className="footer"><div><b>DOL ZIKLUB</b><p>Des albums imposés, des avis honnêtes et quelques amitiés mises à l’épreuve.</p></div><div><Link href="/albums">Albums</Link><Link href="/membres">Membres</Link><Link href="/concept">Le concept</Link></div><small>© {new Date().getFullYear()} — Les pochettes appartiennent à leurs ayants droit.</small></footer>; }

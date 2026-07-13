@@ -1,0 +1,20 @@
+import Link from "next/link";
+import Image from "next/image";
+import { AlbumCard } from "@/components/album-card";
+import { albums } from "@/data/albums";
+import { members } from "@/data/members";
+import { memes } from "@/data/memes";
+import { getClubStats } from "@/lib/statistics";
+
+export default function Home() {
+  const stats = getClubStats(albums);
+  const featured = albums[18] ?? albums[0];
+  return <main>
+    <section className="hero"><p className="stamp">ARCHIVES PRIVÉES · ÉDITION 01</p><h1>DOL<br/><em>ZIKLUB</em></h1><p className="hero__lede">Chaque semaine, quelqu’un impose un album. Quelqu’un d’autre doit survivre à l’écoute et rendre son verdict.</p><div className="hero__actions"><Link className="button" href="/albums">Explorer les archives</Link><Link className="text-link" href="/hasard">Tirer un disque →</Link></div></section>
+    {featured && <section className="feature"><div><p className="eyebrow">À sortir du bac</p><h2>{featured.title}<br/><em>{featured.artist}</em></h2><p>Une pochette retrouvée dans les archives. Les détails d’écoute seront ajoutés dès récupération de la feuille historique.</p><Link className="button button--dark" href={`/albums/${featured.slug}`}>Voir la fiche</Link></div><AlbumCard album={featured} compact /></section>}
+    <section className="ticker"><span>{albums.length} ALBUMS RETROUVÉS</span><span>15 MÈMES CLASSÉS</span><span>{members.length} PARTICIPANTS IDENTIFIÉS</span></section>
+    <section className="section"><div className="section-heading"><p className="eyebrow">Les dernières boîtes ouvertes</p><h2>Archives à écouter</h2><Link href="/albums">Tout voir →</Link></div><div className="album-grid">{albums.slice(0, 6).map((album) => <AlbumCard key={album.id} album={album} />)}</div></section>
+    <section className="split-section"><div><p className="eyebrow">Le club en chiffres</p><h2>Des données, pas du blabla.</h2><div className="stat-row"><b>{stats.total}</b><span>albums indexés</span></div><div className="stat-row"><b>{stats.pending}</b><span>écoutes à documenter</span></div><p className="note">Les notes et avis n’étaient pas dans les fichiers fournis. Ils ne sont donc pas simulés.</p></div><div className="member-wall">{members.map((member, index) => <Link href={`/membres/${member.slug}`} key={member.slug} className="member-chip"><span>{String(index + 1).padStart(2, "0")}</span>{member.displayName}</Link>)}</div></section>
+    <section className="section meme-preview"><div className="section-heading"><div><p className="eyebrow">Musée des dossiers</p><h2>Les preuves compromettantes</h2></div><Link href="/memes">Ouvrir les archives →</Link></div><div className="meme-strip">{memes.slice(0, 4).map((meme) => <Image src={meme.src} alt={meme.alt} key={meme.id} width={500} height={500} sizes="(max-width: 700px) 45vw, 25vw" />)}</div></section>
+  </main>;
+}

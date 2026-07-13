@@ -1,0 +1,8 @@
+export interface Member {
+  slug: string;
+  displayName: string;
+  username: string | null;
+  role: "admin" | "member";
+  bio: string | null;
+  dataStatus: "confirmed" | "needs-review";
+}
