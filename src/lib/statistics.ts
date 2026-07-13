@@ -17,8 +17,10 @@ export function getClubStats(albums: Album[]) {
 }
 
 export function getMemberStats(albums: Album[], slug: string) {
-  const proposed = albums.filter((album) => album.proposedBy === slug);
-  const listened = albums.filter((album) => album.listenedBy === slug);
+  const normalizedSlug = slug.trim().toLocaleLowerCase();
+  const belongsToMember = (name: string | null) => name?.trim().toLocaleLowerCase() === normalizedSlug;
+  const proposed = albums.filter((album) => belongsToMember(album.proposedBy));
+  const listened = albums.filter((album) => belongsToMember(album.listenedBy));
   return {
     proposed,
     listened,
