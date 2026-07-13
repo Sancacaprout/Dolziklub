@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { RatingDisplay } from "@/components/rating-display";
+import { albums as archivedAlbums } from "@/data/albums";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import type { Album } from "@/types/album";
 
 type Entry = { id: string; draw_number: number; position: number; proposed_by: string | null; listened_by: string | null; proposed_by_name: string | null; listened_by_name: string | null; album_title: string | null; album_artist: string | null; youtube_music_url?: string | null };
 type Review = { album_id: string; review: string; rating: number; best_track: string | null; worst_track: string | null; best_track_youtube_music_url?: string | null; worst_track_youtube_music_url?: string | null };
@@ -13,6 +16,8 @@ type StickyHeader = { left: number; width: number; top: number; tableWidth: numb
 function memberName(name: string | null) { if (!name) return "—"; return name.trim().toLocaleLowerCase() === "thomas" ? "Toma" : `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}`; }
 function assigned(entry: Entry, member: Member, side: "proposer" | "listener") { const id = side === "proposer" ? entry.proposed_by : entry.listened_by; const name = side === "proposer" ? entry.proposed_by_name : entry.listened_by_name; return id === member.id || [member.username, member.displayName].some((value) => value.trim().toLocaleLowerCase() === name?.trim().toLocaleLowerCase()); }
 function emptySlot(entry: Entry) { return !entry.album_title?.trim() || !entry.album_artist?.trim() || /^album\s*[-–—]\s*artiste$/i.test(entry.album_title); }
+
+function sameAlbum(entry: Entry, album: Album) { return entry.album_title?.trim().toLocaleLowerCase() === album.title.trim().toLocaleLowerCase() && entry.album_artist?.trim().toLocaleLowerCase() === album.artist.trim().toLocaleLowerCase(); }
 
 function HeaderRow() {
   return <tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best track</th><th>Worst track</th></tr>;
@@ -94,9 +99,9 @@ function LiveDraw({ draw, rows, reviews, member, onOpenProposal, onOpenReview }:
       const review = reviews.get(entry.id);
       const canPropose = member && assigned(entry, member, "proposer") && emptySlot(entry) && draw.status === "published";
       const canReview = member && assigned(entry, member, "listener") && !emptySlot(entry) && draw.status === "published";
-      const album = entry.album_title ? <>{entry.album_title}<span>{entry.album_artist}</span></> : <span className="sheet-placeholder-album">Album – Artiste</span>;
+      const archivedAlbum = archivedAlbums.find((album) => sameAlbum(entry, album));
       return <tr className={canPropose || canReview ? "sheet-row--action" : ""} key={entry.id} onClick={() => canPropose ? onOpenProposal(entry.id) : canReview ? onOpenReview(entry.id) : undefined}>
-        <td>{entry.youtube_music_url ? <a className="sheet-album-link" href={entry.youtube_music_url} target="_blank" rel="noopener noreferrer"><b>{album}</b></a> : <span className="sheet-album-link"><b>{album}</b></span>}</td>
+        <td>{entry.album_title ? <span className="sheet-album-link">{archivedAlbum ? <Link className="sheet-album-title-link" href={`/albums/${archivedAlbum.slug}`}><b>{entry.album_title}</b></Link> : entry.youtube_music_url ? <a className="sheet-album-title-link" href={entry.youtube_music_url} target="_blank" rel="noopener noreferrer"><b>{entry.album_title}</b></a> : <b>{entry.album_title}</b>}<span>{entry.album_artist}</span></span> : <span className="sheet-placeholder-album">Album – Artiste</span>}</td>
         <td><span className="sheet-member">{memberName(entry.proposed_by_name)}</span></td>
         <td><span className="sheet-member">{memberName(entry.listened_by_name)}</span></td>
         <td className="sheet-review">{review?.review || "—"}</td>
