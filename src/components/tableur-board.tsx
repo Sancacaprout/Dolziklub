@@ -34,7 +34,7 @@ const quizQuestions = [
 ];
 
 function memberName(name: string | null) { return name ? `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}` : "—"; }
-function value(input: string | null) { return input?.trim() || "—"; }
+function value(input: string | null) { const text = input?.trim(); return !text || /^avis à compléter$/i.test(text) ? "—" : text; }
 function coverUrl(path: string | null) { return path ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path).data.publicUrl : null; }
 
 function normalizedMember(value: string | null | undefined) { return value?.trim().toLocaleLowerCase() ?? ""; }
