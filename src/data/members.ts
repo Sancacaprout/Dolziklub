@@ -1,10 +1,9 @@
 import type { Member } from "@/types/member";
 
-// Les noms proviennent des consignes et des archives de mèmes. Les relations
-// album/personne ne sont pas disponibles dans les fichiers fournis.
+// Les noms proviennent des consignes et des archives de mèmes. Thomas et Toma
+// désignent la même personne : le nom public retenu est Toma.
 export const members: Member[] = [
-  { slug: "thomas", displayName: "Thomas", username: "thomas", role: "admin", bio: null, dataStatus: "needs-review" },
-  { slug: "toma", displayName: "Toma", username: "toma", role: "member", bio: null, dataStatus: "needs-review" },
+  { slug: "toma", displayName: "Toma", username: "thomas", role: "admin", bio: null, dataStatus: "confirmed" },
   { slug: "dod", displayName: "Dod", username: "dod", role: "admin", bio: null, dataStatus: "confirmed" },
   { slug: "pep", displayName: "Pep", username: "pep", role: "member", bio: null, dataStatus: "confirmed" },
   { slug: "motem", displayName: "Motem", username: "motem", role: "member", bio: null, dataStatus: "confirmed" },
