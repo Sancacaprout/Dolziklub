@@ -1,33 +1,19 @@
-import manifest from "./manifest_pochettes.json";
+import archive from "./albums.generated.json";
 import { uniqueSlug } from "@/lib/slug";
 import type { Album } from "@/types/album";
 
-type ManifestEntry = { album: string; artiste: string; fichier: string };
+type ArchiveRecord = Omit<Album, "id" | "slug"> & { position: number };
+
 const usedSlugs = new Set<string>();
 
-export const albums: Album[] = (manifest as ManifestEntry[]).map((entry, index) => ({
-  id: `archive-${index + 1}`,
-  slug: uniqueSlug(`${entry.album}-${entry.artiste}`, usedSlugs),
-  title: entry.album,
-  artist: entry.artiste,
-  cover: `/covers/${entry.fichier}`,
-  releaseYear: null,
-  origin: null,
-  language: null,
-  genres: [],
-  projectType: null,
-  proposedBy: null,
-  listenedBy: null,
-  rating: null,
-  shortReview: null,
-  detailedReview: null,
-  bestTrack: { title: null, url: null },
-  worstTrack: { title: null, url: null },
-  albumUrl: null,
-  artistDescription: null,
-  albumDescription: null,
-  status: "pending",
+// The supplied club archive is chronological: the last record is the newest.
+export const albums: Album[] = (archive as ArchiveRecord[]).map(({ position, ...album }) => ({
+  ...album,
+  id: `archive-${position}`,
+  slug: uniqueSlug(`${album.title}-${album.artist}`, usedSlugs),
 }));
+
+export const getLatestAlbums = (limit: number) => [...albums].slice(-limit).reverse();
 
 export function getAlbum(slug: string) {
   return albums.find((album) => album.slug === slug);

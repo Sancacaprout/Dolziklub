@@ -16,3 +16,9 @@ export const members: Member[] = [
 ];
 
 export const getMember = (slug: string) => members.find((member) => member.slug === slug);
+
+export const getMemberDisplayName = (name: string | null) => {
+  if (!name) return "Non renseigné";
+  const key = name.trim().toLocaleLowerCase();
+  return members.find((member) => [member.slug, member.username, member.displayName].some((value) => value?.toLocaleLowerCase() === key))?.displayName ?? name;
+};

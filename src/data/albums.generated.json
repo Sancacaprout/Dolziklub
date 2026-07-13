@@ -1,0 +1,1561 @@
+[
+  {
+    "position": 1,
+    "title": "Bunka",
+    "artist": "EVE",
+    "cover": "/covers/Bunka - EVE.png",
+    "releaseYear": 2017,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "J-pop",
+      "rock japonais",
+      "pop alternative"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Yuna",
+    "listenedBy": "kougna",
+    "rating": 2,
+    "shortReview": "moyen mais ok, rien de transcendant, dans la norme de ce genre de musique (pas tout écouté)",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Eve est un auteur-compositeur-interprète japonais connu pour une écriture nerveuse, des mélodies très mobiles et une esthétique visuelle étroitement liée à l’animation.",
+    "albumDescription": "**Bunka** est un projet rattaché principalement aux univers suivants : **J-pop, rock japonais, pop alternative**.   La fiche permet de le situer dans la discographie de **EVE** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 2,
+    "title": "L’école du micro d’argent",
+    "artist": "IAM",
+    "cover": "/covers/L'École du micro d'argent - IAM.png",
+    "releaseYear": 1997,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "hip-hop français",
+      "rap conscient"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Pep",
+    "listenedBy": "Enzo",
+    "rating": 4,
+    "shortReview": "incr, bcp de messages, les prods incrrr, puis comment ils kickent rlarlarlrllralrla",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "La saga ft. Wu tang clan",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Elle donne son corps avant son nom",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "IAM est un groupe marseillais majeur du rap français. Son écriture mêle récits sociaux, références historiques, imaginaire et réflexion politique.",
+    "albumDescription": "**L’école du micro d’argent** est un projet rattaché principalement aux univers suivants : **hip-hop français, rap conscient**.   La fiche permet de le situer dans la discographie de **IAM** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 3,
+    "title": "The Love Album",
+    "artist": "P. Diddy",
+    "cover": "/covers/The Love Album - P. Diddy.png",
+    "releaseYear": 2023,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "R&B",
+      "hip-hop",
+      "pop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "kougna",
+    "listenedBy": "Motem",
+    "rating": 1,
+    "shortReview": "Pue sa mère, les textes sont rincés et les prods pas ouf + feats à chier",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Boohoo",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Tough love",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "P. Diddy est l’artiste crédité pour ce projet.",
+    "albumDescription": "**The Love Album** est un projet rattaché principalement aux univers suivants : **R&B, hip-hop, pop**.   La fiche permet de le situer dans la discographie de **P. Diddy** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 4,
+    "title": "Gracias Compay",
+    "artist": "Compay segundo",
+    "cover": "/covers/Gracias Compay - Compay Segundo.png",
+    "releaseYear": null,
+    "origin": "Cuba",
+    "language": "espagnol",
+    "genres": [
+      "son cubain",
+      "musique cubaine traditionnelle"
+    ],
+    "projectType": "Album",
+    "proposedBy": "Motem",
+    "listenedBy": "Dod",
+    "rating": 2,
+    "shortReview": "sympa mais répétitif. La vibe est authentique, mais je pense que ça s'écoute mieux en fond",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Virgen del Pino",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Ataidi las flores de la vida",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Compay Segundo est une figure historique de la musique cubaine, célèbre pour son chant, son jeu de cordes et sa contribution au son traditionnel cubain.",
+    "albumDescription": "**Gracias Compay** est un projet rattaché principalement aux univers suivants : **son cubain, musique cubaine traditionnelle**.   La fiche permet de le situer dans la discographie de **Compay segundo** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 5,
+    "title": "Submarine",
+    "artist": "The marias",
+    "cover": "/covers/Submarine - The Marías.png",
+    "releaseYear": 2024,
+    "origin": "États-Unis",
+    "language": "anglais et espagnol",
+    "genres": [
+      "dream pop",
+      "indie pop",
+      "pop psychédélique"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Enzo",
+    "listenedBy": "Pep",
+    "rating": 3,
+    "shortReview": "inspi de fou entre chaque son kappa",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Run your mouth",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Lejos de Ti",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "The Marías est un groupe américano-portoricain mêlant dream pop, soul, psychédélisme et passages bilingues.",
+    "albumDescription": "**Submarine** est un projet rattaché principalement aux univers suivants : **dream pop, indie pop, pop psychédélique**.   La fiche permet de le situer dans la discographie de **The marias** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 6,
+    "title": "Born to die",
+    "artist": "Lana del Rey",
+    "cover": "/covers/Born to Die - Lana Del Rey.png",
+    "releaseYear": 2012,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "baroque pop",
+      "dream pop",
+      "pop alternative"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Yuna",
+    "rating": 4,
+    "shortReview": "Album très sympa à écouter lorsqu'on travaille ou pour juste chill",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Million Dollar man",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Off To The Races",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Lana Del Rey est une autrice-compositrice-interprète américaine connue pour une pop cinématographique, mélancolique et nourrie d’images de l’Amérique mythifiée.",
+    "albumDescription": "**Born to die** est un projet rattaché principalement aux univers suivants : **baroque pop, dream pop, pop alternative**.   La fiche permet de le situer dans la discographie de **Lana del Rey** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 7,
+    "title": "JOŸA",
+    "artist": "Tayc",
+    "cover": "/covers/JOŸA - Tayc.png",
+    "releaseYear": null,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "afropop",
+      "R&B",
+      "pop urbaine"
+    ],
+    "projectType": "Album",
+    "proposedBy": "Toma",
+    "listenedBy": "Chacha",
+    "rating": 4,
+    "shortReview": "L'ambiance est vraiment bien, mais les dialogues (monologue, entract...) cassent le rythme de l'album je trouve",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Masterpiece",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Prologue",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Tayc est un chanteur et auteur-compositeur français associé à l’afrolov’, au R&B et à la pop urbaine.",
+    "albumDescription": "**JOŸA** est un projet rattaché principalement aux univers suivants : **afropop, R&B, pop urbaine**.   La fiche permet de le situer dans la discographie de **Tayc** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 8,
+    "title": "The Passionate Ones",
+    "artist": "Nourished by time",
+    "cover": "/covers/The Passionate Ones - Nourished by Time.png",
+    "releaseYear": 2025,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "R&B alternatif",
+      "synth-pop",
+      "indie"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Bono",
+    "listenedBy": "Yuna",
+    "rating": 3,
+    "shortReview": "Des instrus et variantes intéressantes",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "It's time",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Idiots in the Park",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Nourished by Time est le projet de Marcus Brown, artiste américain qui croise R&B alternatif, synth-pop, soul et production indépendante.",
+    "albumDescription": "**The Passionate Ones** est un projet rattaché principalement aux univers suivants : **R&B alternatif, synth-pop, indie**.   La fiche permet de le situer dans la discographie de **Nourished by time** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 9,
+    "title": "The Magic Whip",
+    "artist": "Blur",
+    "cover": "/covers/The Magic Whip - Blur.png",
+    "releaseYear": 2015,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "rock alternatif",
+      "britpop",
+      "art rock"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Bono",
+    "rating": 4,
+    "shortReview": "Nostalgique",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "They are too many of us",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Mirrorball",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Blur est un groupe britannique majeur, d’abord associé à la britpop puis à une écriture rock plus expérimentale et éclectique.",
+    "albumDescription": "**The Magic Whip** est un projet rattaché principalement aux univers suivants : **rock alternatif, britpop, art rock**.   La fiche permet de le situer dans la discographie de **Blur** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 10,
+    "title": "Projet blue beam",
+    "artist": "Freeze Corleone",
+    "cover": "/covers/Projet Blue Beam - Freeze Corleone.png",
+    "releaseYear": 2018,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "trap"
+    ],
+    "projectType": "Projet / mixtape",
+    "proposedBy": "kougna",
+    "listenedBy": "Toma",
+    "rating": 2,
+    "shortReview": "Connaissant déjà Freezer Corleone, je me suis vite habitué à son style;",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tCependant, l'album est claqué au sol ya qu'un son de bien. Textes répétitifs, surtout comparés à \"Shavkat\", que je trouve bien plus travaillé. Morceaux 7 et 9 pas dispo sur Deezer;",
+    "bestTrack": {
+      "title": "Lester",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Les 10 autres",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Freeze Corleone est un rappeur français reconnu pour ses schémas de rimes, ses références en série et une esthétique froide et codée.",
+    "albumDescription": "**Projet blue beam** est un projet rattaché principalement aux univers suivants : **rap français, trap**.   La fiche permet de le situer dans la discographie de **Freeze Corleone** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 11,
+    "title": "Land",
+    "artist": "Kekra",
+    "cover": "/covers/Land - Kekra.png",
+    "releaseYear": 2018,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "trap",
+      "cloud rap"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Bono",
+    "listenedBy": "Chacha",
+    "rating": 3,
+    "shortReview": "Y a des rhytmes intéressant mais...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tje trouve que la voix ne match pas à la musique sur certaines chansons. Quelques découvertes que j'aime bien dont la dernière musique de son album",
+    "bestTrack": {
+      "title": "Frérot",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Normal (Interlude)",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Kekra est un rappeur français connu pour son anonymat visuel, ses flows techniques et ses productions mêlant trap, cloud rap et textures électroniques.",
+    "albumDescription": "**Land** est un projet rattaché principalement aux univers suivants : **rap français, trap, cloud rap**.   La fiche permet de le situer dans la discographie de **Kekra** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 12,
+    "title": "THY WILL BE DONE",
+    "artist": "$uicideboy$",
+    "cover": "/covers/THY WILL BE DONE - $uicideboy$.png",
+    "releaseYear": null,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "hip-hop",
+      "trap",
+      "horrorcore"
+    ],
+    "projectType": "Projet",
+    "proposedBy": "Enzo",
+    "listenedBy": "Toma",
+    "rating": 4,
+    "shortReview": "Album assez sympa mais...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tquand même un peu répétitif vers la fin. J'ai bien aimé les prods ça a un peu un style de Phonk j'aime bien. Le début de l'album est grave cool mais la fin un peu moins. Ça ne mérite pas 5 étoiles car pour moi il manque un son avec une meuf. Reply: \tMarquée comme fermée Reply: \tRouverte",
+    "bestTrack": {
+      "title": "2009 Reggie Bush",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Hypernormalisation",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "$uicideboy$ est un duo américain de La Nouvelle-Orléans mêlant trap sombre, rap underground et esthétique horrorcore.",
+    "albumDescription": "**THY WILL BE DONE** est un projet rattaché principalement aux univers suivants : **hip-hop, trap, horrorcore**.   La fiche permet de le situer dans la discographie de **$uicideboy$** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 13,
+    "title": "Pinkerton",
+    "artist": "Weezer",
+    "cover": "/covers/Pinkerton - Weezer.png",
+    "releaseYear": 1996,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "rock alternatif",
+      "emo",
+      "power pop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Pep",
+    "rating": 3,
+    "shortReview": "Album sympas d'un gars paumé en amour mais sans plus. Une bonne vibe mais rien de marquant.",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "The Good Life",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Tired Of Sex",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Weezer est un groupe américain de rock alternatif et de power pop, connu pour ses mélodies immédiates et ses textes souvent maladroits, intimes ou ironiques.",
+    "albumDescription": "**Pinkerton** est un projet rattaché principalement aux univers suivants : **rock alternatif, emo, power pop**.   La fiche permet de le situer dans la discographie de **Weezer** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 14,
+    "title": "Euphoria",
+    "artist": "Labrinth",
+    "cover": "/covers/Euphoria - Labrinth.png",
+    "releaseYear": 2019,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "musique de série",
+      "électronique",
+      "R&B alternatif"
+    ],
+    "projectType": "Bande originale",
+    "proposedBy": "Yuna",
+    "listenedBy": "Bono",
+    "rating": 3,
+    "shortReview": "La grosse tete à Zendaya ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tBono : Sa tête en plein millieu à croire que vous le fazites exprès pour m'énerver !  En vrai compliqué de jauger des soundtrack de film et/ou série. Tu peux pas être objectif par rapport à qqun qui aurait vu l'œuvre visuel+audio.",
+    "bestTrack": {
+      "title": "Still dont know my",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "New Girl",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Labrinth est un musicien, chanteur et producteur britannique dont le travail mélange électronique, soul, pop et composition pour l’image.",
+    "albumDescription": "**Euphoria** est un projet rattaché principalement aux univers suivants : **musique de série, électronique, R&B alternatif**.   La fiche permet de le situer dans la discographie de **Labrinth** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 15,
+    "title": "Timely !!",
+    "artist": "Anri",
+    "cover": "/covers/Timely!! - Anri.png",
+    "releaseYear": 1983,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "city pop",
+      "funk",
+      "pop japonaise"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Pep",
+    "listenedBy": "Yuna",
+    "rating": 4,
+    "shortReview": "Album chill, j'aime beaucoup petit côté old school qu'on apprécie. It's valideeyy !",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "I CAN'T STOP THE LONELINESS",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Windy Summer",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Anri est une chanteuse japonaise emblématique de la city pop, particulièrement associée au son urbain et sophistiqué des années 1980.",
+    "albumDescription": "**Timely !!** est un projet rattaché principalement aux univers suivants : **city pop, funk, pop japonaise**.   La fiche permet de le situer dans la discographie de **Anri** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 16,
+    "title": "Jeune Prince, Part. II",
+    "artist": "Rsko",
+    "cover": "/covers/Jeune Prince, Part. II - Rsko.png",
+    "releaseYear": null,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "mélodique",
+      "trap"
+    ],
+    "projectType": "Projet",
+    "proposedBy": "Toma",
+    "listenedBy": "Motem",
+    "rating": 2,
+    "shortReview": "Après les premiers sons je pensais que j'allais détester tout l'album, mais ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tagréablement surpris par certains titres.Le son en anglais est catastrophique. Des efforts d'articulations seraient appréciés également, Reply: \tMarquée comme fermée Reply: \tRouverte",
+    "bestTrack": {
+      "title": "Daytona",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "2MYROOM",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Rsko est un rappeur et chanteur français développant un rap mélodique, souvent centré sur les relations, l’ambition et le quotidien.",
+    "albumDescription": "**Jeune Prince, Part. II** est un projet rattaché principalement aux univers suivants : **rap français, mélodique, trap**.   La fiche permet de le situer dans la discographie de **Rsko** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 17,
+    "title": "Le Klub des 7",
+    "artist": "Le klub des 7",
+    "cover": "/covers/Le Klub des 7 - Le Klub des 7.png",
+    "releaseYear": 2006,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "hip-hop français",
+      "rap alternatif"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Motem",
+    "listenedBy": "Enzo",
+    "rating": 1,
+    "shortReview": "Orfffff j'aime pas la sonorité mais...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tje vois pourquoi tu a des gens qui aiment , ce groupe c'est pas des rappeur mais des MC le DJ c'est un disk jockey il mix pas il \"toast\" mais ouai pas mon genre",
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Le Klub des 7 est un collectif de rap français alternatif réunissant plusieurs personnalités de la scène indépendante.",
+    "albumDescription": "**Le Klub des 7** est un projet rattaché principalement aux univers suivants : **hip-hop français, rap alternatif**.   La fiche permet de le situer dans la discographie de **Le klub des 7** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 18,
+    "title": "Unter dem Eis",
+    "artist": "Eisblume",
+    "cover": "/covers/Unter dem Eis - Eisblume.png",
+    "releaseYear": 2009,
+    "origin": "Allemagne",
+    "language": "allemand",
+    "genres": [
+      "pop rock",
+      "rock gothique"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Chacha",
+    "listenedBy": "Dod",
+    "rating": 3,
+    "shortReview": "Evanessence en Allemand,  des suites d'accord originales",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \ttrès sympa dans l'ensemble, la voix est très belle malgré que je ne comprenne pas un traître mot de ce qu'elle bafouille. Des choix de composition fortement appréciables viennent casser la monotonie que pourraient avoir certains morceaux, dédicace aux violons de \"Stern\" qui ont gorgé mon sexe de sang à leur écoute (erection). \"Licht im Ozean\" pourrait être une OST de SNK.",
+    "bestTrack": {
+      "title": "Stern",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Dunkle sehnsucht",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Eisblume est un groupe allemand de pop rock aux arrangements dramatiques et à l’imagerie gothique.",
+    "albumDescription": "**Unter dem Eis** est un projet rattaché principalement aux univers suivants : **pop rock, rock gothique**.   La fiche permet de le situer dans la discographie de **Eisblume** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 19,
+    "title": "Ipséité",
+    "artist": "Damso",
+    "cover": "/covers/Ipséité - Damso.png",
+    "releaseYear": 2017,
+    "origin": "Belgique",
+    "language": "français",
+    "genres": [
+      "rap francophone",
+      "hip-hop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "kougna",
+    "listenedBy": "Dod",
+    "rating": 3,
+    "shortReview": "Monsieur Dems apprécie les gros culs...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tJe ne peux pas le juger pour autant ! Album plutôt sympathique, on a plusieurs ambiances, tantôt gros rap ghetto, tantôt zumba, seul fil conducteur : le SEXE, c'est le sujet qui revient, à certains moments je trouve ça appréciable, dans Gova par exemple la phrase \"sperme dans les yeux, l'amour l'a-t-elle aveuglée ?\" me fait rire et réfléchir en même temps, ou encore tout le son \"une âme pour deux\" que je ne peux pas décrire car il faut le vivre, mais au global je trouve le thème un peu léger et redondant, heureusement il articule, bien il sais raconter, les prods sont planantes et ça fait plaisir.",
+    "bestTrack": {
+      "title": "Une âme pour deux",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Signaler",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Damso est un rappeur belgo-congolais reconnu pour une écriture introspective, dense et souvent sombre.",
+    "albumDescription": "**Ipséité** est un projet rattaché principalement aux univers suivants : **rap francophone, hip-hop**.   La fiche permet de le situer dans la discographie de **Damso** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 20,
+    "title": "1.6 Live",
+    "artist": "TIF",
+    "cover": "/covers/1.6 Live - TIF.png",
+    "releaseYear": null,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "influences nord-africaines",
+      "live"
+    ],
+    "projectType": "Projet live",
+    "proposedBy": "Bono",
+    "listenedBy": "Motem",
+    "rating": 1,
+    "shortReview": "voidesque",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "SHADOW BOXING",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "HINATA",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "TIF est un rappeur français dont la musique associe rap contemporain, mélodies et influences culturelles nord-africaines.",
+    "albumDescription": "**1.6 Live** est un projet rattaché principalement aux univers suivants : **rap français, influences nord-africaines, live**.   La fiche permet de le situer dans la discographie de **TIF** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 21,
+    "title": "Oracular Spectacular",
+    "artist": "MGMT",
+    "cover": "/covers/Oracular Spectacular - MGMT.png",
+    "releaseYear": 2007,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "pop psychédélique",
+      "synth-pop",
+      "indie rock"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Motem",
+    "listenedBy": "Toma",
+    "rating": 5,
+    "shortReview": "Absolute Music",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tNann cet album m’a rappelé une partie de mon enfance hell nah. It’s peak Reply: \tMarquée comme fermée Reply: \tRouverte",
+    "bestTrack": {
+      "title": "Weekend Wars",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Pieces of what",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "MGMT est un groupe américain de pop psychédélique et d’indie rock, connu pour ses synthétiseurs, son goût du décalage et ses refrains très mémorables.",
+    "albumDescription": "**Oracular Spectacular** est un projet rattaché principalement aux univers suivants : **pop psychédélique, synth-pop, indie rock**.   La fiche permet de le situer dans la discographie de **MGMT** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 22,
+    "title": "Star",
+    "artist": "2hollis",
+    "cover": "/covers/Star - 2hollis.png",
+    "releaseYear": 2024,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "électronique",
+      "hyperpop",
+      "trap expérimentale"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Enzo",
+    "listenedBy": "Dod",
+    "rating": 2,
+    "shortReview": "Beaucoup de choses à dire ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tJ'aime l'ambiance, c'était fluide, ça se prête bien a de la musique d'ambiance, mais je trouve ça un peu mal équilibré.  Comme dans le titre Tell me, beaucoup de couplet un peu plat et le drop est pas mindblowing et trop court je trouve. Un peu répétitif sur les effets, Eldest child est super mal placée dans l'album juste après le son le plus puissant, un voix acoustique c'est pas ma tasse de thé et j'ai du mal à voir ce qu'il fait dans cet album. Pk ya un lion et des F1 en fond des phases parlées ??? Dédicace aux bruits de Feu d'artifice de Minecraft dans dream rain sports. J'ai pas détesté mais je suis pas sur le cul non plus.",
+    "bestTrack": {
+      "title": "Nerve",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "eldest child",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "2hollis est un artiste et producteur américain évoluant entre musique électronique, rap expérimental et esthétique hyperpop.",
+    "albumDescription": "**Star** est un projet rattaché principalement aux univers suivants : **électronique, hyperpop, trap expérimentale**.   La fiche permet de le situer dans la discographie de **2hollis** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 23,
+    "title": "Infinity on High",
+    "artist": "Fall Out Boy",
+    "cover": "/covers/Infinity on High - Fall Out Boy.png",
+    "releaseYear": 2007,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "pop punk",
+      "rock alternatif",
+      "emo pop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Enzo",
+    "rating": 3,
+    "shortReview": "Très sympa !",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tTrès sympa, le groupe prend des risques même si ça reste une compo classique (le guitariste et le batteur banger eux deux on un bonne alchimie)  Le vocalist très sympa mais au fil du temp ça voix est ennuyante (même ton) mais très sympa l'écouter aller dans les aigu!",
+    "bestTrack": {
+      "title": "This ain't a scene,",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Hum hallelujah",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Fall Out Boy est un groupe américain de pop punk et de rock alternatif, célèbre pour ses refrains massifs, ses textes chargés et sa production très dynamique.",
+    "albumDescription": "**Infinity on High** est un projet rattaché principalement aux univers suivants : **pop punk, rock alternatif, emo pop**.   La fiche permet de le situer dans la discographie de **Fall Out Boy** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 24,
+    "title": "BDLM Vol.1",
+    "artist": "Tiakola",
+    "cover": "/covers/BDLM Vol. 1 - Tiakola.png",
+    "releaseYear": 2024,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "R&B",
+      "pop urbaine"
+    ],
+    "projectType": "Compilation / projet collectif",
+    "proposedBy": "Toma",
+    "listenedBy": "Bono",
+    "rating": 1,
+    "shortReview": "Pas prêt pour un voyage à Kinshasa",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "plaisir nocif",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "protect",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Tiakola est un chanteur et rappeur français, ancien membre du groupe 4Keus, connu pour son sens mélodique et ses croisements entre rap, R&B et pop.",
+    "albumDescription": "**BDLM Vol.1** est un projet rattaché principalement aux univers suivants : **rap français, R&B, pop urbaine**.   La fiche permet de le situer dans la discographie de **Tiakola** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 25,
+    "title": "Blonde",
+    "artist": "Frank Ocean",
+    "cover": "/covers/Blonde - Frank Ocean.png",
+    "releaseYear": 2016,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "R&B alternatif",
+      "art pop",
+      "soul"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Pep",
+    "listenedBy": "Chacha",
+    "rating": 5,
+    "shortReview": "L'ambiance me fait penser à du lofi en plus dynamique, je pourrai écouter l'album régulièrement tellement il est bien",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Nights",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Facebook story",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Frank Ocean est un auteur-compositeur-interprète américain majeur du R&B alternatif, reconnu pour sa narration fragmentée, son intimité et ses choix de production.",
+    "albumDescription": "**Blonde** est un projet rattaché principalement aux univers suivants : **R&B alternatif, art pop, soul**.   La fiche permet de le situer dans la discographie de **Frank Ocean** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 26,
+    "title": "2005",
+    "artist": "South Arcade",
+    "cover": "/covers/2005 - South Arcade.png",
+    "releaseYear": null,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "pop punk",
+      "rock alternatif"
+    ],
+    "projectType": "Deux projets associés",
+    "proposedBy": "Yuna",
+    "listenedBy": "Pep",
+    "rating": 3,
+    "shortReview": "Franchement j'aime bien, style rock epoque avril lavigne, mais pk de l'auto thune horrible la ?",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "2005.0",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Blood Run Warm",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "South Arcade est un groupe britannique puisant dans le pop punk, le rock alternatif et l’esthétique du début des années 2000.",
+    "albumDescription": "**2005** est un projet rattaché principalement aux univers suivants : **pop punk, rock alternatif**.   La fiche permet de le situer dans la discographie de **South Arcade** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 27,
+    "title": "PLAY!",
+    "artist": "South Arcade",
+    "cover": "/covers/PLAY! - South Arcade.png",
+    "releaseYear": null,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "pop punk",
+      "rock alternatif"
+    ],
+    "projectType": "Deux projets associés",
+    "proposedBy": "Yuna",
+    "listenedBy": "Pep",
+    "rating": 3,
+    "shortReview": "Franchement j'aime bien, style rock epoque avril lavigne, mais pk de l'auto thune horrible la ?",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "2005.0",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Blood Run Warm",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "South Arcade est un groupe britannique puisant dans le pop punk, le rock alternatif et l’esthétique du début des années 2000.",
+    "albumDescription": "**PLAY!** est un projet rattaché principalement aux univers suivants : **pop punk, rock alternatif**.   La fiche permet de le situer dans la discographie de **South Arcade** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 28,
+    "title": "ピッパラの樹の下で",
+    "artist": "nano.RIPE",
+    "cover": "/covers/ピッパラの樹の下で - nano.RIPE.png",
+    "releaseYear": null,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "J-rock",
+      "pop rock",
+      "musique d’anime"
+    ],
+    "projectType": "Album",
+    "proposedBy": "Chacha",
+    "listenedBy": "Yuna",
+    "rating": 4,
+    "shortReview": "Vibe un peu J-Pop et J-Rock sur certains morceaux il n'en faut pas plus pour me convaincre, j'adore ❤️",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Tsuki to Toki",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Kumo no Otoshimono",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "nano.RIPE est un groupe japonais de pop rock connu notamment pour plusieurs génériques et chansons liés à l’animation japonaise.",
+    "albumDescription": "**ピッパラの樹の下で** est un projet rattaché principalement aux univers suivants : **J-rock, pop rock, musique d’anime**.   La fiche permet de le situer dans la discographie de **nano.RIPE** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 29,
+    "title": "Phantom Island",
+    "artist": "King Gizzard & The Lizard Wizard",
+    "cover": "/covers/Phantom Island - King Gizzard & The Lizard Wizard.png",
+    "releaseYear": 2025,
+    "origin": "Australie",
+    "language": "anglais",
+    "genres": [
+      "rock psychédélique",
+      "rock progressif",
+      "orchestral"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Alain",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "King Gizzard & The Lizard Wizard est un groupe australien réputé pour sa productivité et ses changements constants de genre, du garage rock au métal en passant par le jazz et le psychédélisme.",
+    "albumDescription": "**Phantom Island** est un projet rattaché principalement aux univers suivants : **rock psychédélique, rock progressif, orchestral**.   La fiche permet de le situer dans la discographie de **King Gizzard & The Lizard Wizard** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 30,
+    "title": "Marcos valle",
+    "artist": "Marcos valle",
+    "cover": "/covers/Marcos Valle - Marcos Valle.png",
+    "releaseYear": 1970,
+    "origin": "Brésil",
+    "language": "portugais",
+    "genres": [
+      "MPB",
+      "bossa nova",
+      "samba",
+      "jazz-funk"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Bono",
+    "listenedBy": "Dod",
+    "rating": 4,
+    "shortReview": "C'est le brésil, c'est le soleil, les favellas, c'est magnifique...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tentre bangers qui donnent envie de twerker et balades de lovers très chill, gros respect aux compositeurs de bossa nova comme ce cher Marcos, c'est vraiment un style qui arrive a gaver d'accords et de mélodies tout en restant digeste. Je vais sûrement y revenir pour mettre l'ambiance.",
+    "bestTrack": {
+      "title": "Estrelar",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Viola Enluarada",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Marcos Valle est un auteur-compositeur, chanteur et musicien brésilien important de la bossa nova et de la MPB, également influencé par le funk et le jazz.",
+    "albumDescription": "**Marcos valle** est un projet rattaché principalement aux univers suivants : **MPB, bossa nova, samba, jazz-funk**.   La fiche permet de le situer dans la discographie de **Marcos valle** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 31,
+    "title": "Tonight Josephine!",
+    "artist": "Tape Five",
+    "cover": "/covers/Tonight Josephine! - Tape Five.png",
+    "releaseYear": 2010,
+    "origin": "Allemagne",
+    "language": "anglais",
+    "genres": [
+      "electro swing",
+      "lounge",
+      "jazz"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Alain",
+    "listenedBy": "Toma",
+    "rating": 5,
+    "shortReview": "Bon bah c'est une Masterclass ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tje m'attendais à ça de la part de Alain j'aime bien le côté de jazz et toutes les musiques sont bonnes c'est très cools à écouter. Cependant, si je devais faire un reproche, c'est que j'aimerais une mixité des voix, car dans l'album, il n'y a que un son avec un homme comme voix principale, c'est dommage, ne pas avoir exploiter davantage ce domaine",
+    "bestTrack": {
+      "title": "The Sky is not the limite",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Alcazar",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Tape Five est un projet musical allemand mêlant jazz, swing, lounge et production électronique.",
+    "albumDescription": "**Tonight Josephine!** est un projet rattaché principalement aux univers suivants : **electro swing, lounge, jazz**.   La fiche permet de le situer dans la discographie de **Tape Five** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 32,
+    "title": "American Idiot",
+    "artist": "Green Day",
+    "cover": "/covers/American Idiot - Green Day.png",
+    "releaseYear": 2004,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "punk rock",
+      "pop punk",
+      "rock opera"
+    ],
+    "projectType": "Album studio conceptuel",
+    "proposedBy": "Chacha",
+    "listenedBy": "Motem",
+    "rating": 4,
+    "shortReview": "Juste envie de retourner au collège et de faire du skate",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Jesus of Suburbia",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "She's a rebel",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Green Day est un groupe américain de punk rock devenu l’un des principaux représentants du pop punk grand public.",
+    "albumDescription": "**American Idiot** est un projet rattaché principalement aux univers suivants : **punk rock, pop punk, rock opera**.   La fiche permet de le situer dans la discographie de **Green Day** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 33,
+    "title": "15th anniversary Best",
+    "artist": "Maiko Fujita",
+    "cover": "/covers/15th Anniversary Best - Maiko Fujita.png",
+    "releaseYear": null,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "J-pop",
+      "ballade",
+      "pop acoustique"
+    ],
+    "projectType": "Compilation",
+    "proposedBy": "Yuna",
+    "listenedBy": "Chacha",
+    "rating": 5,
+    "shortReview": "Merci pour ce moment d'introspection",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tIl n'y a aucune musique que je n'ai pas aimé, j'ai mis la dernière de l'album parce qu'elle signe la fin de l'album",
+    "bestTrack": {
+      "title": "恋煩い",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "秋風鈴",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Maiko Fujita est une autrice-compositrice-interprète japonaise connue pour ses ballades, son piano et ses chansons liées à plusieurs œuvres audiovisuelles.",
+    "albumDescription": "**15th anniversary Best** est un projet rattaché principalement aux univers suivants : **J-pop, ballade, pop acoustique**.   La fiche permet de le situer dans la discographie de **Maiko Fujita** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 34,
+    "title": "MADRA",
+    "artist": "NEW DAD",
+    "cover": "/covers/MADRA - NewDad.png",
+    "releaseYear": 2024,
+    "origin": "Irlande",
+    "language": "anglais",
+    "genres": [
+      "shoegaze",
+      "indie rock",
+      "dream pop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Enzo",
+    "listenedBy": "Yuna",
+    "rating": 4,
+    "shortReview": "J'aime beaucoup la vibe ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tet la voix de la chanteuse. Des morceaux très groovy, j'enlève juste une étoile car sur un album full certains morceaux peuvent sembler répétitif dans les notes.",
+    "bestTrack": {
+      "title": "Nightmare",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "In My Head",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "NewDad est un groupe irlandais d’indie rock, de dream pop et de shoegaze, caractérisé par des guitares brumeuses et des mélodies mélancoliques.",
+    "albumDescription": "**MADRA** est un projet rattaché principalement aux univers suivants : **shoegaze, indie rock, dream pop**.   La fiche permet de le situer dans la discographie de **NEW DAD** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 35,
+    "title": "The great Chinggis Khan",
+    "artist": "Batzorig Vaanching",
+    "cover": "/covers/The Great Chinggis Khan - Batzorig Vaanchig.png",
+    "releaseYear": null,
+    "origin": "Mongolie",
+    "language": "mongol",
+    "genres": [
+      "chant diphonique mongol",
+      "folk mongol"
+    ],
+    "projectType": "Album",
+    "proposedBy": "Motem",
+    "listenedBy": "Pep",
+    "rating": 4,
+    "shortReview": "Chinese Khan",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Chinggis Khan",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Galshariin magtaal",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Batzorig Vaanchig est un musicien mongol connu pour le chant diphonique et l’interprétation de traditions musicales mongoles.",
+    "albumDescription": "**The great Chinggis Khan** est un projet rattaché principalement aux univers suivants : **chant diphonique mongol, folk mongol**.   La fiche permet de le situer dans la discographie de **Batzorig Vaanching** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 36,
+    "title": "Confiance",
+    "artist": "Kerchak",
+    "cover": "/covers/Confiance - Kerchak.png",
+    "releaseYear": 2024,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "jersey drill",
+      "trap"
+    ],
+    "projectType": "Album / projet",
+    "proposedBy": "Toma",
+    "listenedBy": "Enzo",
+    "rating": 2,
+    "shortReview": "Rap new wave.",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tMhhhhhh, alors  Il apporte vraiment une couleur qu'on manque en France et je le remercie bcp de ça  Mais ce qui me fait chier c'est comme assassin creed, tu écoute 4 ou 6 de ces musique tu a capté ce qu'il fait pas bcp de renouveau (ptet dans ces autre album ???) mais ouai un rap français qui m'ennuie les bpm son a la hauteur de mon ennuis (c'est un peu cru sry toma)  Mais encore une fois il apporte qu'elle que chose de fort et d'unique, ce qui est rare",
+    "bestTrack": {
+      "title": "peur ft ziak",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "percer",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Kerchak est un rappeur français fortement associé à la jersey drill, avec des morceaux courts, rapides et construits autour de rythmiques saccadées.",
+    "albumDescription": "**Confiance** est un projet rattaché principalement aux univers suivants : **rap français, jersey drill, trap**.   La fiche permet de le situer dans la discographie de **Kerchak** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 37,
+    "title": "Black Sunday",
+    "artist": "Cypress Hill",
+    "cover": "/covers/Black Sunday - Cypress Hill.png",
+    "releaseYear": 1993,
+    "origin": "États-Unis",
+    "language": "anglais et espagnol",
+    "genres": [
+      "hip-hop",
+      "rap West Coast",
+      "rap latino"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Pep",
+    "listenedBy": "Bono",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Cypress Hill est un groupe américain pionnier du rap latino et de la West Coast, reconnaissable à ses voix, ses boucles sombres et son identité sonore.",
+    "albumDescription": "**Black Sunday** est un projet rattaché principalement aux univers suivants : **hip-hop, rap West Coast, rap latino**.   La fiche permet de le situer dans la discographie de **Cypress Hill** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 38,
+    "title": "All things must pass",
+    "artist": "George Harrison",
+    "cover": "/covers/All Things Must Pass - George Harrison.png",
+    "releaseYear": 1970,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "rock",
+      "folk rock",
+      "spiritual rock"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Motem",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "George Harrison est un auteur-compositeur et guitariste britannique, membre des Beatles, dont la carrière solo accorde une place importante à la spiritualité et au folk rock.",
+    "albumDescription": "**All things must pass** est un projet rattaché principalement aux univers suivants : **rock, folk rock, spiritual rock**.   La fiche permet de le situer dans la discographie de **George Harrison** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 39,
+    "title": "Moon Safari",
+    "artist": "Air",
+    "cover": "/covers/Moon Safari - Air.png",
+    "releaseYear": 1998,
+    "origin": "France",
+    "language": "anglais et instrumental",
+    "genres": [
+      "electronica",
+      "downtempo",
+      "dream pop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Motem",
+    "listenedBy": "Chacha",
+    "rating": 5,
+    "shortReview": "Ca me rend nostalgique d'une époque que j'ai même pas connu !",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "Sexy Boy",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "La femme d'argent",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Air est un duo français d’électronique connu pour ses arrangements élégants, ses synthétiseurs analogiques et une atmosphère cinématographique.",
+    "albumDescription": "**Moon Safari** est un projet rattaché principalement aux univers suivants : **electronica, downtempo, dream pop**.   La fiche permet de le situer dans la discographie de **Air** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 40,
+    "title": "The Low End Theory",
+    "artist": "A Tribe Called Quest",
+    "cover": "/covers/The Low End Theory - A Tribe Called Quest.png",
+    "releaseYear": 1991,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "hip-hop",
+      "jazz rap",
+      "rap alternatif"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Pep",
+    "listenedBy": "Toma",
+    "rating": 2,
+    "shortReview": "En sah",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tje me suis cru dans un sous-sol remplie de noir en train de se régler en 1vs1  battle de chant. L'album est cool mais TRES TRES TRES REPETITIF, les prods sont les même après pour les paroles je capte pas tout.",
+    "bestTrack": {
+      "title": "Jazz (We've Got)",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "Rap Promoter",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "A Tribe Called Quest est un groupe américain fondamental du rap alternatif et du jazz rap, réputé pour ses grooves, ses basses et ses échanges de voix.",
+    "albumDescription": "**The Low End Theory** est un projet rattaché principalement aux univers suivants : **hip-hop, jazz rap, rap alternatif**.   La fiche permet de le situer dans la discographie de **A Tribe Called Quest** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 41,
+    "title": "Best Day",
+    "artist": "LiSA",
+    "cover": "/covers/Best Day - LiSA.png",
+    "releaseYear": null,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "J-pop",
+      "pop rock",
+      "musique d’anime"
+    ],
+    "projectType": "Album / compilation",
+    "proposedBy": "Chacha",
+    "listenedBy": "Pep",
+    "rating": 4,
+    "shortReview": "La nostalgie, FUCKING WEEB",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "CROSSING FIELD",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "LiTTLE DEViL PARADE",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "LiSA est une chanteuse japonaise de pop rock particulièrement connue pour ses chansons liées aux anime.",
+    "albumDescription": "**Best Day** est un projet rattaché principalement aux univers suivants : **J-pop, pop rock, musique d’anime**.   La fiche permet de le situer dans la discographie de **LiSA** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 42,
+    "title": "This is how tomorrow moves",
+    "artist": "beabadoobe",
+    "cover": "/covers/This Is How Tomorrow Moves - beabadoobee.png",
+    "releaseYear": 2024,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "indie rock",
+      "indie pop",
+      "rock alternatif"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Enzo",
+    "listenedBy": "Bono",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "beabadoobee est une autrice-compositrice-interprète britannique d’origine philippine, associée à l’indie pop et au rock alternatif.",
+    "albumDescription": "**This is how tomorrow moves** est un projet rattaché principalement aux univers suivants : **indie rock, indie pop, rock alternatif**.   La fiche permet de le situer dans la discographie de **beabadoobe** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 43,
+    "title": "Hey u x",
+    "artist": "BENEE",
+    "cover": "/covers/Hey u x - BENEE.png",
+    "releaseYear": 2020,
+    "origin": "Nouvelle-Zélande",
+    "language": "anglais",
+    "genres": [
+      "indie pop",
+      "bedroom pop",
+      "alternative"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Toma",
+    "listenedBy": "Yuna",
+    "rating": 4,
+    "shortReview": "j'ai kiffé",
+    "detailedReview": null,
+    "bestTrack": {
+      "title": "supalonely",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "sheesh",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "BENEE est une chanteuse et autrice-compositrice néo-zélandaise dont la musique mêle indie pop, bedroom pop et production électronique légère.",
+    "albumDescription": "**Hey u x** est un projet rattaché principalement aux univers suivants : **indie pop, bedroom pop, alternative**.   La fiche permet de le situer dans la discographie de **BENEE** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 44,
+    "title": "ITEKOMA HITS",
+    "artist": "Otoboke Beaver",
+    "cover": "/covers/ITEKOMA HITS - Otoboke Beaver.png",
+    "releaseYear": 2019,
+    "origin": "Japon",
+    "language": "japonais",
+    "genres": [
+      "punk hardcore",
+      "noise rock",
+      "punk japonais"
+    ],
+    "projectType": "Compilation / album",
+    "proposedBy": "Dod",
+    "listenedBy": "Enzo",
+    "rating": 2,
+    "shortReview": "Mhhhhhhhhh",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tJe me suis ennuyé, je vois pas l'âme du projet  Elles sont très techniques c'est tout ce que j'ai apprécié du projet",
+    "bestTrack": {
+      "title": "Don't Light my fire",
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Otoboke Beaver est un groupe japonais de punk hardcore connu pour sa vitesse, ses ruptures brutales et son énergie scénique.",
+    "albumDescription": "**ITEKOMA HITS** est un projet rattaché principalement aux univers suivants : **punk hardcore, noise rock, punk japonais**.   La fiche permet de le situer dans la discographie de **Otoboke Beaver** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 45,
+    "title": "Sweet Boy",
+    "artist": "Malcolm Todd",
+    "cover": "/covers/Sweet Boy - Malcolm Todd.png",
+    "releaseYear": 2024,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "R&B alternatif",
+      "indie pop",
+      "soul"
+    ],
+    "projectType": "Album / projet",
+    "proposedBy": "Yuna",
+    "listenedBy": "Dod",
+    "rating": 3,
+    "shortReview": "J'ai bien aimé, et choqué par ...",
+    "detailedReview": "[Threaded comment]  Your version of Excel allows you to read this threaded comment; however, any edits to it will get removed if the file is opened in a newer version of Excel. Learn more: https://go.microsoft.com/fwlink/?linkid=870924 Comment: \tla ressemblance folle avec le style de Steve Lacy ! D'après ce que j'ai pu lire il fait parti de ses influences majeures donc pas étonné. Bonne vibe indie, la ptite drum machine, les grattes un peu sales, peut-être une étoile en moins parce que c'est assez répétitif, la plupart des sons ont le même BPM, la même structure d'accord, ya pas vraiment de hauts et de bas l'album est plutôt plat dans le sens où il prend une recette qui marche et il duplique, mais je lui pardonne parce que malgré ça y'a toujours une ptite touche de mélancholie que j'apprécie fortement !",
+    "bestTrack": {
+      "title": "Art House",
+      "url": null
+    },
+    "worstTrack": {
+      "title": "On my shoulder",
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Malcolm Todd est un chanteur, auteur-compositeur et producteur américain évoluant entre R&B alternatif, indie pop et soul.",
+    "albumDescription": "**Sweet Boy** est un projet rattaché principalement aux univers suivants : **R&B alternatif, indie pop, soul**.   La fiche permet de le situer dans la discographie de **Malcolm Todd** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "rated"
+  },
+  {
+    "position": 46,
+    "title": "Yeezus",
+    "artist": "Kanye West",
+    "cover": "/covers/Yeezus - Kanye West.png",
+    "releaseYear": 2013,
+    "origin": "États-Unis",
+    "language": "anglais",
+    "genres": [
+      "hip-hop expérimental",
+      "industriel",
+      "électronique"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Dod",
+    "listenedBy": "Toma",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Kanye West est un rappeur, producteur et artiste américain dont les albums ont régulièrement modifié les conventions de production du hip-hop grand public.",
+    "albumDescription": "**Yeezus** est un projet rattaché principalement aux univers suivants : **hip-hop expérimental, industriel, électronique**.   La fiche permet de le situer dans la discographie de **Kanye West** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 47,
+    "title": "Pleins Phares, pt. 2",
+    "artist": "Favé",
+    "cover": "/covers/Pleins Phares, pt. 2 - Favé.png",
+    "releaseYear": null,
+    "origin": "France",
+    "language": "français",
+    "genres": [
+      "rap français",
+      "trap",
+      "rap mélodique"
+    ],
+    "projectType": "Projet",
+    "proposedBy": "Toma",
+    "listenedBy": "Pep",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Favé est un rappeur français associé à une nouvelle génération de trap et de rap mélodique.",
+    "albumDescription": "**Pleins Phares, pt. 2** est un projet rattaché principalement aux univers suivants : **rap français, trap, rap mélodique**.   La fiche permet de le situer dans la discographie de **Favé** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 48,
+    "title": "6 Feet Beneath the Moon",
+    "artist": "King Krule",
+    "cover": "/covers/6 Feet Beneath the Moon - King Krule.png",
+    "releaseYear": 2013,
+    "origin": "Royaume-Uni",
+    "language": "anglais",
+    "genres": [
+      "indie rock",
+      "jazz",
+      "post-punk",
+      "trip-hop"
+    ],
+    "projectType": "Album studio",
+    "proposedBy": "Motem",
+    "listenedBy": "Yuna",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "King Krule est le nom de scène d’Archy Marshall, musicien britannique mêlant indie rock, jazz, post-punk, dub et spoken word.",
+    "albumDescription": "**6 Feet Beneath the Moon** est un projet rattaché principalement aux univers suivants : **indie rock, jazz, post-punk, trip-hop**.   La fiche permet de le situer dans la discographie de **King Krule** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  },
+  {
+    "position": 49,
+    "title": "FANTASYLAND",
+    "artist": "Mr.Fantasy",
+    "cover": "/covers/FANTASYLAND - Mr. Fantasy.png",
+    "releaseYear": null,
+    "origin": null,
+    "language": null,
+    "genres": [
+      "électronique / alternatif"
+    ],
+    "projectType": "Album / projet",
+    "proposedBy": "Pep",
+    "listenedBy": "Dod",
+    "rating": null,
+    "shortReview": null,
+    "detailedReview": null,
+    "bestTrack": {
+      "title": null,
+      "url": null
+    },
+    "worstTrack": {
+      "title": null,
+      "url": null
+    },
+    "albumUrl": null,
+    "artistDescription": "Mr. Fantasy est un projet musical pour lequel les informations biographiques disponibles dans la feuille ne permettent pas une identification certaine.",
+    "albumDescription": "**FANTASYLAND** est un projet rattaché principalement aux univers suivants : **électronique / alternatif**.   La fiche permet de le situer dans la discographie de **Mr.Fantasy** et de conserver, au même endroit, les informations encyclopédiques et l’expérience d’écoute du club.",
+    "status": "pending"
+  }
+]
