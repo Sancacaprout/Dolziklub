@@ -1,15 +1,5 @@
--- DOL ZIKLUB — comptes membres et rôles.
--- Appliquer cette migration avant `npm run generate:credentials -- --apply`.
-
-create table if not exists public.member_profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  username text not null unique check (username ~ '^[a-z0-9]+$'),
-  display_name text not null check (char_length(display_name) between 1 and 80),
-  role text not null check (role in ('member', 'admin')) default 'member',
-  created_at timestamptz not null default now()
-);
-
-alter table public.member_profiles enable row level security;
+-- Moves privileged helpers out of the exposed public schema.
+-- This migration also hardens projects where member_auth was already applied.
 
 create schema if not exists private;
 revoke all on schema private from public;
@@ -41,12 +31,12 @@ begin
 end;
 $$;
 
+revoke all on function private.handle_new_member_profile() from public, anon, authenticated;
+
 drop trigger if exists on_auth_user_created_member_profile on auth.users;
 create trigger on_auth_user_created_member_profile
   after insert on auth.users
   for each row execute procedure private.handle_new_member_profile();
-
-revoke all on function private.handle_new_member_profile() from public, anon, authenticated;
 
 create or replace function private.is_member_admin()
 returns boolean
@@ -66,15 +56,10 @@ revoke all on function private.is_member_admin() from public, anon;
 grant usage on schema private to authenticated;
 grant execute on function private.is_member_admin() to authenticated;
 
-revoke all on table public.member_profiles from anon, authenticated;
-grant select on table public.member_profiles to authenticated;
-
-drop policy if exists "Members can read their own profile" on public.member_profiles;
-create policy "Members can read their own profile"
-  on public.member_profiles for select to authenticated
-  using ((select auth.uid()) = id);
-
 drop policy if exists "Admins can read all member profiles" on public.member_profiles;
 create policy "Admins can read all member profiles"
   on public.member_profiles for select to authenticated
   using ((select private.is_member_admin()));
+
+drop function if exists public.handle_new_member_profile();
+drop function if exists public.is_member_admin();

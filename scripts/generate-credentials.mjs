@@ -8,6 +8,8 @@ const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%
 const internalDomain = "auth.dolziklub.local";
 const apply = process.argv.includes("--apply");
 
+if (existsSync(".env.local")) process.loadEnvFile(".env.local");
+
 function password() {
   return Array.from(randomBytes(24), (byte) => alphabet[byte % alphabet.length]).join("");
 }
