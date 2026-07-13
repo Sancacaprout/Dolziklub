@@ -50,6 +50,9 @@ def section(markdown: str, number: int) -> str:
 
 
 def first_paragraph(value: str) -> str | None:
+    # Excel exports threaded comments with a long informational preamble. It
+    # is not part of the club member's review and must never reach the site.
+    value = re.sub(r"^\[Threaded comment\].*?Comment:\s*", "", value, flags=re.DOTALL)
     cleaned = re.sub(r"\n+", " ", value).strip()
     return None if not cleaned or cleaned.startswith("Aucun ") else cleaned
 
