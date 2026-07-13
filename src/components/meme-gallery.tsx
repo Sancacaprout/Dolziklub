@@ -8,7 +8,7 @@ import type { Meme } from "@/types/meme";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type MemePost = { id: string; image_path: string; caption: string | null; created_at: string };
-type MemberReaction = { meme_id: string; user_id?: string; value: number };
+type MemberReaction = { meme_id: string; user_id?: string; value: number; author_name: string | null };
 type GuestReaction = { meme_id: string; visitor_id: string; value: number };
 type MemeComment = { id: string; meme_id: string; body: string; created_at: string; is_anonymous: boolean; author_name: string | null };
 type DisplayedMeme = Meme & { caption?: string | null };
@@ -25,6 +25,10 @@ function getVisitorId() {
   return id;
 }
 
+function guestVoterName(visitorId: string) {
+  return `Visiteur #${visitorId.slice(0, 4).toUpperCase()}`;
+}
+
 function ThumbIcon({ down = false }: { down?: boolean }) {
   const path = "M7 10v12H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3m0 0 4-8h3a2 2 0 0 1 2 2v5h3a3 3 0 0 1 2.88 3.88l-2 7A3 3 0 0 1 17 22H7";
   return <svg className={`meme-thumb meme-thumb--${down ? "down" : "up"}`} viewBox="0 0 24 24" aria-hidden="true"><path d={path} transform={down ? "rotate(180 12 12)" : undefined} /></svg>;
@@ -32,6 +36,10 @@ function ThumbIcon({ down = false }: { down?: boolean }) {
 
 function ReactionButtons({ likes, dislikes, ownReaction, onReact, compact = false }: { likes: number; dislikes: number; ownReaction?: number; onReact: (value: 1 | -1) => void; compact?: boolean }) {
   return <div className={compact ? "meme-reactions meme-reactions--compact" : "meme-reactions"}><button className={`meme-reaction-button meme-reaction-button--like ${ownReaction === 1 ? "active" : ""}`} onClick={() => onReact(1)} aria-pressed={ownReaction === 1}><ThumbIcon />{compact ? <b>{likes}</b> : <>J’aime <b>{likes}</b></>}</button><button className={`meme-reaction-button meme-reaction-button--dislike ${ownReaction === -1 ? "active" : ""}`} onClick={() => onReact(-1)} aria-pressed={ownReaction === -1}><ThumbIcon down />{compact ? <b>{dislikes}</b> : <>Bof <b>{dislikes}</b></>}</button></div>;
+}
+
+function VoterList({ likeVoters, dislikeVoters, compact = false }: { likeVoters: string[]; dislikeVoters: string[]; compact?: boolean }) {
+  return <div className={`meme-voter-list ${compact ? "meme-voter-list--compact" : ""}`} aria-label="Votes enregistrés"><p><ThumbIcon /><span>J’aime</span><b>{likeVoters.length ? likeVoters.join(" · ") : "Personne pour l’instant"}</b></p><p><ThumbIcon down /><span>Bof</span><b>{dislikeVoters.length ? dislikeVoters.join(" · ") : "Personne pour l’instant"}</b></p></div>;
 }
 
 export function MemeGallery({ memes }: { memes: Meme[] }) {
@@ -61,7 +69,8 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const activeMeme = displayedMemes.find((meme) => meme.id === activeId) ?? null;
   const reactionSummary = (memeId: string) => {
     const reactions = [...memberReactions, ...guestReactions].filter((reaction) => reaction.meme_id === memeId);
-    return { likes: reactions.filter((reaction) => reaction.value === 1).length, dislikes: reactions.filter((reaction) => reaction.value === -1).length, own: memberId ? memberReactions.find((reaction) => reaction.meme_id === memeId && reaction.user_id === memberId)?.value : guestReactions.find((reaction) => reaction.meme_id === memeId && reaction.visitor_id === visitorId)?.value };
+    const voters = (value: 1 | -1) => reactions.filter((reaction) => reaction.value === value).map((reaction) => "visitor_id" in reaction ? guestVoterName(reaction.visitor_id) : reaction.author_name || "Membre du club");
+    return { likes: voters(1).length, dislikes: voters(-1).length, likeVoters: voters(1), dislikeVoters: voters(-1), own: memberId ? memberReactions.find((reaction) => reaction.meme_id === memeId && reaction.user_id === memberId)?.value : guestReactions.find((reaction) => reaction.meme_id === memeId && reaction.visitor_id === visitorId)?.value };
   };
 
   const loadUploadedMemes = useCallback(async () => {
@@ -73,7 +82,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const loadSocial = useCallback(async () => {
     if (!configured) return;
     const supabase = getSupabaseBrowserClient();
-    const memberColumns = memberId ? "meme_id, user_id, value" : "meme_id, value";
+    const memberColumns = memberId ? "meme_id, user_id, value, author_name" : "meme_id, value, author_name";
     const [memberResult, guestResult, commentResult] = await Promise.all([
       supabase.from("meme_reactions").select(memberColumns),
       supabase.from("meme_guest_reactions").select("meme_id, visitor_id, value"),
@@ -146,5 +155,5 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
 
   const activeComments = activeMeme ? comments.filter((comment) => comment.meme_id === activeMeme.id) : [];
 
-  return <section className="meme-gallery-section"><div className="meme-gallery-actions">{memberId ? <button className="button meme-add-button" onClick={() => { setIsUploadOpen((open) => !open); setMessage(""); }}>{isUploadOpen ? "Fermer l’ajout" : "Ajouter un mème ↗"}</button> : <Link className="button meme-add-button" href="/connexion">Connexion pour ajouter ↗</Link>}</div>{isUploadOpen && <form className="meme-upload" onSubmit={uploadMeme}><label>Image du mème<input name="meme" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required /></label><label>Texte facultatif<textarea name="caption" maxLength={280} placeholder="Une légende pour le musée…" /></label><button className="button" type="submit" disabled={uploading}>{uploading ? "Ajout en cours…" : "Publier le mème"}</button></form>}{message && <p className="meme-message" role="status">{message}</p>}<div className="meme-grid">{displayedMemes.map((meme) => { const summary = reactionSummary(meme.id); return <div className="meme-tile" key={meme.id}><button className="meme-tile__image" onClick={() => { setActiveId(meme.id); setMessage(""); }} aria-label={meme.title}><Image src={meme.src} alt={meme.alt} width={600} height={600} sizes="(max-width: 700px) 100vw, 33vw" /></button><ReactionButtons compact likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(meme.id, value)} /></div>; })}</div>{activeMeme && (() => { const summary = reactionSummary(activeMeme.id); return <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMeme.title} onMouseDown={() => setActiveId(null)}><div className="lightbox__content" onMouseDown={(event) => event.stopPropagation()}><button className="lightbox__close" onClick={() => setActiveId(null)}>Fermer ×</button><Image src={activeMeme.src} alt={activeMeme.alt} width={1200} height={900} sizes="(max-width: 800px) 94vw, 900px" />{activeMeme.caption && <p className="meme-caption">“{activeMeme.caption}”</p>}<div className="meme-social"><ReactionButtons likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(activeMeme.id, value)} />{memberId ? <form className="meme-comment-form" onSubmit={addComment}><label>Ajouter un mot au dossier<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} maxLength={280} placeholder="Ton commentaire, en une phrase bien sentie…" required /></label><label className="meme-anonymous-control"><input type="checkbox" checked={isAnonymous} onChange={(event) => setIsAnonymous(event.target.checked)} />Mode anonyme</label><button className="button" type="submit">Publier</button></form> : <p className="meme-login-prompt"><Link href="/connexion">Connecte-toi</Link> pour laisser un commentaire.</p>}{activeComments.length > 0 && <div className="meme-comments">{activeComments.map((comment) => <p key={comment.id}><span>{comment.is_anonymous ? "ANONYME" : comment.author_name}</span>“{comment.body}”</p>)}</div>}</div></div></div>; })()}</section>;
+  return <section className="meme-gallery-section"><div className="meme-gallery-actions">{memberId ? <button className="button meme-add-button" onClick={() => { setIsUploadOpen((open) => !open); }}>{isUploadOpen ? "Fermer l’ajout" : "Ajouter un mème ↗"}</button> : <Link className="button meme-add-button" href="/connexion">Connexion pour ajouter ↗</Link>}</div>{isUploadOpen && <form className="meme-upload" onSubmit={uploadMeme}><label>Image du mème<input name="meme" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required /></label><label>Texte facultatif<textarea name="caption" maxLength={280} placeholder="Une légende pour le musée…" /></label><button className="button" type="submit" disabled={uploading}>{uploading ? "Ajout en cours…" : "Publier le mème"}</button></form>}{message && <p className="meme-message" role="status">{message}</p>}<div className="meme-grid">{displayedMemes.map((meme) => { const summary = reactionSummary(meme.id); return <div className="meme-tile" key={meme.id}><button className="meme-tile__image" onClick={() => { setActiveId(meme.id); setMessage(""); }} aria-label={meme.title}><Image src={meme.src} alt={meme.alt} width={600} height={600} sizes="(max-width: 700px) 100vw, 33vw" /></button><ReactionButtons compact likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(meme.id, value)} /><VoterList compact likeVoters={summary.likeVoters} dislikeVoters={summary.dislikeVoters} /></div>; })}</div>{activeMeme && (() => { const summary = reactionSummary(activeMeme.id); return <div className="lightbox" role="dialog" aria-modal="true" aria-label={activeMeme.title} onMouseDown={() => setActiveId(null)}><div className="lightbox__content" onMouseDown={(event) => event.stopPropagation()}><button className="lightbox__close" onClick={() => setActiveId(null)}>Fermer ×</button><Image src={activeMeme.src} alt={activeMeme.alt} width={1200} height={900} sizes="(max-width: 800px) 94vw, 900px" />{activeMeme.caption && <p className="meme-caption">“{activeMeme.caption}”</p>}<div className="meme-social"><ReactionButtons likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(activeMeme.id, value)} /><VoterList likeVoters={summary.likeVoters} dislikeVoters={summary.dislikeVoters} />{memberId ? <form className="meme-comment-form" onSubmit={addComment}><label>Ajouter un mot au dossier<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} maxLength={280} placeholder="Ton commentaire, en une phrase bien sentie…" required /></label><label className="meme-anonymous-control"><input type="checkbox" checked={isAnonymous} onChange={(event) => setIsAnonymous(event.target.checked)} />Mode anonyme</label><button className="button" type="submit">Publier</button></form> : <p className="meme-login-prompt"><Link href="/connexion">Connecte-toi</Link> pour laisser un commentaire.</p>}{activeComments.length > 0 && <div className="meme-comments">{activeComments.map((comment) => <p key={comment.id}><span>{comment.is_anonymous ? "ANONYME" : comment.author_name}</span>“{comment.body}”</p>)}</div>}</div></div></div>; })()}</section>;
 }

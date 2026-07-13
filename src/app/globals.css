@@ -75,3 +75,16 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 @media (max-width:700px) { .account-member-profile { display:grid; }.account-page .avatar-form { grid-template-columns:1fr; }.account-page .avatar-form .button { width:100%; }.account-kouize-editor { padding:1.25rem; }.color-panel__rgb { grid-template-columns:1fr 1fr 1fr; } }
 
 .sheet-rating { min-width:4.5rem; text-align:center; white-space:nowrap; }.sheet-member { display:inline-flex; align-items:center; min-height:1.9rem; padding:0 .5rem; border-bottom:2px solid var(--red); background:#fff9; font:500 .76rem var(--font-mono),monospace; letter-spacing:.04em; }.sheet-track-link { display:inline-flex; align-items:baseline; gap:.38rem; color:var(--ink); border-bottom:2px solid var(--ink); font:500 .82rem/1.35 var(--font-mono),monospace; text-decoration:none; transition:color .16s ease,border-color .16s ease,transform .16s ease; }.sheet-track-link span { color:var(--red); font-size:.75rem; }.sheet-track-link:hover { color:var(--red); border-color:var(--red); transform:translateX(2px); }.sheet-track-link--best { border-color:var(--blue); }.sheet-track-link--worst { border-color:var(--red); }.sheet-track-empty { color:#777; font:1.1rem var(--font-mono),monospace; }
+
+/* Meme cards: the image, votes and voter names form one tight, readable block. */
+.meme-tile { margin-bottom:1.55rem; }
+.meme-grid .meme-tile__image { position:relative; z-index:0; border:var(--line); border-bottom:0; padding:0; transition:outline-color .16s ease,outline-offset .16s ease; }
+.meme-grid .meme-tile__image:hover,.meme-grid .meme-tile__image:focus-visible { transform:none; box-shadow:none; outline:3px solid var(--blue); outline-offset:0; z-index:1; }
+.meme-tile .meme-reactions--compact { margin:0; }
+.meme-voter-list { display:grid; gap:.35rem; margin:.85rem 0 0; padding:.7rem .8rem; border:var(--line); background:#fff9; }
+.meme-voter-list--compact { margin:0; border-top:0; background:var(--paper); }
+.meme-voter-list p { display:flex; align-items:flex-start; gap:.42rem; margin:0; font:.68rem/1.35 var(--font-mono),monospace; }
+.meme-voter-list .meme-thumb { flex:none; width:1rem; height:1rem; margin-top:.02rem; }
+.meme-voter-list span { flex:none; padding:0; color:#555; text-transform:uppercase; }
+.meme-voter-list b { font-weight:600; overflow-wrap:anywhere; }
+.meme-social .meme-voter-list { max-width:620px; }
