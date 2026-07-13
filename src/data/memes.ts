@@ -22,5 +22,5 @@ export const memes: Meme[] = (manifest as ManifestEntry[])
     src: `/memes/${entry.nouveau_nom}`,
     alt: entry.nouveau_nom.replace(/\.(png|jpg)$/i, ""),
   }))
-  .filter((meme) => !/a liké ce m[êe]me/i.test(meme.title))
+  .filter((meme) => !/a lik(?:é|er) ce m[êe]me/i.test(meme.title))
   .sort((a, b) => (orderByTitle.get(a.title) ?? 99) - (orderByTitle.get(b.title) ?? 99));
