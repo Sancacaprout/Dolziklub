@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "kcizszuvrtnlxgikgfdx.supabase.co",
         pathname: "/storage/v1/object/public/meme-uploads/**",
       },
+      {
+        protocol: "https",
+        hostname: "kcizszuvrtnlxgikgfdx.supabase.co",
+        pathname: "/storage/v1/object/public/member-avatars/**",
+      },
     ],
   },
 };
