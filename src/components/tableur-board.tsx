@@ -12,6 +12,7 @@ type Tab = "archive" | "selection" | "kouize" | "admin";
 type SignedMember = { id: string; username: string; displayName: string };
 type DrawEntry = { id: string; draw_number: number; position: number; proposed_by: string | null; listened_by: string | null; proposed_by_name: string | null; listened_by_name: string | null; album_title: string | null; album_artist: string | null; cover_path: string | null };
 type ReviewRecord = { album_id: string; review: string; rating: number; best_track: string | null; worst_track: string | null };
+type ArchivedReview = { album_id: string; review: string | null; rating: number | null; best_track: string | null; worst_track: string | null; is_modified: boolean };
 type ReviewPayload = { entryId: string; review: string; rating: number; bestTrack: string; worstTrack: string };
 type ProposalPayload = { entryId: string; title: string; artist: string; file: File | null };
 type KouizeAnswer = { member_username: string; question_key: string; answer: string };
@@ -47,24 +48,81 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
   const artist = entry.album_artist?.trim() ?? "";
   return !title || !artist || /^album\s*[-–—]\s*artiste$/i.test(title);
 }
+function isHistoricalListener(album: Album, member: SignedMember) {
+  return [member.username, member.displayName].some((name) => normalizedMember(name) === normalizedMember(album.listenedBy));
+}
 
 function MemberSelect({ value, onChange, label }: { value: string | null; onChange: (next: string) => void; label: string }) {
   return <select value={value ?? ""} onChange={(event) => onChange(event.target.value)} aria-label={label}><option value="">—</option>{roster.map((member) => <option key={member.username} value={member.username}>{member.displayName}</option>)}</select>;
 }
 
-function TrackLink({ album, kind }: { album: Album; kind: "bestTrack" | "worstTrack" }) {
-  const track = album[kind];
-  if (!track.title) return <span className="sheet-track-empty">—</span>;
-  const url = track.url ?? `https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${track.title}`)}`;
-  return <a className={`sheet-track-link sheet-track-link--${kind === "bestTrack" ? "best" : "worst"}`} href={url} target="_blank" rel="noreferrer">{track.title}<span>↗</span></a>;
+function HistoricalReviewRow({ album, record, editable, saving, onSave }: { album: Album; record?: ArchivedReview; editable: boolean; saving: boolean; onSave: (payload: Omit<ArchivedReview, "is_modified">) => void }) {
+  const [review, setReview] = useState(record?.review ?? album.shortReview ?? "");
+  const [rating, setRating] = useState(record?.rating?.toString() ?? album.rating?.toString() ?? "");
+  const [bestTrack, setBestTrack] = useState(record?.best_track ?? album.bestTrack.title ?? "");
+  const [worstTrack, setWorstTrack] = useState(record?.worst_track ?? album.worstTrack.title ?? "");
+  const hasOverride = record?.is_modified === true;
+  const renderedReview = hasOverride ? record?.review : album.shortReview;
+  const renderedRating = hasOverride ? record?.rating : album.rating;
+  const renderedBestTrack = hasOverride ? record?.best_track : album.bestTrack.title;
+  const renderedWorstTrack = hasOverride ? record?.worst_track : album.worstTrack.title;
+  const save = () => onSave({ album_id: album.id, review: review.trim() || null, rating: rating === "" ? null : Number(rating), best_track: bestTrack.trim() || null, worst_track: worstTrack.trim() || null });
+  return <tr>
+    <td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td>
+    <td><span className="sheet-member">{memberName(album.proposedBy)}</span></td>
+    <td><span className="sheet-member">{memberName(album.listenedBy)}</span></td>
+    {editable ? <td className="sheet-review"><textarea className="sheet-inline-textarea" value={review} onChange={(event) => setReview(event.target.value)} maxLength={2000} aria-label={`Avis sur ${album.title}`} /></td> : <td className="sheet-review">{value(renderedReview)}</td>}
+    {editable ? <td><select className="sheet-inline-select" value={rating} onChange={(event) => setRating(event.target.value)} aria-label={`Note sur ${album.title}`}><option value="">En attente</option>{ratingChoices.map((choice) => <option key={choice} value={choice}>{choice.toFixed(1)} / 5</option>)}</select></td> : <td><RatingDisplay rating={renderedRating ?? null} /></td>}
+    {editable ? <td><input className="sheet-inline-input" value={bestTrack} onChange={(event) => setBestTrack(event.target.value)} maxLength={160} placeholder="Best track" aria-label={`Best track de ${album.title}`} /></td> : <td>{renderedBestTrack ? <a className="sheet-track-link sheet-track-link--best" href={`https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${renderedBestTrack}`)}`} target="_blank" rel="noreferrer">{renderedBestTrack}<span>↗</span></a> : <span className="sheet-track-empty">—</span>}</td>}
+    {editable ? <td><div className="sheet-inline-save"><input className="sheet-inline-input" value={worstTrack} onChange={(event) => setWorstTrack(event.target.value)} maxLength={160} placeholder="Worst track" aria-label={`Worst track de ${album.title}`} /><button type="button" className="sheet-entry-action" onClick={save} disabled={saving}>{saving ? "…" : "Enregistrer"}</button></div></td> : <td>{renderedWorstTrack ? <a className="sheet-track-link sheet-track-link--worst" href={`https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${renderedWorstTrack}`)}`} target="_blank" rel="noreferrer">{renderedWorstTrack}<span>↗</span></a> : <span className="sheet-track-empty">—</span>}</td>}
+  </tr>;
 }
 
 function HistoricalDraws({ albums }: { albums: Album[] }) {
+  const configured = isSupabaseConfigured();
+  const [member, setMember] = useState<SignedMember | null>(null);
+  const [records, setRecords] = useState<ArchivedReview[]>([]);
+  const [editingDraw, setEditingDraw] = useState<number | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [message, setMessage] = useState("");
+  const loadRecords = useCallback(async () => {
+    if (!configured) return;
+    const { data } = await getSupabaseBrowserClient().from("archived_album_reviews").select("album_id, review, rating, best_track, worst_track, is_modified");
+    setRecords((data ?? []) as ArchivedReview[]);
+  }, [configured]);
+  useEffect(() => {
+    if (!configured) return;
+    const supabase = getSupabaseBrowserClient();
+    const syncMember = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) { setMember(null); return; }
+      const { data: profile } = await supabase.from("member_profiles").select("username, display_name").eq("id", data.user.id).maybeSingle();
+      if (!profile) { setMember(null); return; }
+      setMember({ id: data.user.id, username: profile.username, displayName: profile.display_name });
+    };
+    const timer = setTimeout(() => { void syncMember(); void loadRecords(); }, 0);
+    const { data: listener } = supabase.auth.onAuthStateChange(() => void syncMember());
+    return () => { clearTimeout(timer); listener.subscription.unsubscribe(); };
+  }, [configured, loadRecords]);
+  const saveRecord = async (record: Omit<ArchivedReview, "is_modified">) => {
+    if (!member || !Number.isFinite(record.rating ?? 0) && record.rating !== null) return;
+    setSavingId(record.album_id); setMessage("");
+    const { error } = await getSupabaseBrowserClient().from("archived_album_reviews").update({ review: record.review, rating: record.rating, best_track: record.best_track, worst_track: record.worst_track }).eq("album_id", record.album_id);
+    setSavingId(null);
+    if (error) setMessage("La modification n'a pas pu être enregistrée.");
+    else { setMessage("Tes modifications sont enregistrées dans le tirage."); await loadRecords(); }
+  };
   const ordered = [...albums].sort((a, b) => Number(a.id.replace("archive-", "")) - Number(b.id.replace("archive-", "")));
   const placeholder = (id: string, proposedBy: string, listenedBy: string): Album => ({ id, slug: id, title: "Album – Artiste", artist: "", cover: null, releaseYear: null, origin: null, language: null, genres: [], projectType: null, proposedBy, listenedBy, rating: null, shortReview: "Avis à compléter", detailedReview: null, bestTrack: { title: null, url: null }, worstTrack: { title: null, url: null }, albumUrl: null, artistDescription: null, albumDescription: null, status: "pending" });
   const inRange = (from: number, to: number) => ordered.filter((album) => { const position = Number(album.id.replace("archive-", "")); return position >= from && position <= to; });
   const groups = [inRange(1, 10), inRange(11, 19), inRange(20, 28), inRange(29, 37), inRange(38, 45), [placeholder("pending-yuna-enzo", "Yuna", "Enzo"), ...inRange(46, 46), placeholder("pending-enzo-motem", "Enzo", "Motem"), ...inRange(47, 49), placeholder("pending-chacha-bono", "Chacha", "Bono"), placeholder("pending-bono-chacha", "Bono", "Chacha")]];
-  return <>{groups.map((group, index) => <section className="draw-section" key={index}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(index + 1).padStart(2, "0")}</span><span>{group.length} albums classés</span></div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => <tr key={album.id}><td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td><td><span className="sheet-member">{memberName(album.proposedBy)}</span></td><td><span className="sheet-member">{memberName(album.listenedBy)}</span></td><td className="sheet-review">{value(album.shortReview)}</td><td><RatingDisplay rating={album.rating} /></td><td><TrackLink album={album} kind="bestTrack" /></td><td><TrackLink album={album} kind="worstTrack" /></td></tr>)}</tbody></table></div></section>)}</>;
+  const recordMap = new Map(records.map((record) => [record.album_id, record]));
+  return <>{message && <p className="selection-message" role="status">{message}</p>}{groups.map((group, index) => {
+    const draw = index + 1;
+    const canEditDraw = Boolean(member && group.some((album) => album.id.startsWith("archive-") && isHistoricalListener(album, member)));
+    const editing = editingDraw === draw;
+    return <section className="draw-section" key={draw}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(draw).padStart(2, "0")}</span><span>{group.length} albums classés</span>{canEditDraw && <button className="sheet-entry-action" type="button" onClick={() => setEditingDraw(editing ? null : draw)}>{editing ? "Terminer l'édition" : "Modifier mes notes"}</button>}</div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => { const record = recordMap.get(album.id); const recordKey = `${album.id}:${record?.is_modified ?? false}:${record?.review ?? ""}:${record?.rating ?? ""}:${record?.best_track ?? ""}:${record?.worst_track ?? ""}`; return <HistoricalReviewRow key={recordKey} album={album} record={record} editable={Boolean(editing && member && album.id.startsWith("archive-") && isHistoricalListener(album, member))} saving={savingId === album.id} onSave={(nextRecord) => void saveRecord(nextRecord)} />; })}</tbody></table></div></section>;
+  })}</>;
 }
 
 function LiveDraws({ entries, member, onOpenProposal, onOpenReview }: { entries: DrawEntry[]; member: SignedMember | null; onOpenProposal: (id: string) => void; onOpenReview: (id: string) => void }) {
@@ -91,12 +149,14 @@ function ReviewCard({ entry, existing, saving, onSave }: { entry: DrawEntry; exi
 }
 
 function SelectionWorkspace({ entries, member, reviews, focusedProposal, focusedReview, savingId, onProposal, onReview }: { entries: DrawEntry[]; member: SignedMember | null; reviews: ReviewRecord[]; focusedProposal: string | null; focusedReview: string | null; savingId: string | null; onProposal: (payload: ProposalPayload) => void; onReview: (payload: ReviewPayload) => void }) {
-  const proposals = member ? entries.filter((entry) => isAssignedToMember(entry, member, "proposer") && isEmptyAlbumSlot(entry)) : [];
-  const listens = member ? entries.filter((entry) => isAssignedToMember(entry, member, "listener") && !isEmptyAlbumSlot(entry)) : [];
+  const latestDraw = entries.reduce((latest, entry) => Math.max(latest, entry.draw_number), 0);
+  const currentEntries = entries.filter((entry) => entry.draw_number === latestDraw);
+  const proposals = member ? currentEntries.filter((entry) => isAssignedToMember(entry, member, "proposer") && isEmptyAlbumSlot(entry)) : [];
+  const listens = member ? currentEntries.filter((entry) => isAssignedToMember(entry, member, "listener") && !isEmptyAlbumSlot(entry)) : [];
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
   const visibleProposals = focusedProposal ? proposals.filter((entry) => entry.id === focusedProposal) : proposals;
   const visibleListens = focusedReview ? listens.filter((entry) => entry.id === focusedReview) : listens;
-  return <>{!member ? <section className="review-workspace"><div className="review-workspace__empty"><p>Connecte-toi pour proposer ton album ou rendre une écoute.</p><Link className="button" href="/connexion">Connexion</Link></div></section> : <><section className="review-workspace proposal-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES PROPOSITIONS</p><h2>Les albums que je <em>propose.</em></h2><p>Seules les lignes où tu es désigné·e « proposé par » sont accessibles ici.</p></div><span className="review-counter">{proposals.length} slot{proposals.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleProposals.length ? visibleProposals.map((entry) => <ProposalCard key={entry.id} entry={entry} saving={savingId === entry.id} onSave={onProposal} />) : <div className="review-workspace__empty"><p>Aucun album à proposer dans les tirages actifs.</p></div>}</div></section><section className="review-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES ÉCOUTES À RENDRE</p><h2>Les albums que je dois <em>écouter.</em></h2><p>Seules les lignes où tu es désigné·e « écouté par » peuvent recevoir ton verdict.</p></div><span className="review-counter">{listens.length} écoute{listens.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleListens.length ? visibleListens.map((entry) => <ReviewCard key={entry.id} entry={entry} existing={reviewMap.get(entry.id)} saving={savingId === entry.id} onSave={onReview} />) : <div className="review-workspace__empty"><p>Rien à rendre pour l’instant : les albums apparaîtront dès qu’ils seront proposés.</p></div>}</div></section></>}</>;
+  return <>{!member ? <section className="review-workspace"><div className="review-workspace__empty"><p>Connecte-toi pour proposer ton album ou rendre une écoute.</p><Link className="button" href="/connexion">Connexion</Link></div></section> : <><section className="review-workspace proposal-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES PROPOSITIONS</p><h2>Les albums que je <em>propose.</em></h2><p>Seules les lignes du dernier tirage où tu es désigné·e « proposé par » sont accessibles ici.</p></div><span className="review-counter">{proposals.length} slot{proposals.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleProposals.length ? visibleProposals.map((entry) => <ProposalCard key={entry.id} entry={entry} saving={savingId === entry.id} onSave={onProposal} />) : <div className="review-workspace__empty"><p>Aucun album à proposer dans le dernier tirage.</p></div>}</div></section><section className="review-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES ÉCOUTES À RENDRE</p><h2>Les albums que je dois <em>écouter.</em></h2><p>Seules les lignes du dernier tirage où tu es désigné·e « écouté par » peuvent recevoir ton verdict.</p></div><span className="review-counter">{listens.length} écoute{listens.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleListens.length ? visibleListens.map((entry) => <ReviewCard key={entry.id} entry={entry} existing={reviewMap.get(entry.id)} saving={savingId === entry.id} onSave={onReview} />) : <div className="review-workspace__empty"><p>Rien à rendre dans le dernier tirage pour l’instant.</p></div>}</div></section></>}</>;
 }
 
 function AdminDraws({ entries, savingId, message, onCreate, onDelete, onAssign }: { entries: DrawEntry[]; savingId: string | null; message: string; onCreate: () => void; onDelete: (draw: number) => void; onAssign: (entry: DrawEntry, proposer: string, listener: string) => void }) {
