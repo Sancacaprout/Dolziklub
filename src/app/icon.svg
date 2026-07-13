@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>DOL ZIKLUB</title>
+  <rect width="64" height="64" fill="#f5f1e8"/>
+  <path d="M8 10h15.5C36 10 44 19.3 44 32S36 54 23.5 54H8V10Zm10 9v26h5c7.2 0 11-4.7 11-13S30.2 19 23 19h-5Z" fill="#111111"/>
+  <circle cx="47" cy="43" r="12" fill="#111111"/>
+  <circle cx="47" cy="43" r="8.5" fill="none" stroke="#f5f1e8" stroke-width="1.3"/>
+  <circle cx="47" cy="43" r="4.5" fill="none" stroke="#f5f1e8" stroke-width="1.3"/>
+  <circle cx="47" cy="43" r="2.3" fill="#e84b32"/>
+</svg>
