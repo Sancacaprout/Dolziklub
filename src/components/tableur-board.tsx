@@ -19,6 +19,8 @@ type ReviewRecord = {
 };
 type SignedMember = { id: string; username: string; displayName: string };
 type ReviewPayload = { albumId: string; review: string; rating: number; bestTrack: string; worstTrack: string };
+type KouizeAnswer = { member_username: string; question_key: string; answer: string; updated_at: string };
+type KouizePayload = { questionKey: string; answer: string };
 
 const tabs: Array<{ id: Tab; label: string; hint: string }> = [
   { id: "archive", label: "Tirages", hint: "Toutes les écoutes, tirage par tirage" },
@@ -40,10 +42,10 @@ const defaultSelections: SelectionRow[] = [
 
 const quizMembers = ["Toma", "Pep", "Motem", "Bono", "Dod", "Yuna", "Chacha", "Enzo", "Kougna", "Alain"];
 const quizQuestions = [
-  { question: "Le style de musique que j’écoute le + par défaut, c’est…", answers: ["Rap", "—", "Tout", "—", "Rock — puis n’importe quoi", "Pop — rap de la street bof", "Rock", "—", "Hip-hop — et le rock en 2e", "Instrumental"] },
-  { question: "Ce que je n’aime VRAIMENT pas, c’est…", answers: ["Métal", "—", "Autotune bien dégueu", "—", "Classique", "Rap — rap de la street bof", "—", "—", "Il y a du bon dans tout", "Rap"] },
-  { question: "Le style de musique que je suis curieux(se) d’écouter, c’est…", answers: ["Jazz", "Musique mongole", "—", "—", "Folk", "Expérimental", "Jazz", "—", "Autre — tout", "—"] },
-  { question: "En général, l’élément qui m’attire en premier dans une musique, c’est…", answers: ["La mélodie — la prod intrigue, les paroles font rester", "L’ambiance — les émotions frr", "—", "—", "La mélodie — plus précisément les suites d’accords", "La mélodie", "La rythmique", "—", "L’ambiance", "L’ambiance — une musique avec une âme, les changements de tonalité qui surprennent"] },
+  { key: "default_style", label: "DÉPART", question: "Ton univers sonore par défaut", prompt: "Le style qui revient naturellement dans tes écoutes.", answers: ["Rap", "—", "Tout", "—", "Rock — puis n’importe quoi", "Pop — rap de la street bof", "Rock", "—", "Hip-hop — et le rock en 2e", "Instrumental"] },
+  { key: "dislikes", label: "NOPE", question: "Le son que tu zappes sans hésiter", prompt: "Ce qui a très peu de chances de te convaincre.", answers: ["Métal", "—", "Autotune bien dégueu", "—", "Classique", "Rap — rap de la street bof", "—", "—", "Il y a du bon dans tout", "Rap"] },
+  { key: "curiosity", label: "DÉTOUR", question: "Le territoire musical qui t’intrigue", prompt: "Le genre ou l’univers que tu veux mieux explorer.", answers: ["Jazz", "Musique mongole", "—", "—", "Folk", "Expérimental", "Jazz", "—", "Autre — tout", "—"] },
+  { key: "first_hook", label: "DÉCLIC", question: "Ce qui te capte dès les premières secondes", prompt: "L’élément qui te fait tendre l’oreille en premier.", answers: ["La mélodie — la prod intrigue, les paroles font rester", "L’ambiance — les émotions frr", "—", "—", "La mélodie — plus précisément les suites d’accords", "La mélodie", "La rythmique", "—", "L’ambiance", "L’ambiance — une musique avec une âme, les changements de tonalité qui surprennent"] },
 ];
 
 const drawSizes = [10, 9, 17];
@@ -137,8 +139,17 @@ function ReviewWorkspace({ albums, member, reviews, savingAlbumId, onSave }: { a
   return <section className="review-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MA SÉLECTION ACTUELLE</p><h2>Mes écoutes <em>à rendre.</em></h2><p>{member ? `Bonjour ${member.displayName} : ajoute ici ton avis, ta note et tes deux tracks pour chaque album qui t’est confié.` : "Connecte-toi pour retrouver tes albums attribués et rendre tes verdicts."}</p></div>{member && <span className="review-counter">{assigned.length} album{assigned.length > 1 ? "s" : ""} attribué{assigned.length > 1 ? "s" : ""}</span>}</div>{!member ? <div className="review-workspace__empty"><p>La connexion est nécessaire pour enregistrer un verdict personnel.</p><Link className="button" href="/connexion">Connexion</Link></div> : assigned.length === 0 ? <div className="review-workspace__empty"><p>Rien à rendre pour l’instant. Les prochains albums qui te seront attribués apparaîtront ici.</p></div> : <div className="review-queue">{assigned.map((album) => <ReviewCard key={album.id} album={album} existing={reviewByAlbum.get(album.id)} saving={savingAlbumId === album.id} onSave={onSave} />)}</div>}</section>;
 }
 
-function QuizSheet() {
-  return <section className="quiz-sheet"><div className="quiz-intro"><p className="eyebrow">KOUIZE</p><h2>Pour mieux proposer,<br /><em>et mieux surprendre.</em></h2><p>Les réponses partagées par les membres pour guider les futures propositions dans le bac.</p></div><div className="quiz-scroll"><table className="quiz-table"><thead><tr><th>Question</th>{quizMembers.map((member) => <th key={member}>{member}</th>)}</tr></thead><tbody>{quizQuestions.map((entry) => <tr key={entry.question}><th>{entry.question}</th>{entry.answers.map((answer, index) => <td key={`${entry.question}-${quizMembers[index]}`} className={answer === "—" ? "is-empty" : ""}>{answer}</td>)}</tr>)}</tbody></table></div></section>;
+function KouizeAnswerCell({ answer, editable, saving, onSave }: { answer: string; editable: boolean; saving: boolean; onSave: (answer: string) => void }) {
+  if (!editable) return <span className={answer === "—" ? "kouize-answer is-empty" : "kouize-answer"}>{answer}</span>;
+
+  return <form className="kouize-answer-form" onSubmit={(event) => { event.preventDefault(); onSave(String(new FormData(event.currentTarget).get("answer") ?? "")); }}><input name="answer" key={answer} defaultValue={answer === "—" ? "" : answer} maxLength={240} placeholder="Ta réponse" aria-label="Modifier ma réponse" /><button type="submit" disabled={saving}>{saving ? "…" : "OK"}</button></form>;
+}
+
+function QuizSheet({ answers, member, isAdmin, savingKey, message, onSave }: { answers: KouizeAnswer[]; member: SignedMember | null; isAdmin: boolean; savingKey: string | null; message: string; onSave: (payload: KouizePayload) => void }) {
+  const answersByMemberAndQuestion = new Map(answers.map((answer) => [`${answer.member_username}:${answer.question_key}`, answer.answer]));
+  const usernameForDisplayName = (displayName: string) => members.find((entry) => entry.displayName === displayName)?.username ?? normalise(displayName);
+
+  return <section className="quiz-sheet"><div className="quiz-intro kouize-intro"><p className="eyebrow">KOUIZE</p><h2>Un peu plus de goût,<br /><em>un peu moins de hasard.</em></h2><p>{!member ? "Connecte-toi pour compléter ta colonne. Les réponses du club restent visibles pour mieux viser les prochaines propositions." : isAdmin ? "Les administrateurs peuvent consulter le Kouize, mais ne modifient pas leur propre colonne." : "Ta colonne est éditable : indique tes goûts, puis valide chaque réponse pour guider les prochaines propositions."}</p></div>{message && <p className="kouize-message" role="status">{message}</p>}<div className="quiz-scroll kouize-scroll"><table className="quiz-table kouize-table"><thead><tr><th>Repère</th>{quizMembers.map((memberName) => <th key={memberName}>{memberName}</th>)}</tr></thead><tbody>{quizQuestions.map((entry) => <tr key={entry.key}><th><span>{entry.label}</span><b>{entry.question}</b><small>{entry.prompt}</small></th>{quizMembers.map((memberName, index) => { const username = usernameForDisplayName(memberName); const answer = answersByMemberAndQuestion.get(`${username}:${entry.key}`) ?? entry.answers[index]; const editable = Boolean(member && !isAdmin && member.username === username); return <td key={`${entry.key}-${username}`} className={editable ? "kouize-cell--editable" : ""}><KouizeAnswerCell answer={answer} editable={editable} saving={savingKey === entry.key} onSave={(nextAnswer) => onSave({ questionKey: entry.key, answer: nextAnswer })} /></td>; })}</tr>)}</tbody></table></div></section>;
 }
 
 export function TableurBoard({ albums }: { albums: Album[] }) {
@@ -149,9 +160,12 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [member, setMember] = useState<SignedMember | null>(null);
   const [reviews, setReviews] = useState<ReviewRecord[]>([]);
+  const [kouizeAnswers, setKouizeAnswers] = useState<KouizeAnswer[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savingAlbumId, setSavingAlbumId] = useState<string | null>(null);
+  const [savingKouizeKey, setSavingKouizeKey] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [kouizeMessage, setKouizeMessage] = useState("");
   const active = tabs.find((tab) => tab.id === activeTab)!;
 
   const loadSelections = useCallback(async () => {
@@ -166,6 +180,12 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
     if (!error) setReviews((data ?? []) as ReviewRecord[]);
   }, [configured]);
 
+  const loadKouizeAnswers = useCallback(async () => {
+    if (!configured) return;
+    const { data, error } = await getSupabaseBrowserClient().from("member_kouize_answers").select("member_username, question_key, answer, updated_at");
+    if (!error) setKouizeAnswers((data ?? []) as KouizeAnswer[]);
+  }, [configured]);
+
   const syncAccess = useCallback(async () => {
     if (!configured) return;
     const supabase = getSupabaseBrowserClient();
@@ -175,6 +195,7 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
       setMember(null);
       setIsAdmin(false);
       setReviews([]);
+      setKouizeAnswers([]);
       return;
     }
     const username = typeof user.app_metadata.username === "string" ? user.app_metadata.username : user.email?.split("@")[0] ?? "membre";
@@ -183,12 +204,13 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
     const { data: profile } = await supabase.from("member_profiles").select("role").eq("id", user.id).maybeSingle();
     setIsAdmin(profile?.role === "admin");
     await loadReviews();
-  }, [configured, loadReviews]);
+    await loadKouizeAnswers();
+  }, [configured, loadKouizeAnswers, loadReviews]);
 
   useEffect(() => {
-    const timer = setTimeout(() => { void loadSelections(); void syncAccess(); }, 0);
+    const timer = setTimeout(() => { void loadSelections(); void loadKouizeAnswers(); void syncAccess(); }, 0);
     return () => clearTimeout(timer);
-  }, [loadSelections, syncAccess]);
+  }, [loadKouizeAnswers, loadSelections, syncAccess]);
 
   useEffect(() => {
     if (!configured) return;
@@ -270,5 +292,23 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
     }
   };
 
-  return <section className="tableur-board" aria-label="Tableur du DOL ZIKLUB"><div className="sheet-tabs" role="tablist" aria-label="Feuilles du tableur">{tabs.map((tab) => <button key={tab.id} type="button" role="tab" id={`tab-${tab.id}`} aria-selected={activeTab === tab.id} aria-controls={`sheet-${tab.id}`} className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div><div className="sheet-meta"><span className="eyebrow">{active.label}</span><span>{active.hint}</span></div><div role="tabpanel" id={`sheet-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>{activeTab === "archive" && <AlbumTable albums={albums} />}{activeTab === "selection" && <><ReviewWorkspace albums={albums} member={member} reviews={reviews} savingAlbumId={savingAlbumId} onSave={(payload) => void saveReview(payload)} /><DrawSheet rows={selectionRows} isAdmin={isAdmin} savingId={savingId} message={message} draftMembers={draftMembers} onDraftChange={updateDraftMember} onMemberChange={updateMember} onSave={(row) => void saveRow(row)} onCreate={() => void addRow()} onToggleLock={(row) => void toggleLock(row)} onDelete={(row) => void deleteRow(row)} /></>}{activeTab === "quiz" && <QuizSheet />}</div></section>;
+  const saveKouizeAnswer = async (payload: KouizePayload) => {
+    if (!configured || !member || isAdmin) return;
+    const answer = payload.answer.trim();
+    if (!answer) {
+      setKouizeMessage("Ajoute une réponse avant de l’enregistrer.");
+      return;
+    }
+    setSavingKouizeKey(payload.questionKey);
+    setKouizeMessage("");
+    const { error } = await getSupabaseBrowserClient().from("member_kouize_answers").upsert({ member_id: member.id, member_username: member.username, question_key: payload.questionKey, answer }, { onConflict: "member_id,question_key" });
+    setSavingKouizeKey(null);
+    if (error) setKouizeMessage("Ta réponse n’a pas pu être enregistrée. Réessaie dans un instant.");
+    else {
+      setKouizeMessage("Réponse enregistrée.");
+      await loadKouizeAnswers();
+    }
+  };
+
+  return <section className="tableur-board" aria-label="Tableur du DOL ZIKLUB"><div className="sheet-tabs" role="tablist" aria-label="Feuilles du tableur">{tabs.map((tab) => <button key={tab.id} type="button" role="tab" id={`tab-${tab.id}`} aria-selected={activeTab === tab.id} aria-controls={`sheet-${tab.id}`} className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div><div className="sheet-meta"><span className="eyebrow">{active.label}</span><span>{active.hint}</span></div><div role="tabpanel" id={`sheet-${activeTab}`} aria-labelledby={`tab-${activeTab}`}>{activeTab === "archive" && <AlbumTable albums={albums} />}{activeTab === "selection" && <><ReviewWorkspace albums={albums} member={member} reviews={reviews} savingAlbumId={savingAlbumId} onSave={(payload) => void saveReview(payload)} /><DrawSheet rows={selectionRows} isAdmin={isAdmin} savingId={savingId} message={message} draftMembers={draftMembers} onDraftChange={updateDraftMember} onMemberChange={updateMember} onSave={(row) => void saveRow(row)} onCreate={() => void addRow()} onToggleLock={(row) => void toggleLock(row)} onDelete={(row) => void deleteRow(row)} /></>}{activeTab === "quiz" && <QuizSheet answers={kouizeAnswers} member={member} isAdmin={isAdmin} savingKey={savingKouizeKey} message={kouizeMessage} onSave={(payload) => void saveKouizeAnswer(payload)} />}</div></section>;
 }
