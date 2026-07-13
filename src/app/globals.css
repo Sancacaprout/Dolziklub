@@ -95,7 +95,7 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 .meme-tile { margin-bottom:1.55rem; }
 .meme-grid .meme-tile__image { position:relative; z-index:0; border:var(--line); border-bottom:0; padding:0; transition:outline-color .16s ease,outline-offset .16s ease; }
 .meme-grid .meme-tile__image:hover,.meme-grid .meme-tile__image:focus-visible { transform:none; box-shadow:none; outline:3px solid var(--blue); outline-offset:0; z-index:1; }
-.meme-tile .meme-reactions--compact { margin:0; }
+.meme-tile .meme-reactions--compact { margin:0; } .meme-author { margin:0; padding:.5rem .7rem; border:var(--line); border-bottom:0; background:var(--acid); color:var(--ink); font:.65rem var(--font-mono),monospace; letter-spacing:.07em; }.meme-author b { color:var(--red); }.meme-author--modal { display:inline-block; margin-top:.8rem; border-bottom:var(--line); }
 .meme-voter-list { display:grid; gap:.35rem; margin:.85rem 0 0; padding:.7rem .8rem; border:var(--line); background:#fff9; }
 .meme-voter-list--compact { margin:0; border-top:0; background:var(--paper); }
 .meme-voter-list p { display:flex; align-items:flex-start; gap:.42rem; margin:0; font:.68rem/1.35 var(--font-mono),monospace; }

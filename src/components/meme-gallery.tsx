@@ -11,7 +11,8 @@ type MemePost = { id: string; image_path: string; caption: string | null; create
 type MemberReaction = { meme_id: string; user_id?: string; value: number; author_name: string | null };
 type GuestReaction = { meme_id: string; visitor_id: string; value: number };
 type MemeComment = { id: string; meme_id: string; author_id: string; body: string; created_at: string; is_anonymous: boolean; author_name: string | null };
-type DisplayedMeme = Meme & { caption?: string | null; postId?: string; imagePath?: string; createdBy?: string };
+type MemeAuthor = { id: string; username: string };
+type DisplayedMeme = Meme & { caption?: string | null; postId?: string; imagePath?: string; createdBy?: string; createdByName?: string };
 
 const permittedImageTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const maxUploadSize = 5 * 1024 * 1024;
@@ -53,6 +54,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const [memberId, setMemberId] = useState<string | null>(null);
   const [visitorId, setVisitorId] = useState<string | null>(null);
   const [uploadedMemes, setUploadedMemes] = useState<MemePost[]>([]);
+  const [memeAuthors, setMemeAuthors] = useState<Record<string, string>>({});
   const [memberReactions, setMemberReactions] = useState<MemberReaction[]>([]);
   const [guestReactions, setGuestReactions] = useState<GuestReaction[]>([]);
   const [comments, setComments] = useState<MemeComment[]>([]);
@@ -77,10 +79,11 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
         postId: post.id,
         imagePath: post.image_path,
         createdBy: post.created_by,
+        createdByName: memeAuthors[post.created_by],
       };
     });
     return [...remote, ...memes];
-  }, [configured, memes, uploadedMemes]);
+  }, [configured, memeAuthors, memes, uploadedMemes]);
 
   const activeMeme = displayedMemes.find((meme) => meme.id === activeId) ?? null;
   const reactionSummary = (memeId: string) => {
@@ -100,7 +103,13 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const loadUploadedMemes = useCallback(async () => {
     if (!configured) return;
     const { data, error } = await getSupabaseBrowserClient().from("meme_posts").select("id, image_path, caption, created_by, created_at").order("created_at", { ascending: false });
-    if (!error) setUploadedMemes((data ?? []) as MemePost[]);
+    if (error) return;
+    const posts = (data ?? []) as MemePost[];
+    setUploadedMemes(posts);
+    const authorIds = [...new Set(posts.map((post) => post.created_by))];
+    if (!authorIds.length) { setMemeAuthors({}); return; }
+    const { data: authors } = await getSupabaseBrowserClient().from("member_public_profiles").select("id, username").in("id", authorIds);
+    setMemeAuthors(Object.fromEntries(((authors ?? []) as MemeAuthor[]).map((author) => [author.id, author.username])));
   }, [configured]);
 
   const loadSocial = useCallback(async () => {
@@ -220,6 +229,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
         const summary = reactionSummary(meme.id);
         return <div className="meme-tile" key={meme.id}>
           <button className="meme-tile__image" onClick={() => { setActiveId(meme.id); setMessage(""); }} aria-label={meme.title}><Image src={meme.src} alt={meme.alt} width={600} height={600} sizes="(max-width: 700px) 100vw, 33vw" /></button>
+          {meme.createdByName && <p className="meme-author">CRÉÉ PAR <b>{meme.createdByName}</b></p>}
           <ReactionButtons compact likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(meme.id, value)} />
           <VoterList compact likeVoters={summary.likeVoters} dislikeVoters={summary.dislikeVoters} />
         </div>;
@@ -234,6 +244,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
             <button className="lightbox__close" onClick={() => setActiveId(null)}>Fermer ×</button>
           </div>
           <Image src={activeMeme.src} alt={activeMeme.alt} width={1200} height={900} sizes="(max-width: 800px) 94vw, 900px" />
+          {activeMeme.createdByName && <p className="meme-author meme-author--modal">CRÉÉ PAR <b>{activeMeme.createdByName}</b></p>}
           {activeMeme.caption && <p className="meme-caption">“ {activeMeme.caption} ”</p>}
           <div className="meme-social">
             <ReactionButtons likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(activeMeme.id, value)} />
