@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const links = [["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
+const links = [["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mêmes", "/memes"], ["Le concept", "/concept"]] as const;
 const clubSheetUrl = "https://docs.google.com/spreadsheets/d/1xdhbz6kRsdhEsdQIuZ7TbRbJ_umvfacopPLpYFRqrRI/edit?usp=sharing";
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
