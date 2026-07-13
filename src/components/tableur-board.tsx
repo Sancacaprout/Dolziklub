@@ -48,7 +48,9 @@ const quizQuestions = [
   { key: "first_hook", label: "DÉCLIC", question: "Ce qui te capte dès les premières secondes", prompt: "L’élément qui te fait tendre l’oreille en premier.", answers: ["La mélodie — la prod intrigue, les paroles font rester", "L’ambiance — les émotions frr", "—", "—", "La mélodie — plus précisément les suites d’accords", "La mélodie", "La rythmique", "—", "L’ambiance", "L’ambiance — une musique avec une âme, les changements de tonalité qui surprennent"] },
 ];
 
-const drawSizes = [10, 9, 17];
+type ArchiveTableRow = { kind: "album"; album: Album } | { kind: "placeholder"; id: string; proposedBy: string; listenedBy: string };
+
+const drawSizes = [10, 9, 17, 9];
 const ratingChoices = Array.from({ length: 11 }, (_, index) => index / 2);
 
 function value(input: string | null) {
@@ -86,16 +88,26 @@ function TrackLink({ album, kind }: { album: Album; kind: "bestTrack" | "worstTr
 }
 
 function AlbumTable({ albums }: { albums: Album[] }) {
-  let offset = 0;
-  const groups = [...drawSizes, albums.length - drawSizes.reduce((total, size) => total + size, 0)]
-    .filter((size) => size > 0)
-    .map((size) => {
-      const group = albums.slice(offset, offset + size);
-      offset += size;
-      return group;
+  const archivedGroups = drawSizes
+    .map((size, index) => {
+      const start = drawSizes.slice(0, index).reduce((total, previousSize) => total + previousSize, 0);
+      const group = albums.slice(start, start + size);
+      return group.map((album) => ({ kind: "album" as const, album }));
     });
+  const byId = new Map(albums.map((album) => [album.id, album]));
+  const pendingDraw = [
+    { kind: "placeholder" as const, id: "pending-yuna-enzo", proposedBy: "Yuna", listenedBy: "Enzo" },
+    { kind: "album", album: byId.get("archive-46")! },
+    { kind: "placeholder" as const, id: "pending-enzo-motem", proposedBy: "Enzo", listenedBy: "Motem" },
+    { kind: "album", album: byId.get("archive-47")! },
+    { kind: "album", album: byId.get("archive-48")! },
+    { kind: "album", album: byId.get("archive-49")! },
+    { kind: "placeholder" as const, id: "pending-chacha-bono", proposedBy: "Chacha", listenedBy: "Bono" },
+    { kind: "placeholder" as const, id: "pending-bono-chacha", proposedBy: "Bono", listenedBy: "Chacha" },
+  ] satisfies ArchiveTableRow[];
+  const groups = [...archivedGroups, pendingDraw];
 
-  return <div className="sheet-archive">{groups.map((group, index) => <section className="draw-section" key={`draw-${index + 1}`}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(index + 1).padStart(2, "0")}</span><span>{group.length} album{group.length > 1 ? "s" : ""} classés</span></div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => <tr key={album.id}><td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td><td><span className="sheet-member">{memberName(album.proposedBy)}</span></td><td><span className="sheet-member">{memberName(album.listenedBy)}</span></td><td className="sheet-review">{value(album.shortReview)}</td><td>{album.status === "pending" ? <span className="sheet-pending">En attente</span> : album.rating === null ? "—" : <span className="rating sheet-rating">{album.rating.toFixed(1)} / 5</span>}</td><td><TrackLink album={album} kind="bestTrack" /></td><td><TrackLink album={album} kind="worstTrack" /></td></tr>)}</tbody></table></div></section>)}</div>;
+  return <div className="sheet-archive">{groups.map((group, index) => <section className="draw-section" key={`draw-${index + 1}`}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(index + 1).padStart(2, "0")}</span><span>{index === groups.length - 1 ? `${group.length} emplacements à compléter` : `${group.length} album${group.length > 1 ? "s" : ""} classés`}</span></div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((row) => row.kind === "placeholder" ? <tr className="sheet-placeholder-row" key={row.id}><td><span className="sheet-placeholder-album">Album – Artiste</span></td><td><span className="sheet-member">{row.proposedBy}</span></td><td><span className="sheet-member">{row.listenedBy}</span></td><td className="sheet-review"><span className="sheet-placeholder-copy">Avis à compléter</span></td><td><span className="sheet-pending">En attente</span></td><td><span className="sheet-track-empty">—</span></td><td><span className="sheet-track-empty">—</span></td></tr> : <tr key={row.album.id}><td><Link className="sheet-album-link" href={`/albums/${row.album.slug}`}><b>{row.album.title}</b><span>{row.album.artist}</span></Link></td><td><span className="sheet-member">{memberName(row.album.proposedBy)}</span></td><td><span className="sheet-member">{memberName(row.album.listenedBy)}</span></td><td className="sheet-review">{value(row.album.shortReview)}</td><td>{row.album.status === "pending" ? <span className="sheet-pending">En attente</span> : row.album.rating === null ? "—" : <span className="rating sheet-rating">{row.album.rating.toFixed(1)} / 5</span>}</td><td><TrackLink album={row.album} kind="bestTrack" /></td><td><TrackLink album={row.album} kind="worstTrack" /></td></tr>)}</tbody></table></div></section>)}</div>;
 }
 
 function MemberSelect({ value: selected, onChange, disabled, label }: { value: string; onChange: (value: string) => void; disabled?: boolean; label: string }) {
