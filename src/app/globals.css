@@ -99,6 +99,14 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 .meme-voter-list span { flex:none; padding:0; color:#555; text-transform:uppercase; }
 .meme-voter-list b { font-weight:600; overflow-wrap:anywhere; }
 .meme-social .meme-voter-list { max-width:620px; }
+.meme-modal-actions { display:flex; justify-content:flex-end; align-items:center; gap:.6rem; margin-bottom:.8rem; }
+.meme-delete-button,.meme-comment__delete { border:1px solid var(--ink); border-radius:0; padding:.5rem .7rem; background:var(--red); color:#fff; font:500 .68rem var(--font-mono),monospace; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
+.meme-delete-button:disabled,.meme-comment__delete:disabled { cursor:wait; opacity:.68; }
+.meme-comments { display:grid; gap:.65rem; }
+.meme-comment { display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; border:var(--line); padding:.6rem .7rem; background:#fff9; }
+.meme-comment p { margin:0; }
+.meme-comment__delete { flex:none; padding:.35rem .5rem; font-size:.58rem; }
+@media (max-width:700px) { .meme-modal-actions { align-items:stretch; flex-direction:column-reverse; }.meme-comment { flex-direction:column; }.meme-comment__delete { width:max-content; } }
 
 /* Active draw workflow: proposal and review stay visually distinct and tightly scoped. */
 .draw-section--live { border-top:6px solid var(--blue); padding-top:1.2rem; }
