@@ -33,7 +33,7 @@ const quizQuestions = [
   { key: "first_hook", label: "DÉCLIC", question: "Ce qui te capte dès les premières secondes", prompt: "L’élément qui te fait tendre l’oreille en premier." },
 ];
 
-function memberName(name: string | null) { return name ? `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}` : "—"; }
+function memberName(name: string | null) { if (!name) return "—"; return normalizedMember(name) === "thomas" ? "Toma" : `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}`; }
 function value(input: string | null) { const text = input?.trim(); return !text || /^avis à compléter$/i.test(text) ? "—" : text; }
 function coverUrl(path: string | null) { return path ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path).data.publicUrl : null; }
 
