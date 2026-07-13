@@ -23,7 +23,7 @@ type ReviewPayload = { albumId: string; review: string; rating: number; bestTrac
 const tabs: Array<{ id: Tab; label: string; hint: string }> = [
   { id: "archive", label: "Tirages", hint: "Toutes les écoutes, tirage par tirage" },
   { id: "selection", label: "Sélection", hint: "Tes écoutes à rendre et les nouveaux tirages" },
-  { id: "quiz", label: "Quiz +", hint: "Les goûts et curiosités des membres" },
+  { id: "quiz", label: "Kouize", hint: "Les goûts et curiosités des membres" },
 ];
 
 const rosterNames = members.map((member) => member.displayName);
@@ -138,7 +138,7 @@ function ReviewWorkspace({ albums, member, reviews, savingAlbumId, onSave }: { a
 }
 
 function QuizSheet() {
-  return <section className="quiz-sheet"><div className="quiz-intro"><p className="eyebrow">QUIZ +</p><h2>Pour mieux proposer,<br /><em>et mieux surprendre.</em></h2><p>Les réponses partagées par les membres pour guider les futures propositions dans le bac.</p></div><div className="quiz-scroll"><table className="quiz-table"><thead><tr><th>Question</th>{quizMembers.map((member) => <th key={member}>{member}</th>)}</tr></thead><tbody>{quizQuestions.map((entry) => <tr key={entry.question}><th>{entry.question}</th>{entry.answers.map((answer, index) => <td key={`${entry.question}-${quizMembers[index]}`} className={answer === "—" ? "is-empty" : ""}>{answer}</td>)}</tr>)}</tbody></table></div></section>;
+  return <section className="quiz-sheet"><div className="quiz-intro"><p className="eyebrow">KOUIZE</p><h2>Pour mieux proposer,<br /><em>et mieux surprendre.</em></h2><p>Les réponses partagées par les membres pour guider les futures propositions dans le bac.</p></div><div className="quiz-scroll"><table className="quiz-table"><thead><tr><th>Question</th>{quizMembers.map((member) => <th key={member}>{member}</th>)}</tr></thead><tbody>{quizQuestions.map((entry) => <tr key={entry.question}><th>{entry.question}</th>{entry.answers.map((answer, index) => <td key={`${entry.question}-${quizMembers[index]}`} className={answer === "—" ? "is-empty" : ""}>{answer}</td>)}</tr>)}</tbody></table></div></section>;
 }
 
 export function TableurBoard({ albums }: { albums: Album[] }) {
