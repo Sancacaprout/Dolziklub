@@ -130,11 +130,9 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 
 /* Les repères restent visibles sans jamais quitter leur propre tirage. */
 .draw-section--live .sheet-scroll { position:relative; }
-.draw-section--live .sheet-table thead th { position:sticky; top:0; z-index:4; background:var(--ink); box-shadow:0 2px 0 var(--ink); }
+.sticky-draw-header { position:fixed; z-index:20; overflow:hidden; pointer-events:none; border:var(--line); border-top:0; box-shadow:0 3px 0 var(--ink); }
+.sticky-draw-header .sheet-table { margin:0; border:0; border-collapse:collapse; }
+.sticky-draw-header .sheet-table th { background:var(--ink); }
 .kouize-table thead th:first-child,.kouize-table tbody th { position:sticky; left:0; }
 .kouize-table thead th:first-child { z-index:5; background:#183650; box-shadow:3px 0 0 var(--ink); }
 .kouize-table tbody th { z-index:3; box-shadow:3px 0 0 var(--ink); }
-
-/* À partir de cette largeur, le tableau tient dans la page : le bandeau peut
-   donc rester accroché au viewport tout en étant borné par son tirage. */
-@media (min-width:1150px) { .draw-section--live .sheet-scroll { overflow:visible; } }
