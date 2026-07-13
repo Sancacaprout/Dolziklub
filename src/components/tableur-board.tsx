@@ -10,7 +10,7 @@ type SelectionRow = { id: string; position: number; members: string[]; is_locked
 type RemoteSelectionRow = { id: string; position: number; members: unknown; is_locked: boolean };
 
 const tabs: Array<{ id: Tab; label: string; hint: string }> = [
-  { id: "archive", label: "Archives", hint: "Toutes les écoutes, tirage par tirage" },
+  { id: "archive", label: "Tirages", hint: "Toutes les écoutes, tirage par tirage" },
   { id: "selection", label: "Sélection", hint: "Les groupes proposés dans la feuille du club" },
   { id: "quiz", label: "Quiz +", hint: "Les goûts et curiosités des membres" },
 ];
@@ -30,12 +30,20 @@ const quizQuestions = [
 const drawSizes = [10, 9, 17];
 
 function value(input: string | null) { return input?.trim() || "—"; }
+function memberName(input: string | null) { const name = value(input); return name === "—" ? name : `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}`; }
 function readMembers(input: unknown) { return Array.isArray(input) ? [0, 1, 2].map((index) => typeof input[index] === "string" ? input[index] : "—") : ["—", "—", "—"]; }
+
+function TrackLink({ album, kind }: { album: Album; kind: "bestTrack" | "worstTrack" }) {
+  const track = album[kind];
+  if (!track.title) return <span className="sheet-track-empty">—</span>;
+  const url = track.url ?? `https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${track.title}`)}`;
+  return <a className={`sheet-track-link sheet-track-link--${kind === "bestTrack" ? "best" : "worst"}`} href={url} target="_blank" rel="noreferrer" aria-label={`Écouter ${track.title} sur YouTube Music`}>{track.title}<span aria-hidden="true">↗</span></a>;
+}
 
 function AlbumTable({ albums }: { albums: Album[] }) {
   let offset = 0;
   const groups = [...drawSizes, albums.length - drawSizes.reduce((total, size) => total + size, 0)].filter((size) => size > 0).map((size) => { const group = albums.slice(offset, offset + size); offset += size; return group; });
-  return <div className="sheet-archive">{groups.map((group, index) => <section className="draw-section" key={`draw-${index + 1}`}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(index + 1).padStart(2, "0")}</span><span>{group.length} album{group.length > 1 ? "s" : ""} classé{group.length > 1 ? "s" : ""}</span></div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => <tr key={album.id}><td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td><td>{value(album.proposedBy)}</td><td>{value(album.listenedBy)}</td><td className="sheet-review">{value(album.shortReview)}</td><td>{album.status === "pending" ? <span className="sheet-pending">En attente</span> : album.rating === null ? "—" : <span className="rating">{album.rating.toFixed(1)} / 5</span>}</td><td>{value(album.bestTrack.title)}</td><td>{value(album.worstTrack.title)}</td></tr>)}</tbody></table></div></section>)}</div>;
+  return <div className="sheet-archive">{groups.map((group, index) => <section className="draw-section" key={`draw-${index + 1}`}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(index + 1).padStart(2, "0")}</span><span>{group.length} album{group.length > 1 ? "s" : ""} classés</span></div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => <tr key={album.id}><td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td><td><span className="sheet-member">{memberName(album.proposedBy)}</span></td><td><span className="sheet-member">{memberName(album.listenedBy)}</span></td><td className="sheet-review">{value(album.shortReview)}</td><td>{album.status === "pending" ? <span className="sheet-pending">En attente</span> : album.rating === null ? "—" : <span className="rating sheet-rating">{album.rating.toFixed(1)} / 5</span>}</td><td><TrackLink album={album} kind="bestTrack" /></td><td><TrackLink album={album} kind="worstTrack" /></td></tr>)}</tbody></table></div></section>)}</div>;
 }
 
 function SelectionSheet({ rows, isAdmin, savingId, message, onMemberChange, onSave, onAdd, onToggleLock, onDelete }: { rows: SelectionRow[]; isAdmin: boolean; savingId: string | null; message: string; onMemberChange: (id: string, index: number, value: string) => void; onSave: (row: SelectionRow) => void; onAdd: () => void; onToggleLock: (row: SelectionRow) => void; onDelete: (row: SelectionRow) => void }) {
