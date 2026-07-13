@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { RatingDisplay } from "@/components/rating-display";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 
@@ -16,6 +16,44 @@ function emptySlot(entry: Entry) { return !entry.album_title?.trim() || !entry.a
 
 function HeaderRow() {
   return <tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best track</th><th>Worst track</th></tr>;
+}
+
+export function StickyDrawShell({ heading, children }: { heading: ReactNode; children: ReactNode }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
+  const [stickyHeader, setStickyHeader] = useState<StickyHeader>(null);
+
+  useEffect(() => {
+    const update = () => {
+      const section = sectionRef.current;
+      const scroll = scrollRef.current;
+      const table = tableRef.current;
+      const header = table?.tHead;
+      if (!section || !scroll || !table || !header) return;
+      const scrollRect = scroll.getBoundingClientRect();
+      const sectionRect = section.getBoundingClientRect();
+      const headerHeight = header.getBoundingClientRect().height;
+      const active = scrollRect.top < 0 && sectionRect.bottom > 0;
+      if (!active) { setStickyHeader(null); return; }
+      setStickyHeader({ left: scrollRect.left, width: scrollRect.width, top: Math.min(0, sectionRect.bottom - headerHeight), tableWidth: table.scrollWidth, scrollLeft: scroll.scrollLeft });
+    };
+    const scroll = scrollRef.current;
+    const observer = new ResizeObserver(update);
+    if (scroll) observer.observe(scroll);
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    scroll?.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => { observer.disconnect(); window.removeEventListener("scroll", update); window.removeEventListener("resize", update); scroll?.removeEventListener("scroll", update); };
+  }, []);
+
+  return <section className="draw-section draw-section--live" ref={sectionRef}>
+    {stickyHeader && <div aria-hidden="true" className="sticky-draw-header" style={{ left: stickyHeader.left, top: stickyHeader.top, width: stickyHeader.width }}><table className="sheet-table" style={{ width: stickyHeader.tableWidth, minWidth: stickyHeader.tableWidth, transform: `translateX(-${stickyHeader.scrollLeft}px)` }}><thead><HeaderRow /></thead></table></div>}
+    {heading}
+    <div className="sheet-scroll" ref={scrollRef}><table className="sheet-table" ref={tableRef}><thead><HeaderRow /></thead><tbody>{children}</tbody></table></div>
+  </section>;
 }
 
 function LiveDraw({ draw, rows, reviews, member, onOpenProposal, onOpenReview }: { draw: Draw; rows: Entry[]; reviews: Map<string, Review>; member: Member | null; onOpenProposal: (id: string) => void; onOpenReview: (id: string) => void }) {

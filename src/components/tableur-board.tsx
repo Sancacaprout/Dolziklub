@@ -7,7 +7,7 @@ import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { RatingDisplay } from "@/components/rating-display";
 import { ProposalAssistantCard, ReviewAssistantCard, type AssistedProposalPayload, type AssistedReviewPayload } from "@/components/music-selection-cards";
-import { LiveDraws } from "@/components/live-draws";
+import { LiveDraws, StickyDrawShell } from "@/components/live-draws";
 import type { Album } from "@/types/album";
 
 type Tab = "archive" | "selection" | "kouize" | "admin";
@@ -123,6 +123,12 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
   return <>{message && <p className="selection-message" role="status">{message}</p>}{[...groups].reverse().map(({ draw, albums: group, isCurrent }) => {
     const canEditDraw = Boolean(member && group.some((album) => album.id.startsWith("archive-") && isHistoricalListener(album, member)));
     const editing = editingDraw === draw;
+    const rows = group.map((album) => {
+      const record = recordMap.get(album.id);
+      const recordKey = `${album.id}:${record?.is_modified ?? false}:${record?.review ?? ""}:${record?.rating ?? ""}:${record?.best_track ?? ""}:${record?.worst_track ?? ""}`;
+      return <HistoricalReviewRow key={recordKey} album={album} record={record} editable={Boolean(editing && member && album.id.startsWith("archive-") && isHistoricalListener(album, member))} saving={savingId === album.id} onSave={(nextRecord) => void saveRecord(nextRecord)} />;
+    });
+    return <StickyDrawShell key={draw} heading={<div className="draw-heading"><span className="eyebrow">TIRAGE {String(draw).padStart(2, "0")}{isCurrent ? " · EN COURS" : ""}</span><span>{isCurrent ? `${group.length} emplacements en cours` : `${group.length} albums classés`}</span>{canEditDraw && <button className="sheet-entry-action" type="button" onClick={() => setEditingDraw(editing ? null : draw)}>{editing ? "Terminer l’édition" : isCurrent ? "Rendre ou modifier mon avis" : "Modifier mes notes"}</button>}</div>}>{rows}</StickyDrawShell>;
     return <section className={`draw-section${isCurrent ? " draw-section--current" : ""}`} key={draw}><div className="draw-heading"><span className="eyebrow">TIRAGE {String(draw).padStart(2, "0")}{isCurrent ? " · EN COURS" : ""}</span><span>{isCurrent ? `${group.length} emplacements en cours` : `${group.length} albums classés`}</span>{canEditDraw && <button className="sheet-entry-action" type="button" onClick={() => setEditingDraw(editing ? null : draw)}>{editing ? "Terminer l'édition" : isCurrent ? "Rendre ou modifier mon avis" : "Modifier mes notes"}</button>}</div><div className="sheet-scroll"><table className="sheet-table"><thead><tr><th>Album · Artiste</th><th>Proposé par</th><th>Écouté par</th><th>Avis</th><th>Note</th><th>Best Track</th><th>Worst Track</th></tr></thead><tbody>{group.map((album) => { const record = recordMap.get(album.id); const recordKey = `${album.id}:${record?.is_modified ?? false}:${record?.review ?? ""}:${record?.rating ?? ""}:${record?.best_track ?? ""}:${record?.worst_track ?? ""}`; return <HistoricalReviewRow key={recordKey} album={album} record={record} editable={Boolean(editing && member && album.id.startsWith("archive-") && isHistoricalListener(album, member))} saving={savingId === album.id} onSave={(nextRecord) => void saveRecord(nextRecord)} />; })}</tbody></table></div></section>;
   })}</>;
 }
