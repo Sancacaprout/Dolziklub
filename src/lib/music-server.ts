@@ -87,11 +87,14 @@ type YouTubeSearchItem = {
 
 type AlbumSearchIntent = { title: string; artist: string };
 
-type ItunesAlbumItem = {
-  collectionId?: number;
-  collectionName?: string;
-  artistName?: string;
-  artworkUrl100?: string;
+type DeezerAlbumItem = {
+  id?: number;
+  title?: string;
+  cover_xl?: string;
+  cover_big?: string;
+  nb_tracks?: number;
+  record_type?: string;
+  artist?: { name?: string };
 };
 
 function cleanAlbumTitle(value: string) {
@@ -326,22 +329,23 @@ export async function searchYouTubeMusic(
   return { candidates, cached: false };
 }
 
-// The public iTunes search endpoint is used only when YouTube rejects a
-// request because its API quota is exhausted. It keeps cover selection usable
-// without weakening the authenticated, rate-limited server route.
-export async function searchItunesAlbums(title: string, artist: string) {
+// Deezer's album endpoint returns albums directly, unlike a video search. It
+// needs no user credentials and lets the club choose a canonical album title,
+// artist, high-resolution cover and track count in one request.
+export async function searchDeezerAlbums(title: string, artist: string) {
   const intent = albumIntent(title, artist);
-  // Keep canonical catalogue results separate from YouTube video cache entries.
-  const query = cacheKey("album", "itunes-v1", intent.title, intent.artist);
+  const query = cacheKey("album", "deezer-v1", intent.title, intent.artist);
   const cached = await fromCache("album", query);
   if (cached) return { candidates: cached, cached: true };
 
-  const url = new URL("https://itunes.apple.com/search");
+  const quote = (value: string) => value.replace(/"/g, " ").trim();
+  const searchQuery = [
+    intent.artist && `artist:"${quote(intent.artist)}"`,
+    `album:"${quote(intent.title)}"`,
+  ].filter(Boolean).join(" ");
+  const url = new URL("https://api.deezer.com/search/album");
   url.search = new URLSearchParams({
-    term: [intent.artist, intent.title].filter(Boolean).join(" "),
-    country: "FR",
-    media: "music",
-    entity: "album",
+    q: searchQuery,
     limit: "10",
   }).toString();
   let response: Response;
@@ -351,48 +355,46 @@ export async function searchItunesAlbums(title: string, artist: string) {
       signal: AbortSignal.timeout(9000),
     });
   } catch {
-    throw new Error("itunes_network_unavailable");
+    throw new Error("deezer_network_unavailable");
   }
-  if (!response.ok) throw new Error(`itunes_api_http_${response.status}`);
-  const body = (await response.json()) as { results?: ItunesAlbumItem[] };
+  if (!response.ok) throw new Error(`deezer_api_http_${response.status}`);
+  const body = (await response.json()) as { data?: DeezerAlbumItem[] };
   const requestQuery = [intent.artist, intent.title].filter(Boolean).join(" ");
-  const candidates = (body.results ?? [])
+  const candidates = (body.data ?? [])
     .flatMap((item): MusicCandidate[] => {
-      const candidateTitle = item.collectionName?.trim() ?? "";
-      const candidateArtist = item.artistName?.trim() ?? "";
-      if (!item.collectionId || !candidateTitle || !candidateArtist) return [];
+      const candidateTitle = item.title?.trim() ?? "";
+      const candidateArtist = item.artist?.name?.trim() ?? "";
+      if (!item.id || !candidateTitle || !candidateArtist) return [];
       if (!isLikelyCatalogAlbumResult({
         title: intent.title,
         artist: intent.artist,
         candidateTitle,
         candidateArtist,
       })) return [];
-      const thumbnailUrl = item.artworkUrl100
-        ? item.artworkUrl100.replace("100x100bb", "600x600bb")
-        : null;
+      const thumbnailUrl = item.cover_xl ?? item.cover_big ?? null;
       const score = scoreMusicCandidate({
         title: intent.title,
         artist: intent.artist,
         candidateTitle,
         candidateArtist,
-        channelTitle: "iTunes",
+        channelTitle: "Deezer",
         resourceType: "search",
         thumbnailUrl,
       });
       if (score < (intent.artist ? 85 : 55)) return [];
       return [{
-        id: `itunes:${item.collectionId}`,
+        id: `deezer:${item.id}`,
         title: candidateTitle,
         artist: candidateArtist,
-        channelTitle: "iTunes",
+        channelTitle: "Deezer",
         thumbnailUrl,
         resourceType: "search",
         resourceId: null,
         ...musicUrls("search", null, requestQuery),
-        itemCount: null,
+        itemCount: item.nb_tracks ?? null,
         score,
         confidence: classifyConfidence(score),
-        source: "itunes_search",
+        source: "deezer_search",
       }];
     })
     .sort((left, right) => right.score - left.score)

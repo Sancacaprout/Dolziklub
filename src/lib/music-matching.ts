@@ -15,7 +15,7 @@ export type MusicCandidate = {
   itemCount: number | null;
   confidence: MatchConfidence;
   score: number;
-  source: "youtube_search" | "itunes_search";
+  source: "youtube_search" | "deezer_search";
 };
 
 const noiseWords = new Set(["official", "audio", "video", "full", "album", "playlist", "music", "topic"]);
