@@ -41,6 +41,11 @@ function value(input: string | null) { const text = input?.trim(); return !text 
 function coverUrl(path: string | null) { return path ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path).data.publicUrl : null; }
 
 function normalizedMember(value: string | null | undefined) { return value?.trim().toLocaleLowerCase() ?? ""; }
+function duoMember(value: string | null | undefined) { const member = normalizedMember(value); return member === "thomas" ? "toma" : member; }
+function duoKey(first: string | null | undefined, second: string | null | undefined) {
+  const members = [duoMember(first), duoMember(second)].filter(Boolean).sort();
+  return members.length === 2 ? members.join("|") : "";
+}
 function kouizeValue(input: unknown, key: string) { if (!input || typeof input !== "object" || Array.isArray(input)) return ""; const value = (input as Record<string, unknown>)[key]; return typeof value === "string" ? value.trim() : ""; }
 function isAssignedToMember(entry: DrawEntry, member: SignedMember, role: "proposer" | "listener") {
   const id = role === "proposer" ? entry.proposed_by : entry.listened_by;
@@ -213,22 +218,23 @@ function SelectionWorkspace({ albums, entries, draws, member, reviews, focusedPr
   return <>{!member ? <section className="review-workspace"><div className="review-workspace__empty"><p>Connecte-toi pour proposer ton album ou rendre une écoute.</p><Link className="button" href="/connexion">Connexion</Link></div></section> : <><section className="review-workspace proposal-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES PROPOSITIONS</p><h2>Les albums que je <em>propose.</em></h2><p>Toutes tes lignes encore ouvertes restent accessibles ici, quel que soit leur tirage.</p></div><span className="review-counter">{proposals.length} slot{proposals.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleProposals.length ? visibleProposals.map((entry) => <ProposalCard key={`${entry.id}:${entry.album_title ?? ""}:${entry.album_artist ?? ""}:${entry.cover_path ?? ""}`} entry={entry} saving={savingId === entry.id} onSave={onProposal} onDelete={onDeleteProposal} />) : <div className="review-workspace__empty"><p>Aucune proposition ouverte pour l’instant.</p></div>}</div></section><section className="review-workspace"><div className="review-workspace__heading"><div><p className="eyebrow">MES ÉCOUTES À RENDRE</p><h2>Les albums que je dois <em>écouter.</em></h2><p>Toute ligne où tu es désigné·e « écouté par » reste disponible tant que le verdict est absent.</p></div><span className="review-counter">{listens.length} écoute{listens.length > 1 ? "s" : ""}</span></div><div className="review-queue">{visibleListens.length ? visibleListens.map((entry) => <ReviewCard key={entry.id} entry={entry} existing={reviewMap.get(entry.id)} saving={savingId === entry.id} onSave={onReview} />) : <div className="review-workspace__empty"><p>Rien à rendre dans les tirages actifs pour l’instant.</p></div>}</div></section><HistoricalPendingReviews albums={albums} member={member} /></>}</>;
 }
 
-function AdminDraws({ entries, draws, savingId, onCreate, onDelete, onValidate, onPublish }: { entries: DrawEntry[]; draws: DrawMeta[]; savingId: string | null; onCreate: (participants: string[]) => void; onDelete: (draw: number) => void; onValidate: (draw: number, assignments: Array<{ entry: DrawEntry; proposer: string; listener: string }>) => Promise<void>; onPublish: (draw: number) => void }) {
+function AdminDraws({ albums = archivedAlbums, entries, draws, savingId, onCreate, onDelete, onValidate, onPublish }: { albums?: Album[]; entries: DrawEntry[]; draws: DrawMeta[]; savingId: string | null; onCreate: (participants: string[]) => void; onDelete: (draw: number) => void; onValidate: (draw: number, assignments: Array<{ entry: DrawEntry; proposer: string; listener: string }>) => Promise<void>; onPublish: (draw: number) => void }) {
   const [drafts, setDrafts] = useState<Record<string, { proposer: string; listener: string }>>({});
   const [participants, setParticipants] = useState(() => roster.map((member) => member.username));
   const [duoNotice, setDuoNotice] = useState<{ draw: number; invalidIds: string[]; message: string } | null>(null);
   const rowsByDraw = new Map<number, DrawEntry[]>(); entries.forEach((entry) => rowsByDraw.set(entry.draw_number, [...(rowsByDraw.get(entry.draw_number) ?? []), entry]));
+  const archivedPairs = new Set(albums.map((album) => duoKey(album.proposedBy, album.listenedBy)).filter(Boolean));
   const field = (entry: DrawEntry) => drafts[entry.id] ?? { proposer: entry.proposed_by_name ?? "", listener: entry.listened_by_name ?? "" };
   const change = (entry: DrawEntry, key: "proposer" | "listener", next: string) => setDrafts((current) => ({ ...current, [entry.id]: { ...field(entry), [key]: next } }));
   const toggleParticipant = (username: string) => setParticipants((current) => current.includes(username) ? current.filter((value) => value !== username) : [...current, username]);
   const validateDraw = async (draw: DrawMeta) => {
     const rows = (rowsByDraw.get(draw.draw_number) ?? []).sort((a, b) => a.position - b.position);
     const priorDraws = new Set(draws.filter((candidate) => candidate.draw_number !== draw.draw_number && candidate.status !== "draft").map((candidate) => candidate.draw_number));
-    const seenPairs = new Set(entries.filter((entry) => priorDraws.has(entry.draw_number) && entry.proposed_by_name && entry.listened_by_name).map((entry) => `${entry.proposed_by_name!.toLowerCase()}|${entry.listened_by_name!.toLowerCase()}`));
+    const seenPairs = new Set([...archivedPairs, ...entries.filter((entry) => priorDraws.has(entry.draw_number) && entry.proposed_by_name && entry.listened_by_name).map((entry) => duoKey(entry.proposed_by_name, entry.listened_by_name)).filter(Boolean)]);
     const assignments = rows.map((entry) => ({ entry, ...field(entry) }));
     const incomplete = assignments.filter(({ proposer, listener }) => !proposer || !listener).map(({ entry }) => entry.id);
     const selfPairs = assignments.filter(({ proposer, listener }) => proposer && proposer === listener).map(({ entry }) => entry.id);
-    const repeatedPairs = assignments.filter(({ proposer, listener }) => proposer && listener && seenPairs.has(`${proposer}|${listener}`)).map(({ entry }) => entry.id);
+    const repeatedPairs = assignments.filter(({ proposer, listener }) => proposer && listener && seenPairs.has(duoKey(proposer, listener))).map(({ entry }) => entry.id);
     const invalidIds = [...new Set([...incomplete, ...selfPairs, ...repeatedPairs])];
     if (invalidIds.length) {
       const reasons = [incomplete.length ? "des lignes incomplètes" : "", selfPairs.length ? "des membres attribués à eux-mêmes" : "", repeatedPairs.length ? "des duos déjà rencontrés" : ""].filter(Boolean).join(", ");
