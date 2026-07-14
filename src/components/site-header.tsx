@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-const links = [["Accueil", "/"], ["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mêmes", "/memes"], ["Le concept", "/concept"]] as const;
+const links = [["Accueil", "/"], ["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
