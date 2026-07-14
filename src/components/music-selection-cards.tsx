@@ -24,7 +24,7 @@ export function ProposalAssistantCard({ entry, coverUrl, saving, onSave, onDelet
   const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); onSave({ entryId: entry.id, title, artist, file, match }); };
   return <article className="review-card proposal-card">
     <div className="review-card__album">
-      {coverUrl ? <img src={coverUrl} alt="Pochette proposée" width={90} height={90} /> : <span className="proposal-card__placeholder">POCHETTE</span>}
+      {coverUrl ? <img src={coverUrl} alt={`Pochette de ${entry.album_title ?? "l’album"}`} width={220} height={220} /> : <span className="proposal-card__placeholder">POCHETTE</span>}
       <span className="eyebrow">{filled ? "PROPOSITION MODIFIABLE" : "À PROPOSER"}</span>
       <h3>{filled ? entry.album_title : "Tes choix, ton disque."}</h3>
       <p>{filled ? "Tu peux corriger ou retirer cet album tant que son écoute n’a pas reçu de verdict." : "Écris le titre : les suggestions t’aident à choisir la bonne fiche."}</p>
@@ -48,6 +48,28 @@ export function ReviewAssistantCard({ entry, existing, coverUrl, saving, onSave 
   const [bestMatch, setBestMatch] = useState<MusicCandidate | null>(null);
   const [worstMatch, setWorstMatch] = useState<MusicCandidate | null>(null);
   const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); onSave({ entryId: entry.id, review, rating: Number(rating), bestTrack, worstTrack, bestMatch, worstMatch }); };
+  const reset = () => {
+    if (!confirm("Remettre ce verdict à zéro dans le formulaire ?")) return;
+    setReview("");
+    setRating("0");
+    setBestTrack("");
+    setWorstTrack("");
+    setBestMatch(null);
+    setWorstMatch(null);
+  };
   const albumHref = entry.youtube_music_url ?? youtubeMusicSearchUrl(entry.album_artist, entry.album_title);
-  return <article className="review-card"><div className="review-card__album"><span className="eyebrow">{existing ? "VERDICT ENREGISTRÉ" : "À RENDRE"}</span><h3><a href={albumHref} target="_blank" rel="noopener noreferrer">{entry.album_title}</a></h3><p>{entry.album_artist}</p>{coverUrl && <img src={coverUrl} alt="Pochette de l’album" width={90} height={90} />}</div><form className="review-form" onSubmit={submit}><label><span>Ton avis</span><textarea required maxLength={2000} value={review} onChange={(event) => setReview(event.target.value)} placeholder="Ton verdict, sans filtre." /></label><label><span>Ta note</span><select required value={rating} onChange={(event) => setRating(event.target.value)}><option value="" disabled>Choisir une note</option>{ratings.map((choice) => <option key={choice} value={choice}>{choice} / 5</option>)}</select></label><div className="review-form__tracks"><TrackLookup label="La pépite" title={bestTrack} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? ""} selected={bestMatch} disabled={saving} onTitleChange={setBestTrack} onSelect={setBestMatch} /><TrackLookup label="Envoyé au goulag" title={worstTrack} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? ""} selected={worstMatch} disabled={saving} onTitleChange={setWorstTrack} onSelect={setWorstMatch} /></div><button type="submit" className="button" disabled={saving}>{saving ? "Enregistrement…" : existing ? "Mettre à jour mon verdict" : "Enregistrer mon verdict"}</button></form></article>;
+  return <article className="review-card">
+    <div className="review-card__album">
+      <span className="eyebrow">{existing ? "VERDICT ENREGISTRÉ" : "À RENDRE"}</span>
+      <h3><a href={albumHref} target="_blank" rel="noopener noreferrer" title="Ouvrir l’album dans YouTube Music">{entry.album_title}<span aria-hidden="true"> ↗</span></a></h3>
+      <p>{entry.album_artist}</p>
+      {coverUrl && <img src={coverUrl} alt={`Pochette de ${entry.album_title ?? "l’album"}`} width={220} height={220} />}
+    </div>
+    <form className="review-form" onSubmit={submit}>
+      <label><span>Ton avis</span><textarea required maxLength={2000} value={review} onChange={(event) => setReview(event.target.value)} placeholder="Ton verdict, sans filtre." /></label>
+      <label><span>Ta note</span><select required value={rating} onChange={(event) => setRating(event.target.value)}><option value="" disabled>Choisir une note</option>{ratings.map((choice) => <option key={choice} value={choice}>{choice} / 5</option>)}</select></label>
+      <div className="review-form__tracks"><TrackLookup label="La pépite" title={bestTrack} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? ""} selected={bestMatch} disabled={saving} onTitleChange={setBestTrack} onSelect={setBestMatch} /><TrackLookup label="Envoyé au goulag" title={worstTrack} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? ""} selected={worstMatch} disabled={saving} onTitleChange={setWorstTrack} onSelect={setWorstMatch} /></div>
+      <div className="review-form__actions"><button type="submit" className="button" disabled={saving}>{saving ? "Enregistrement…" : existing ? "Mettre à jour mon verdict" : "Enregistrer mon verdict"}</button><button type="button" className="sheet-entry-action review-form__reset" disabled={saving} onClick={reset}>Réinitialiser l’avis</button></div>
+    </form>
+  </article>;
 }
