@@ -1,9 +1,21 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { cacheKey, classifyConfidence, musicUrls, scoreMusicCandidate, type MusicCandidate, type MusicResourceType } from "@/lib/music-matching";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 type AuthenticatedUser = { id: string };
+
+function hasSupabaseAdminConfig() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function getSupabaseAuthClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("supabase_auth_unavailable");
+  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+}
 
 function error(message: string, status: number) {
   return NextResponse.json({ error: message }, { status });
@@ -15,7 +27,10 @@ export async function authenticatedUser(request: Request): Promise<Authenticated
   const value = request.headers.get("authorization");
   const token = value?.startsWith("Bearer ") ? value.slice(7).trim() : "";
   if (!token) return null;
-  const { data, error: authError } = await getSupabaseAdmin().auth.getUser(token);
+  // Verifying a user token only needs the publishable key. This keeps music
+  // search available even when the optional server-only cache key is absent.
+  const auth = hasSupabaseAdminConfig() ? getSupabaseAdmin() : getSupabaseAuthClient();
+  const { data, error: authError } = await auth.auth.getUser(token);
   if (authError || !data.user) return null;
   return { id: data.user.id };
 }
@@ -25,6 +40,7 @@ export function cleanText(value: unknown, limit: number) {
 }
 
 export async function consumeSearchQuota(userId: string, type: "album" | "track") {
+  if (!hasSupabaseAdminConfig()) return true;
   // Supabase types are generated separately; this server-only path reaches new tables immediately after migration.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: quotaError } = await (getSupabaseAdmin() as any).rpc("consume_music_search_quota", { p_user_id: userId, p_search_type: type });
@@ -38,6 +54,7 @@ type YouTubeSearchItem = {
 };
 
 async function fromCache(searchType: "album" | "track", query: string) {
+  if (!hasSupabaseAdminConfig()) return null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (getSupabaseAdmin() as any).from("music_search_cache")
     .select("response")
@@ -49,6 +66,7 @@ async function fromCache(searchType: "album" | "track", query: string) {
 }
 
 async function storeCache(searchType: "album" | "track", query: string, candidates: MusicCandidate[]) {
+  if (!hasSupabaseAdminConfig()) return;
   const expiresAt = new Date(Date.now() + (searchType === "album" ? 14 : 4) * 24 * 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (getSupabaseAdmin() as any).from("music_search_cache").upsert({ search_type: searchType, normalized_query: query, response: candidates, expires_at: expiresAt }, { onConflict: "search_type,normalized_query" });

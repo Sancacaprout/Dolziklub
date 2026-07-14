@@ -4,7 +4,7 @@ import { authenticatedUser, cleanText, consumeSearchQuota, error, searchYouTubeM
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  const user = await authenticatedUser(request);
+  const user = await authenticatedUser(request).catch(() => null);
   if (!user) return error("Connexion requise.", 401);
   const body = await request.json().catch(() => null);
   const title = cleanText(body?.title, 200);
