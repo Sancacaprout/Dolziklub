@@ -185,6 +185,7 @@ function LiveDraw({
   member,
   onOpenProposal,
   onOpenReview,
+  focusEntryId,
 }: {
   draw: Draw;
   rows: Entry[];
@@ -192,6 +193,7 @@ function LiveDraw({
   member: Member | null;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
+  focusEntryId: string | null;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -236,6 +238,16 @@ function LiveDraw({
       scroll?.removeEventListener("scroll", update);
     };
   }, []);
+
+  useEffect(() => {
+    if (!focusEntryId || !rows.some((entry) => entry.id === focusEntryId)) {
+      return;
+    }
+
+    document
+      .getElementById(`draw-entry-${focusEntryId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusEntryId, rows]);
 
   return (
     <section className="draw-section draw-section--live" ref={sectionRef}>
@@ -295,7 +307,13 @@ function LiveDraw({
               );
               return (
                 <tr
-                  className={canPropose || canReview ? "sheet-row--action" : ""}
+                  className={[
+                    canPropose || canReview ? "sheet-row--action" : "",
+                    entry.id === focusEntryId ? "sheet-row--focused" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  id={`draw-entry-${entry.id}`}
                   key={entry.id}
                   onClick={() =>
                     canPropose
@@ -412,6 +430,7 @@ export function LiveDraws({
   member,
   onOpenProposal,
   onOpenReview,
+  focusEntryId = null,
 }: {
   entries: Entry[];
   reviews: Review[];
@@ -419,6 +438,7 @@ export function LiveDraws({
   member: Member | null;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
+  focusEntryId?: string | null;
 }) {
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
   return (
@@ -433,6 +453,7 @@ export function LiveDraws({
             member={member}
             onOpenProposal={onOpenProposal}
             onOpenReview={onOpenReview}
+            focusEntryId={focusEntryId}
             reviews={reviewMap}
             rows={entries
               .filter((entry) => entry.draw_number === draw.draw_number)

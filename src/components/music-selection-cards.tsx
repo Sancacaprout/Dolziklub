@@ -177,12 +177,14 @@ export function ReviewAssistantCard({
   coverUrl,
   saving,
   onSave,
+  onReset,
 }: {
   entry: AssistedEntry;
   existing?: AssistedReview;
   coverUrl: string | null;
   saving: boolean;
   onSave: (payload: AssistedReviewPayload) => void;
+  onReset: (entryId: string) => void;
 }) {
   const [review, setReview] = useState(existing?.review ?? "");
   const [rating, setRating] = useState(String(existing?.rating ?? ""));
@@ -203,13 +205,13 @@ export function ReviewAssistantCard({
     });
   };
   const reset = () => {
-    if (!confirm("Remettre ce verdict à zéro dans le formulaire ?")) return;
-    setReview("");
-    setRating("0");
-    setBestTrack("");
-    setWorstTrack("");
-    setBestMatch(null);
-    setWorstMatch(null);
+    if (
+      !confirm(
+        "Réinitialiser ce verdict ? L’avis, la note et les morceaux seront retirés du tirage.",
+      )
+    )
+      return;
+    onReset(entry.id);
   };
   const albumHref =
     entry.youtube_music_url ??
@@ -299,14 +301,16 @@ export function ReviewAssistantCard({
                 ? "Mettre à jour mon verdict"
                 : "Enregistrer mon verdict"}
           </button>
-          <button
-            type="button"
-            className="sheet-entry-action review-form__reset"
-            disabled={saving}
-            onClick={reset}
-          >
-            Réinitialiser l’avis
-          </button>
+          {existing && (
+            <button
+              type="button"
+              className="sheet-entry-action review-form__reset"
+              disabled={saving}
+              onClick={reset}
+            >
+              Réinitialiser l’avis
+            </button>
+          )}
         </div>
       </form>
     </article>
