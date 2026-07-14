@@ -96,6 +96,23 @@ export function AlbumExplorer({ albums }: { albums: Album[] }) {
     | "listened"
   >("latest");
   const [member, setMember] = useState("");
+  // The archive is chronological. Its contiguous pending tail is the draw
+  // currently being listened to: these albums keep their complete archive
+  // pages, while the catalogue identifies them as a live draw rather than as
+  // already closed archives.
+  const currentDrawArchiveIds = useMemo(() => {
+    const ids = new Set<string>();
+    const newestFirst = [...albums].sort(
+      (left, right) =>
+        Number(right.id.replace("archive-", "")) -
+        Number(left.id.replace("archive-", "")),
+    );
+    for (const album of newestFirst) {
+      if (album.status !== "pending") break;
+      ids.add(album.id);
+    }
+    return ids;
+  }, [albums]);
   useEffect(() => {
     if (!configured) return;
     const timer = setTimeout(() => {
@@ -236,7 +253,12 @@ export function AlbumExplorer({ albums }: { albums: Album[] }) {
       {results.length ? (
         <div className={view === "grid" ? "album-grid" : "album-list"}>
           {results.map((album) => (
-            <AlbumCard key={album.id} album={album} list={view === "list"} />
+            <AlbumCard
+              key={album.id}
+              album={album}
+              list={view === "list"}
+              currentDraw={currentDrawArchiveIds.has(album.id)}
+            />
           ))}
         </div>
       ) : (
