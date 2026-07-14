@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { RatingDisplay } from "@/components/rating-display";
+import { ReviewPreview } from "@/components/review-preview";
 import { albums as archivedAlbums } from "@/data/albums";
 import { normalizeMusicText } from "@/lib/music-matching";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
@@ -363,7 +364,9 @@ function LiveDraw({
                       {memberName(entry.listened_by_name)}
                     </span>
                   </td>
-                  <td className="sheet-review">{review?.review || "—"}</td>
+                  <td className="sheet-review">
+                    <ReviewPreview review={review?.review} />
+                  </td>
                   <td>
                     {review ? (
                       <RatingDisplay rating={review.rating} />

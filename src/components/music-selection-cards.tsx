@@ -274,7 +274,7 @@ export function ReviewAssistantCard({
         </label>
         <div className="review-form__tracks">
           <TrackLookup
-            label="La pépite"
+            label="Best track"
             title={bestTrack}
             artist={entry.album_artist ?? ""}
             albumTitle={entry.album_title ?? ""}
@@ -284,7 +284,7 @@ export function ReviewAssistantCard({
             onSelect={setBestMatch}
           />
           <TrackLookup
-            label="Envoyé au goulag"
+            label="Worst track"
             title={worstTrack}
             artist={entry.album_artist ?? ""}
             albumTitle={entry.album_title ?? ""}

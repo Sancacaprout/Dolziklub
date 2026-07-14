@@ -146,6 +146,10 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 .sheet-album-title-link:hover b { color:var(--red); }
 .sheet-album-link>span { color:var(--ink); }
 .sheet-review { overflow-wrap:anywhere; word-break:break-word; }
+.review-preview { display:grid; gap:.4rem; max-width:42ch; }
+.review-preview p { margin:0; }
+.review-preview__toggle { width:fit-content; padding:0; border:0; background:transparent; color:var(--blue); font:700 .72rem var(--font-mono); letter-spacing:.04em; text-decoration:underline; text-underline-offset:.18em; cursor:pointer; }
+.review-preview__toggle:hover { color:var(--red); }
 .review-card__album h3 a { margin:0; color:var(--ink); font:inherit; letter-spacing:inherit; text-transform:none; }
 .review-card__album h3 a:hover { color:var(--blue); }
 .review-card__album>img { display:block; margin-top:1.1rem; }

@@ -8,6 +8,7 @@ import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { normalizeMusicText } from "@/lib/music-matching";
 import { RatingDisplay } from "@/components/rating-display";
+import { ReviewPreview } from "@/components/review-preview";
 import { ProposalAssistantCard, ReviewAssistantCard, type AssistedProposalPayload, type AssistedReviewPayload } from "@/components/music-selection-cards";
 import { LiveDraws, StickyDrawShell } from "@/components/live-draws";
 import type { Album } from "@/types/album";
@@ -83,7 +84,7 @@ function HistoricalReviewRow({ album, record, editable, saving, onSave }: { albu
     <td><Link className="sheet-album-link" href={`/albums/${album.slug}`}><b>{album.title}</b><span>{album.artist}</span></Link></td>
     <td><span className="sheet-member">{memberName(album.proposedBy)}</span></td>
     <td><span className="sheet-member">{memberName(album.listenedBy)}</span></td>
-    {editable ? <td className="sheet-review"><textarea className="sheet-inline-textarea" value={review} onChange={(event) => setReview(event.target.value)} maxLength={2000} aria-label={`Avis sur ${album.title}`} /></td> : <td className="sheet-review">{value(renderedReview)}</td>}
+    {editable ? <td className="sheet-review"><textarea className="sheet-inline-textarea" value={review} onChange={(event) => setReview(event.target.value)} maxLength={2000} aria-label={`Avis sur ${album.title}`} /></td> : <td className="sheet-review"><ReviewPreview review={renderedReview} /></td>}
     {editable ? <td><select className="sheet-inline-select" value={rating} onChange={(event) => setRating(event.target.value)} aria-label={`Note sur ${album.title}`}><option value="">En attente</option>{ratingChoices.map((choice) => <option key={choice} value={choice}>{choice} / 5</option>)}</select></td> : <td>{renderedRating === null || renderedRating === undefined ? <span className="sheet-pending">En attente</span> : <RatingDisplay rating={renderedRating} />}</td>}
     {editable ? <td><input className="sheet-inline-input" value={bestTrack} onChange={(event) => setBestTrack(event.target.value)} maxLength={160} placeholder="Best track" aria-label={`Best track de ${album.title}`} /></td> : <td>{renderedBestTrack ? <a className="sheet-track-link sheet-track-link--best" href={`https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${renderedBestTrack}`)}`} target="_blank" rel="noreferrer">{renderedBestTrack}<span>↗</span></a> : <span className="sheet-track-empty">—</span>}</td>}
     {editable ? <td><div className="sheet-inline-save"><input className="sheet-inline-input" value={worstTrack} onChange={(event) => setWorstTrack(event.target.value)} maxLength={160} placeholder="Worst track" aria-label={`Worst track de ${album.title}`} /><button type="button" className="sheet-entry-action" onClick={save} disabled={saving}>{saving ? "…" : "Enregistrer"}</button></div></td> : <td>{renderedWorstTrack ? <a className="sheet-track-link sheet-track-link--worst" href={`https://music.youtube.com/search?q=${encodeURIComponent(`${album.artist} ${renderedWorstTrack}`)}`} target="_blank" rel="noreferrer">{renderedWorstTrack}<span>↗</span></a> : <span className="sheet-track-empty">—</span>}</td>}
