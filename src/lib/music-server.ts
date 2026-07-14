@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   cacheKey,
   classifyConfidence,
+  isLikelyCatalogAlbumResult,
   isLikelyAlbumResult,
   musicUrls,
   scoreMusicCandidate,
@@ -85,6 +86,13 @@ type YouTubeSearchItem = {
 };
 
 type AlbumSearchIntent = { title: string; artist: string };
+
+type ItunesAlbumItem = {
+  collectionId?: number;
+  collectionName?: string;
+  artistName?: string;
+  artworkUrl100?: string;
+};
 
 function cleanAlbumTitle(value: string) {
   return value
@@ -315,6 +323,81 @@ export async function searchYouTubeMusic(
     )
     .slice(0, 5);
   await storeCache(searchType, query, candidates);
+  return { candidates, cached: false };
+}
+
+// The public iTunes search endpoint is used only when YouTube rejects a
+// request because its API quota is exhausted. It keeps cover selection usable
+// without weakening the authenticated, rate-limited server route.
+export async function searchItunesAlbums(title: string, artist: string) {
+  const intent = albumIntent(title, artist);
+  // Keep canonical catalogue results separate from YouTube video cache entries.
+  const query = cacheKey("album", "itunes-v1", intent.title, intent.artist);
+  const cached = await fromCache("album", query);
+  if (cached) return { candidates: cached, cached: true };
+
+  const url = new URL("https://itunes.apple.com/search");
+  url.search = new URLSearchParams({
+    term: [intent.artist, intent.title].filter(Boolean).join(" "),
+    country: "FR",
+    media: "music",
+    entity: "album",
+    limit: "10",
+  }).toString();
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(9000),
+    });
+  } catch {
+    throw new Error("itunes_network_unavailable");
+  }
+  if (!response.ok) throw new Error(`itunes_api_http_${response.status}`);
+  const body = (await response.json()) as { results?: ItunesAlbumItem[] };
+  const requestQuery = [intent.artist, intent.title].filter(Boolean).join(" ");
+  const candidates = (body.results ?? [])
+    .flatMap((item): MusicCandidate[] => {
+      const candidateTitle = item.collectionName?.trim() ?? "";
+      const candidateArtist = item.artistName?.trim() ?? "";
+      if (!item.collectionId || !candidateTitle || !candidateArtist) return [];
+      if (!isLikelyCatalogAlbumResult({
+        title: intent.title,
+        artist: intent.artist,
+        candidateTitle,
+        candidateArtist,
+      })) return [];
+      const thumbnailUrl = item.artworkUrl100
+        ? item.artworkUrl100.replace("100x100bb", "600x600bb")
+        : null;
+      const score = scoreMusicCandidate({
+        title: intent.title,
+        artist: intent.artist,
+        candidateTitle,
+        candidateArtist,
+        channelTitle: "iTunes",
+        resourceType: "search",
+        thumbnailUrl,
+      });
+      if (score < (intent.artist ? 85 : 55)) return [];
+      return [{
+        id: `itunes:${item.collectionId}`,
+        title: candidateTitle,
+        artist: candidateArtist,
+        channelTitle: "iTunes",
+        thumbnailUrl,
+        resourceType: "search",
+        resourceId: null,
+        ...musicUrls("search", null, requestQuery),
+        itemCount: null,
+        score,
+        confidence: classifyConfidence(score),
+        source: "itunes_search",
+      }];
+    })
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 5);
+  await storeCache("album", query, candidates);
   return { candidates, cached: false };
 }
 

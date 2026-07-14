@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cacheKey, classifyConfidence, isLikelyAlbumResult, musicUrls, normalizeMusicText, scoreMusicCandidate } from "../src/lib/music-matching";
+import { cacheKey, classifyConfidence, isLikelyAlbumResult, isLikelyCatalogAlbumResult, musicUrls, normalizeMusicText, scoreMusicCandidate } from "../src/lib/music-matching";
 
 test("normalise accents, apostrophes et ponctuation sans effacer le texte utile", () => {
   assert.equal(normalizeMusicText("L’École du micro d'argent — Vol. 1"), "l ecole du micro d argent vol 1");
@@ -73,6 +73,13 @@ test("garde les albums officiels et écarte les vidéos parasites", () => {
     }),
     false,
   );
+});
+
+test("le catalogue ne garde que les albums dont le titre et l’artiste correspondent", () => {
+  assert.equal(isLikelyCatalogAlbumResult({ title: "ASTROWORLD", artist: "Travis Scott", candidateTitle: "ASTROWORLD", candidateArtist: "Travis Scott" }), true);
+  assert.equal(isLikelyCatalogAlbumResult({ title: "ASTROWORLD", artist: "Travis Scott", candidateTitle: "ASTROWORLD (Screwed & Chopped)", candidateArtist: "Travis Scott" }), true);
+  assert.equal(isLikelyCatalogAlbumResult({ title: "ASTROWORLD", artist: "Travis Scott", candidateTitle: "ASTROWORLD", candidateArtist: "Various Artists" }), false);
+  assert.equal(isLikelyCatalogAlbumResult({ title: "ASTROWORLD", artist: "Travis Scott", candidateTitle: "Rodeo", candidateArtist: "Travis Scott" }), false);
 });
 
 test("construit les liens YouTube Music vérifiables et la recherche de secours", () => {

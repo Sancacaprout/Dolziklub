@@ -15,7 +15,7 @@ export type MusicCandidate = {
   itemCount: number | null;
   confidence: MatchConfidence;
   score: number;
-  source: "youtube_search";
+  source: "youtube_search" | "itunes_search";
 };
 
 const noiseWords = new Set(["official", "audio", "video", "full", "album", "playlist", "music", "topic"]);
@@ -100,6 +100,32 @@ export function isLikelyAlbumResult(input: {
   // music videos, which also gives us one stable cover and direct Music URL.
   if (input.resourceType === "playlist") return false;
   return albumMarked || officialChannel || (titleMatches && artistMatches);
+}
+
+export function isLikelyCatalogAlbumResult(input: {
+  title: string;
+  artist: string;
+  candidateTitle: string;
+  candidateArtist: string;
+}) {
+  const expectedTitle = normalizeMusicText(input.title);
+  const candidateTitle = normalizeMusicText(input.candidateTitle);
+  const expectedArtist = normalizeMusicText(input.artist);
+  const candidateArtist = normalizeMusicText(input.candidateArtist);
+  if (!expectedTitle || !candidateTitle) return false;
+
+  // Catalogues may add edition details after the canonical album title, but a
+  // partial substring match would let unrelated releases into the chooser.
+  const titleMatches =
+    candidateTitle === expectedTitle ||
+    candidateTitle.startsWith(`${expectedTitle} `) ||
+    expectedTitle.startsWith(`${candidateTitle} `);
+  const artistMatches =
+    !expectedArtist ||
+    candidateArtist === expectedArtist ||
+    candidateArtist.includes(expectedArtist) ||
+    expectedArtist.includes(candidateArtist);
+  return titleMatches && artistMatches;
 }
 
 export function musicUrls(resourceType: MusicResourceType, resourceId: string | null, query: string) {
