@@ -63,7 +63,8 @@ export function scoreMusicCandidate(input: { title: string; artist: string; reso
   score += overlap(input.artist, searchable) * 30;
   if (includesExact(input.title, input.candidateTitle)) score += 12;
   if (includesExact(input.artist, searchable)) score += 8;
-  if (input.resourceType === "playlist") score += 5;
+  if (input.resourceType === "playlist") score += 2;
+  if (input.resourceType === "video") score += 7;
   if (/\b(topic|official)\b/i.test(input.channelTitle ?? "")) score += 6;
   if (input.thumbnailUrl) score += 3;
   if (input.itemCount && input.itemCount > 1 && input.itemCount < 80) score += 3;
@@ -94,7 +95,10 @@ export function isLikelyAlbumResult(input: {
   );
 
   if (!titleMatches || !artistMatches || rejected) return false;
-  return input.resourceType === "playlist" || albumMarked || officialChannel;
+  // A title match alone catches too many user-curated playlists. Keep a
+  // playlist only when YouTube identifies it as an official music source.
+  if (input.resourceType === "playlist") return officialChannel;
+  return albumMarked || officialChannel;
 }
 
 export function musicUrls(resourceType: MusicResourceType, resourceId: string | null, query: string) {
@@ -109,5 +113,5 @@ export function musicUrls(resourceType: MusicResourceType, resourceId: string | 
 }
 
 export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
-  return `${searchType}:v3:${parts.map(normalizeMusicText).join("|")}`;
+  return `${searchType}:v4:${parts.map(normalizeMusicText).join("|")}`;
 }

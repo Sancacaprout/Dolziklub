@@ -160,7 +160,7 @@ async function searchYouTube(
   const url = new URL("https://www.googleapis.com/youtube/v3/search");
   url.search = new URLSearchParams({
     part: "snippet",
-    maxResults: "10",
+    maxResults: "25",
     key: apiKey,
     ...parameters,
   }).toString();
@@ -264,7 +264,8 @@ export async function searchYouTubeMusic(
       const score = Math.min(
         100,
         baseScore +
-          (searchType === "album" && resourceType === "playlist" ? 16 : 0) +
+          (searchType === "album" && resourceType === "playlist" ? 2 : 0) +
+          (searchType === "album" && resourceType === "video" ? 10 : 0) +
           (searchType === "album" && albumVideoMarker(rawTitle) ? 12 : 0) +
           (searchType === "album" && /\b(?:topic|official|vevo|records|music)\b/i.test(channelTitle) ? 8 : 0),
       );

@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         hostname: "kcizszuvrtnlxgikgfdx.supabase.co",
         pathname: "/storage/v1/object/public/album-covers/**",
       },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+        pathname: "/**",
+      },
     ],
   },
 };

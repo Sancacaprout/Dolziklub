@@ -19,14 +19,16 @@ type LiveEntry = {
   album_title: string | null;
   album_artist: string | null;
   cover_path: string | null;
+  cover_source_url: string | null;
+  youtube_music_url: string | null;
 };
 const memberName = (value: string | null) =>
   getMemberDisplayName(value).toLocaleLowerCase("fr");
-function coverUrl(path: string | null) {
+function coverUrl(path: string | null, sourceUrl: string | null) {
   return path
     ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path)
         .data.publicUrl
-    : "/album-a-venir.png";
+    : sourceUrl ?? "/album-a-venir.png";
 }
 function liveAlbum(entry: LiveEntry): Album {
   return {
@@ -34,7 +36,7 @@ function liveAlbum(entry: LiveEntry): Album {
     slug: `live-${entry.id}`,
     title: entry.album_title!,
     artist: entry.album_artist!,
-    cover: coverUrl(entry.cover_path),
+    cover: coverUrl(entry.cover_path, entry.cover_source_url),
     releaseYear: null,
     origin: null,
     language: null,
@@ -47,7 +49,7 @@ function liveAlbum(entry: LiveEntry): Album {
     detailedReview: null,
     bestTrack: { title: null, url: null },
     worstTrack: { title: null, url: null },
-    albumUrl: null,
+    albumUrl: entry.youtube_music_url,
     artistDescription: null,
     albumDescription: null,
     status: "pending",
@@ -100,7 +102,7 @@ export function AlbumExplorer({ albums }: { albums: Album[] }) {
       void getSupabaseBrowserClient()
         .from("club_draw_entries")
         .select(
-          "id, draw_number, position, proposed_by_name, listened_by_name, album_title, album_artist, cover_path",
+          "id, draw_number, position, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url",
         )
         .not("album_title", "is", null)
         .not("album_artist", "is", null)

@@ -6,7 +6,7 @@ import type { Album } from "@/types/album";
 
 export function AlbumCard({ album, compact = false, list = false }: { album: Album; compact?: boolean; list?: boolean }) {
   const isLive = album.id.startsWith("live-");
-  const href = isLive ? "/tableur" : `/albums/${album.slug}`;
+  const href = `/albums/${album.slug}`;
   const archiveLabel = isLive ? "Tirage en cours" : `Archive #${album.id.replace("archive-", "")}`;
   const cover = album.cover ? <Image src={album.cover} alt={`Pochette de ${album.title} par ${album.artist}`} fill quality={90} sizes={list ? "170px" : "(max-width: 700px) 46vw, 260px"} /> : <span>Sans pochette</span>;
 

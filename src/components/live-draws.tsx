@@ -334,17 +334,13 @@ function LiveDraw({
                           >
                             <b>{entry.album_title}</b>
                           </Link>
-                        ) : entry.youtube_music_url ? (
-                          <a
+                        ) : (
+                          <Link
                             className="sheet-album-title-link"
-                            href={entry.youtube_music_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`/albums/live-${entry.id}`}
                           >
                             <b>{entry.album_title}</b>
-                          </a>
-                        ) : (
-                          <b>{entry.album_title}</b>
+                          </Link>
                         )}
                         <span>{entry.album_artist}</span>
                       </span>

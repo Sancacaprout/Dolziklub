@@ -4,7 +4,7 @@ import { cacheKey, classifyConfidence, isLikelyAlbumResult, musicUrls, normalize
 
 test("normalise accents, apostrophes et ponctuation sans effacer le texte utile", () => {
   assert.equal(normalizeMusicText("L’École du micro d'argent — Vol. 1"), "l ecole du micro d argent vol 1");
-  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v3:joya|tayc");
+  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v4:joya|tayc");
 });
 
 test("favorise un album officiel plutôt qu'une réaction hors sujet", () => {
@@ -40,6 +40,17 @@ test("garde les albums officiels et écarte les vidéos parasites", () => {
       resourceType: "playlist",
     }),
     true,
+  );
+  assert.equal(
+    isLikelyAlbumResult({
+      title: "ASTROWORLD",
+      artist: "Travis Scott",
+      candidateTitle: "ASTROWORLD",
+      candidateArtist: "Travis Scott",
+      channelTitle: "Albums rap français",
+      resourceType: "playlist",
+    }),
+    false,
   );
   assert.equal(
     isLikelyAlbumResult({
