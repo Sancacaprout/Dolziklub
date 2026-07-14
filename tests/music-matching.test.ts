@@ -4,7 +4,7 @@ import { cacheKey, classifyConfidence, musicUrls, normalizeMusicText, scoreMusic
 
 test("normalise accents, apostrophes et ponctuation sans effacer le texte utile", () => {
   assert.equal(normalizeMusicText("L’École du micro d'argent — Vol. 1"), "l ecole du micro d argent vol 1");
-  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v1:joya|tayc");
+  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v2:joya|tayc");
 });
 
 test("favorise un album officiel plutôt qu'une réaction hors sujet", () => {
