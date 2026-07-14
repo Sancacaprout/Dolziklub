@@ -6,6 +6,7 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { albums as archivedAlbums } from "@/data/albums";
 import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { normalizeMusicText } from "@/lib/music-matching";
 import { RatingDisplay } from "@/components/rating-display";
 import { ProposalAssistantCard, ReviewAssistantCard, type AssistedProposalPayload, type AssistedReviewPayload } from "@/components/music-selection-cards";
 import { LiveDraws, StickyDrawShell } from "@/components/live-draws";
@@ -60,7 +61,7 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
 function isHistoricalListener(album: Album, member: SignedMember) {
   return [member.username, member.displayName].some((name) => normalizedMember(name) === normalizedMember(album.listenedBy));
 }
-function archiveForEntry(entry: Pick<DrawEntry, "album_title" | "album_artist">) { return archivedAlbums.find((album) => normalizedMember(album.title) === normalizedMember(entry.album_title) && normalizedMember(album.artist) === normalizedMember(entry.album_artist)); }
+function archiveForEntry(entry: Pick<DrawEntry, "album_title" | "album_artist">) { return archivedAlbums.find((album) => normalizeMusicText(album.title) === normalizeMusicText(entry.album_title ?? "") && normalizeMusicText(album.artist) === normalizeMusicText(entry.album_artist ?? "")); }
 
 function MemberSelect({ value, onChange, label, options = roster, disabled = false }: { value: string | null; onChange: (next: string) => void; label: string; options?: typeof roster; disabled?: boolean }) {
   return <select value={value ?? ""} disabled={disabled} onChange={(event) => onChange(event.target.value)} aria-label={label}><option value="">—</option>{options.map((member) => <option key={member.username} value={member.username}>{member.displayName}</option>)}</select>;

@@ -82,5 +82,5 @@ export function musicUrls(resourceType: MusicResourceType, resourceId: string | 
 }
 
 export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
-  return `${searchType}:v1:${parts.map(normalizeMusicText).join("|")}`;
+  return `${searchType}:v2:${parts.map(normalizeMusicText).join("|")}`;
 }
