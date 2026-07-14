@@ -200,20 +200,28 @@ export async function searchYouTubeMusic(
     .filter(Boolean)
     .join(" ");
   // The Data API has no dedicated YouTube Music album entity. For albums, we
-  // therefore ask for official playlists first, then only long music videos
-  // (normally the official full-album uploads). This avoids generic clips,
-  // visualizers, reactions and user playlists from the suggestion list.
+  // inspect two sets of long music videos: a precise "full album" search and
+  // a broader fallback. Playlists are deliberately excluded: even playlists
+  // from a music channel can be user-curated rather than actual albums.
   const items =
     searchType === "album"
       ? await Promise.all([
-          searchYouTube(apiKey, { q: requestQuery, type: "playlist" }),
+          searchYouTube(apiKey, {
+            q: `${intent.artist} ${intent.title} full album`.trim(),
+            type: "video",
+            videoCategoryId: "10",
+            videoDuration: "long",
+          }),
           searchYouTube(apiKey, {
             q: requestQuery,
             type: "video",
             videoCategoryId: "10",
             videoDuration: "long",
           }),
-        ]).then(([playlists, videos]) => [...playlists, ...videos])
+        ]).then(([preciseVideos, fallbackVideos]) => [
+          ...preciseVideos,
+          ...fallbackVideos,
+        ])
       : await searchYouTube(apiKey, { q: requestQuery, type: "video" });
   const candidates = items
     .flatMap((item): MusicCandidate[] => {
@@ -264,7 +272,6 @@ export async function searchYouTubeMusic(
       const score = Math.min(
         100,
         baseScore +
-          (searchType === "album" && resourceType === "playlist" ? 2 : 0) +
           (searchType === "album" && resourceType === "video" ? 10 : 0) +
           (searchType === "album" && albumVideoMarker(rawTitle) ? 12 : 0) +
           (searchType === "album" && /\b(?:topic|official|vevo|records|music)\b/i.test(channelTitle) ? 8 : 0),

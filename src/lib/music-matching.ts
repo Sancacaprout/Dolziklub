@@ -95,10 +95,11 @@ export function isLikelyAlbumResult(input: {
   );
 
   if (!titleMatches || !artistMatches || rejected) return false;
-  // A title match alone catches too many user-curated playlists. Keep a
-  // playlist only when YouTube identifies it as an official music source.
-  if (input.resourceType === "playlist") return officialChannel;
-  return albumMarked || officialChannel;
+  // YouTube's Data API does not distinguish an album playlist from a user
+  // playlist reliably enough. Albums are therefore selected only from long
+  // music videos, which also gives us one stable cover and direct Music URL.
+  if (input.resourceType === "playlist") return false;
+  return albumMarked || officialChannel || (titleMatches && artistMatches);
 }
 
 export function musicUrls(resourceType: MusicResourceType, resourceId: string | null, query: string) {
@@ -113,5 +114,5 @@ export function musicUrls(resourceType: MusicResourceType, resourceId: string | 
 }
 
 export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
-  return `${searchType}:v4:${parts.map(normalizeMusicText).join("|")}`;
+  return `${searchType}:v5:${parts.map(normalizeMusicText).join("|")}`;
 }

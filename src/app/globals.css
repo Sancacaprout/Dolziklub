@@ -156,3 +156,10 @@ h1,h2,h3,p { margin-top:0; } h1,h2,h3,.logo { font-family:var(--font-display),Ar
 .review-form__actions { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem; }
 .review-form__reset { background:transparent; color:var(--ink); }
 .review-form__reset:hover { background:var(--ink); color:#fff; }
+
+/* Les pochettes de la sélection gardent une vraie présence, même sur les
+   albums dont le titre est court (comme FANTASYLAND). */
+@media (min-width:901px) {
+  .review-card { grid-template-columns:minmax(280px,.82fr) minmax(0,1.18fr); }
+  .proposal-card .review-card__album img,.proposal-card__placeholder { width:min(100%,320px); }
+}
