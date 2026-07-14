@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
         hostname: "i.ytimg.com",
         pathname: "/**",
       },
+      {
+        // Jaquettes fournies par le catalogue Deezer lorsque l'on choisit un
+        // album dans l'assistant de proposition.
+        protocol: "https",
+        hostname: "cdn-images.dzcdn.net",
+        pathname: "/**",
+      },
     ],
   },
 };

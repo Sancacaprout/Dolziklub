@@ -7,7 +7,15 @@ export const dynamic = "force-dynamic";
 function allowedImageUrl(value: string) {
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname.endsWith("ytimg.com") || url.hostname.endsWith("ggpht.com"));
+    // The URL is never supplied back to the browser as an upload target: it is
+    // downloaded server-side, size- and content-type checked, then copied to
+    // our own Supabase bucket. Keep the allow-list explicit nevertheless.
+    return (
+      url.protocol === "https:" &&
+      (url.hostname.endsWith("ytimg.com") ||
+        url.hostname.endsWith("ggpht.com") ||
+        url.hostname === "cdn-images.dzcdn.net")
+    );
   } catch { return false; }
 }
 
@@ -36,7 +44,7 @@ export async function POST(request: Request) {
     if (uploadError) throw uploadError;
     const { error: updateError } = await supabase.from("club_draw_entries").update({ cover_path: path, cover_source_url: imageUrl }).eq("id", entryId);
     if (updateError) throw updateError;
-    if (access.isAdmin) await supabase.from("music_metadata_audit_log").insert({ entry_id: entryId, actor_id: user.id, event_type: "album_cover_replaced", detail: { source: "youtube" } });
+    if (access.isAdmin) await supabase.from("music_metadata_audit_log").insert({ entry_id: entryId, actor_id: user.id, event_type: "album_cover_replaced", detail: { source: imageUrl.includes("dzcdn.net") ? "deezer" : "youtube" } });
     return NextResponse.json({ coverPath: path });
   } catch {
     return error("La pochette n’a pas pu être importée. Tu peux continuer sans image.", 503);
