@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cacheKey, classifyConfidence, musicUrls, normalizeMusicText, scoreMusicCandidate } from "../src/lib/music-matching";
+import { cacheKey, classifyConfidence, isLikelyAlbumResult, musicUrls, normalizeMusicText, scoreMusicCandidate } from "../src/lib/music-matching";
 
 test("normalise accents, apostrophes et ponctuation sans effacer le texte utile", () => {
   assert.equal(normalizeMusicText("L’École du micro d'argent — Vol. 1"), "l ecole du micro d argent vol 1");
-  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v2:joya|tayc");
+  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v3:joya|tayc");
 });
 
 test("favorise un album officiel plutôt qu'une réaction hors sujet", () => {
@@ -18,6 +18,39 @@ test("retrouve un album avec son seul titre pour l’autocomplétion", () => {
   const score = scoreMusicCandidate({ title: "Currents", artist: "", candidateTitle: "Tame Impala - Currents", candidateArtist: "Tame Impala", channelTitle: "Tame Impala - Topic", resourceType: "playlist", thumbnailUrl: "https://example.test/currents.jpg", itemCount: 13 });
   assert.ok(score >= 57);
   assert.notEqual(classifyConfidence(score), "low");
+});
+
+test("garde les albums officiels et écarte les vidéos parasites", () => {
+  assert.equal(
+    isLikelyAlbumResult({
+      title: "Currents",
+      artist: "Tame Impala",
+      candidateTitle: "Tame Impala - Currents (Full Album)",
+      channelTitle: "Tame Impala - Topic",
+      resourceType: "video",
+    }),
+    true,
+  );
+  assert.equal(
+    isLikelyAlbumResult({
+      title: "ASTROWORLD",
+      artist: "Travis Scott",
+      candidateTitle: "Travis Scott - ASTROWORLD",
+      channelTitle: "Travis Scott - Topic",
+      resourceType: "playlist",
+    }),
+    true,
+  );
+  assert.equal(
+    isLikelyAlbumResult({
+      title: "Currents",
+      artist: "Tame Impala",
+      candidateTitle: "Reacting to Tame Impala - Currents",
+      channelTitle: "A random channel",
+      resourceType: "video",
+    }),
+    false,
+  );
 });
 
 test("construit les liens YouTube Music vérifiables et la recherche de secours", () => {

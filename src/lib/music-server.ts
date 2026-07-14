@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import {
   cacheKey,
   classifyConfidence,
+  isLikelyAlbumResult,
   musicUrls,
   scoreMusicCandidate,
   type MusicCandidate,
@@ -152,6 +153,30 @@ async function storeCache(
     );
 }
 
+async function searchYouTube(
+  apiKey: string,
+  parameters: Record<string, string>,
+) {
+  const url = new URL("https://www.googleapis.com/youtube/v3/search");
+  url.search = new URLSearchParams({
+    part: "snippet",
+    maxResults: "10",
+    key: apiKey,
+    ...parameters,
+  }).toString();
+  const response = await fetch(url, {
+    cache: "no-store",
+    signal: AbortSignal.timeout(9000),
+  });
+  if (!response.ok) throw new Error("service_unavailable");
+  const body = (await response.json()) as { items?: YouTubeSearchItem[] };
+  return body.items ?? [];
+}
+
+function albumVideoMarker(title: string) {
+  return /\b(?:full|complete|official|visual)\s+album\b|\balbum\b/i.test(title);
+}
+
 export async function searchYouTubeMusic(
   searchType: "album" | "track",
   title: string,
@@ -174,27 +199,30 @@ export async function searchYouTubeMusic(
   ]
     .filter(Boolean)
     .join(" ");
-  const url = new URL("https://www.googleapis.com/youtube/v3/search");
-  url.search = new URLSearchParams({
-    part: "snippet",
-    maxResults: "5",
-    q: requestQuery,
-    type: "video",
-    ...(searchType === "album" ? { videoCategoryId: "10" } : {}),
-    key: apiKey,
-  }).toString();
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(9000),
-  });
-  if (!response.ok) throw new Error("service_unavailable");
-  const body = (await response.json()) as { items?: YouTubeSearchItem[] };
-  const candidates = (body.items ?? [])
+  // The Data API has no dedicated YouTube Music album entity. For albums, we
+  // therefore ask for official playlists first, then only long music videos
+  // (normally the official full-album uploads). This avoids generic clips,
+  // visualizers, reactions and user playlists from the suggestion list.
+  const items =
+    searchType === "album"
+      ? await Promise.all([
+          searchYouTube(apiKey, { q: requestQuery, type: "playlist" }),
+          searchYouTube(apiKey, {
+            q: requestQuery,
+            type: "video",
+            videoCategoryId: "10",
+            videoDuration: "long",
+          }),
+        ]).then(([playlists, videos]) => [...playlists, ...videos])
+      : await searchYouTube(apiKey, { q: requestQuery, type: "video" });
+  const candidates = items
     .flatMap((item): MusicCandidate[] => {
-      const resourceType: MusicResourceType | null = item.id?.videoId
-        ? "video"
-        : null;
-      const resourceId = item.id?.videoId ?? null;
+      const resourceType: MusicResourceType | null = item.id?.playlistId
+        ? "playlist"
+        : item.id?.videoId
+          ? "video"
+          : null;
+      const resourceId = item.id?.playlistId ?? item.id?.videoId ?? null;
       const rawTitle = item.snippet?.title?.trim() ?? "";
       if (!resourceType || !resourceId || !rawTitle) return [];
       const channelTitle = item.snippet?.channelTitle?.trim() ?? "";
@@ -211,7 +239,20 @@ export async function searchYouTubeMusic(
         searchType === "album" && intent.title
           ? intent.title
           : cleanAlbumTitle(rawTitle);
-      const score = scoreMusicCandidate({
+      if (
+        searchType === "album" &&
+        !isLikelyAlbumResult({
+          title: intent.title,
+          artist: intent.artist,
+          candidateTitle: rawTitle,
+          candidateArtist: detectedArtist,
+          channelTitle,
+          resourceType,
+        })
+      ) {
+        return [];
+      }
+      const baseScore = scoreMusicCandidate({
         title: intent.title,
         artist: intent.artist,
         candidateTitle: rawTitle,
@@ -220,7 +261,14 @@ export async function searchYouTubeMusic(
         resourceType,
         thumbnailUrl,
       });
-      if (searchType === "album" && score < 35) return [];
+      const score = Math.min(
+        100,
+        baseScore +
+          (searchType === "album" && resourceType === "playlist" ? 16 : 0) +
+          (searchType === "album" && albumVideoMarker(rawTitle) ? 12 : 0) +
+          (searchType === "album" && /\b(?:topic|official|vevo|records|music)\b/i.test(channelTitle) ? 8 : 0),
+      );
+      if (searchType === "album" && score < 60) return [];
       const urls = musicUrls(resourceType, resourceId, requestQuery);
       return [
         {
@@ -239,7 +287,11 @@ export async function searchYouTubeMusic(
         },
       ];
     })
-    .sort((left, right) => right.score - left.score);
+    .sort((left, right) => right.score - left.score)
+    .filter((candidate, index, all) =>
+      all.findIndex((other) => other.id === candidate.id) === index,
+    )
+    .slice(0, 5);
   await storeCache(searchType, query, candidates);
   return { candidates, cached: false };
 }

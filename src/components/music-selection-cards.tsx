@@ -11,6 +11,7 @@ export type AssistedEntry = {
   album_title: string | null;
   album_artist: string | null;
   cover_path: string | null;
+  cover_source_url?: string | null;
   youtube_music_url?: string | null;
 };
 export type AssistedReview = {

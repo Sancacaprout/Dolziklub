@@ -20,6 +20,7 @@ export type MusicCandidate = {
 
 const noiseWords = new Set(["official", "audio", "video", "full", "album", "playlist", "music", "topic"]);
 const weakerWords = ["reaction", "review", "cover", "slowed", "reverb", "nightcore", "remix", "instrumental", "lyrics", "live", "sped up"];
+const albumOnlyRejectedWords = ["react", "review", "cover", "slowed", "reverb", "nightcore", "remix", "lyrics", "live", "sped up", "mix"];
 
 export function normalizeMusicText(input: string) {
   return input
@@ -70,6 +71,32 @@ export function scoreMusicCandidate(input: { title: string; artist: string; reso
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+export function isLikelyAlbumResult(input: {
+  title: string;
+  artist: string;
+  candidateTitle: string;
+  candidateArtist?: string;
+  channelTitle?: string;
+  resourceType: Extract<MusicResourceType, "playlist" | "video">;
+}) {
+  const candidateTitle = normalizeMusicText(input.candidateTitle);
+  const expectedTitle = normalizeMusicText(input.title);
+  const artistHaystack = normalizeMusicText(
+    `${input.candidateArtist ?? ""} ${input.channelTitle ?? ""} ${input.candidateTitle}`,
+  );
+  const expectedArtist = normalizeMusicText(input.artist);
+  const titleMatches = Boolean(expectedTitle) && candidateTitle.includes(expectedTitle);
+  const artistMatches = !expectedArtist || artistHaystack.includes(expectedArtist);
+  const rejected = albumOnlyRejectedWords.some((word) => candidateTitle.includes(word));
+  const albumMarked = /\b(?:full|complete|official|visual) album\b|\balbum\b/.test(candidateTitle);
+  const officialChannel = /\b(?:topic|official|vevo|records|music)\b/.test(
+    normalizeMusicText(input.channelTitle ?? ""),
+  );
+
+  if (!titleMatches || !artistMatches || rejected) return false;
+  return input.resourceType === "playlist" || albumMarked || officialChannel;
+}
+
 export function musicUrls(resourceType: MusicResourceType, resourceId: string | null, query: string) {
   const safeQuery = encodeURIComponent(query.trim());
   if (!resourceId || resourceType === "search") {
@@ -82,5 +109,5 @@ export function musicUrls(resourceType: MusicResourceType, resourceId: string | 
 }
 
 export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
-  return `${searchType}:v2:${parts.map(normalizeMusicText).join("|")}`;
+  return `${searchType}:v3:${parts.map(normalizeMusicText).join("|")}`;
 }
