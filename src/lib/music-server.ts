@@ -164,11 +164,25 @@ async function searchYouTube(
     key: apiKey,
     ...parameters,
   }).toString();
-  const response = await fetch(url, {
-    cache: "no-store",
-    signal: AbortSignal.timeout(9000),
-  });
-  if (!response.ok) throw new Error("service_unavailable");
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(9000),
+    });
+  } catch {
+    throw new Error("youtube_network_unavailable");
+  }
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as {
+      error?: { errors?: Array<{ reason?: string }>; message?: string };
+    } | null;
+    const reason =
+      payload?.error?.errors?.[0]?.reason ??
+      payload?.error?.message?.replace(/[^a-z0-9_-]/gi, "_").slice(0, 80) ??
+      "unknown";
+    throw new Error(`youtube_api_http_${response.status}_${reason}`);
+  }
   const body = (await response.json()) as { items?: YouTubeSearchItem[] };
   return body.items ?? [];
 }
@@ -190,7 +204,7 @@ export async function searchYouTubeMusic(
   if (cached) return { candidates: cached, cached: true };
 
   const apiKey = process.env.YOUTUBE_API_KEY;
-  if (!apiKey) throw new Error("service_unavailable");
+  if (!apiKey) throw new Error("youtube_api_key_missing");
   const requestQuery = [
     intent.artist,
     intent.title,
