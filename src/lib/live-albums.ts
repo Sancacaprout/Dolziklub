@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 import type { Album } from "@/types/album";
 
 const LIVE_SLUG = /^live-([0-9a-f-]{36})$/i;
@@ -21,11 +21,22 @@ type LiveReview = {
   worst_track: string | null;
 };
 
+function getLiveAlbumReader() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key) throw new Error("supabase_read_unavailable");
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 export async function getLiveAlbum(slug: string): Promise<Album | null> {
   const match = LIVE_SLUG.exec(slug);
   if (!match) return null;
 
-  const supabase = getSupabaseAdmin();
+  const supabase = getLiveAlbumReader();
   const [{ data: entryData }, { data: reviewData }] = await Promise.all([
     supabase
       .from("club_draw_entries")
