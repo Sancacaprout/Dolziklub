@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const migration = readFileSync(
-  resolve("supabase/migrations/20260715212506_synchronize_selection_mutations.sql"),
+  resolve("supabase/migrations/20260715213914_synchronize_selection_mutations.sql"),
   "utf8",
 );
 
