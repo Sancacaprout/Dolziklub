@@ -58,11 +58,29 @@ export function TrackLookup({ label, title, artist, albumTitle, selected, onTitl
   const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
-  const search = async () => {
-    if (!title.trim()) { setState("error"); setMessage("Écris d’abord le titre du morceau."); return; }
-    setState("loading"); setMessage("");
-    try { const result = await musicRequest("/api/music/search-tracks", { title, artist, albumTitle }); setCandidates(result.candidates ?? []); setState("idle"); setMessage(result.candidates?.length ? "Choisis le morceau qui correspond vraiment à ton verdict." : "Aucun résultat certain : tu peux garder le titre saisi sans lien."); }
-    catch (error) { setState("error"); setMessage(error instanceof Error ? error.message : "La recherche est indisponible."); }
-  };
-  return <label className="track-lookup"><span>{label}</span><div className="track-lookup__input"><input maxLength={160} value={title} onChange={(event) => { onTitleChange(event.target.value); onSelect(null); }} placeholder={label === "La pépite" ? "Ton meilleur morceau" : "Le morceau le moins convaincant"} /><button type="button" className="sheet-entry-action" disabled={disabled || state === "loading"} onClick={() => void search()}>{state === "loading" ? "…" : "Trouver"}</button></div>{message && <small className={state === "error" ? "is-error" : ""}>{message}</small>}{candidates.length > 0 && <CandidateList candidates={candidates} selectedId={selected?.id} onSelect={(candidate) => { onTitleChange(candidate.title); onSelect(candidate); }} />}</label>;
+  const search = useCallback(async () => {
+    if (!title.trim()) {
+      setState("idle");
+      setMessage("");
+      setCandidates([]);
+      return;
+    }
+    setState("loading");
+    setMessage("");
+    try {
+      const result = await musicRequest("/api/music/search-tracks", { title, artist, albumTitle });
+      setCandidates(result.candidates ?? []);
+      setState("idle");
+      setMessage(result.candidates?.length ? "Choisis le morceau qui correspond vraiment à ton verdict." : "Aucun résultat certain : tu peux garder le titre saisi sans lien.");
+    } catch (error) {
+      setState("error");
+      setMessage(error instanceof Error ? error.message : "La recherche est indisponible.");
+    }
+  }, [albumTitle, artist, title]);
+  useEffect(() => {
+    if (!title.trim()) return;
+    const timer = window.setTimeout(() => void search(), 650);
+    return () => window.clearTimeout(timer);
+  }, [search, title]);
+  return <label className="track-lookup"><span>{label}</span><div className="track-lookup__input"><input disabled={disabled} maxLength={160} value={title} onChange={(event) => { onTitleChange(event.target.value); onSelect(null); }} placeholder={label === "Best track" ? "Ton meilleur morceau" : "Le morceau le moins convaincant"} /></div>{state === "loading" && <small>Recherche…</small>}{message && state !== "loading" && <small className={state === "error" ? "is-error" : ""}>{message}</small>}{candidates.length > 0 && <CandidateList candidates={candidates} selectedId={selected?.id} onSelect={(candidate) => { onTitleChange(candidate.title); onSelect(candidate); }} />}</label>;
 }

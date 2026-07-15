@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { getReviewPreview } from "@/lib/review-preview";
 
-export function ReviewPreview({ review }: { review: string | null | undefined }) {
+export function ReviewPreview({ review, title }: { review: string | null | undefined; title?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const value = review?.trim();
 
@@ -16,6 +16,7 @@ export function ReviewPreview({ review }: { review: string | null | undefined })
 
   return (
     <div className="review-preview">
+      {title?.trim() && <strong className="review-preview__title">{title.trim()}</strong>}
       <p>{visibleReview}</p>
       {preview.truncated && (
         <button

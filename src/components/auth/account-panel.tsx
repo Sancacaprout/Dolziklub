@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { FavoriteAlbumsPanel } from "@/components/auth/favorite-albums-panel";
+import { defaultProfileTheme, isProfileThemeId, type ProfileThemeId } from "@/lib/profile-themes";
 import {
   getSupabaseBrowserClient,
   isSupabaseConfigured,
@@ -169,6 +171,18 @@ export function AccountPanel() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [activeTheme, setActiveTheme] = useState<ProfileThemeId>(defaultProfileTheme);
+  const classicTheme = activeTheme === defaultProfileTheme;
+  useEffect(() => {
+    const syncTheme = () => {
+      const theme = document.body.dataset.profileTheme;
+      setActiveTheme(isProfileThemeId(theme) ? theme : defaultProfileTheme);
+    };
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["class", "data-profile-theme"] });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     if (!configured) return;
     const timer = setTimeout(() => {
@@ -359,10 +373,18 @@ export function AccountPanel() {
           {uploading ? "Envoi…" : "Mettre à jour la photo"}
         </button>
       </form>
+      <FavoriteAlbumsPanel theme={activeTheme} />
       <form
         className="member-kouize account-kouize-editor"
         onSubmit={saveProfile}
-        style={{ backgroundColor: account.profileColor, color: foreground }}
+        style={
+          {
+            backgroundColor: account.profileColor,
+            color: foreground,
+            "--member-kouize-custom": account.profileColor,
+            "--member-kouize-text": foreground,
+          } as CSSProperties
+        }
       >
         <div>
           <p className="eyebrow">MON KOUIZE</p>
@@ -379,7 +401,7 @@ export function AccountPanel() {
               maxLength={280}
             />
           </label>
-          <fieldset className="color-panel stat-color-panel">
+          {classicTheme ? <><fieldset className="color-panel stat-color-panel">
             <legend>Couleur de fond de ma fiche</legend>
             <StatColorControl
               label="Couleur de fond"
@@ -395,6 +417,11 @@ export function AccountPanel() {
               onChange={updateStatColor}
             />
           </fieldset>
+          </> : null}
+          <p className="theme-colors-note">
+            Les couleurs personnelles sont disponibles uniquement avec le thème
+            classique DOL ZIKLUB.
+          </p>
         </div>
         <div className="member-kouize__answers account-kouize-fields">
           <label>

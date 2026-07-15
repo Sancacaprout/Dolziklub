@@ -4,8 +4,11 @@ import Link from "next/link";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { RatingDisplay } from "@/components/rating-display";
 import { ReviewPreview } from "@/components/review-preview";
+import { AlbumTitlePreview } from "@/components/album-title-preview";
 import { albums as archivedAlbums } from "@/data/albums";
+import { members } from "@/data/members";
 import { normalizeMusicText } from "@/lib/music-matching";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import type { Album } from "@/types/album";
 
@@ -19,10 +22,13 @@ type Entry = {
   listened_by_name: string | null;
   album_title: string | null;
   album_artist: string | null;
+  cover_path?: string | null;
+  cover_source_url?: string | null;
   youtube_music_url?: string | null;
 };
 type Review = {
   album_id: string;
+  review_title: string | null;
   review: string;
   rating: number;
   best_track: string | null;
@@ -45,6 +51,18 @@ function memberName(name: string | null) {
   return name.trim().toLocaleLowerCase() === "thomas"
     ? "Toma"
     : `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}`;
+}
+function memberProfileHref(name: string | null) {
+  const key = name?.trim().toLocaleLowerCase();
+  const clubMember = members.find((candidate) =>
+    [candidate.slug, candidate.username, candidate.displayName].some((value) => value?.toLocaleLowerCase() === key),
+  );
+  return clubMember ? `/membres/${clubMember.slug}` : null;
+}
+function MemberProfileLink({ name }: { name: string | null }) {
+  const href = memberProfileHref(name);
+  const label = memberName(name);
+  return href ? <Link className="sheet-member sheet-member--link" href={href} onClick={(event) => event.stopPropagation()} aria-label={`Voir le profil de ${label}`}>{label}</Link> : <span className="sheet-member">{label}</span>;
 }
 function assigned(entry: Entry, member: Member, side: "proposer" | "listener") {
   const id = side === "proposer" ? entry.proposed_by : entry.listened_by;
@@ -75,6 +93,13 @@ function sameAlbum(entry: Entry, album: Album) {
   );
 }
 
+function previewCoverUrl(entry: Entry, archivedAlbum: Album | undefined) {
+  if (entry.cover_path && isSupabaseConfigured()) {
+    return getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(entry.cover_path).data.publicUrl;
+  }
+  return entry.cover_source_url ?? archivedAlbum?.cover ?? null;
+}
+
 function HeaderRow() {
   return (
     <tr>
@@ -83,8 +108,8 @@ function HeaderRow() {
       <th>Écouté par</th>
       <th>Avis</th>
       <th>Note</th>
-      <th>Best track</th>
-      <th>Worst track</th>
+      <th>Morceau le plus convaincant</th>
+      <th>Morceau le moins convaincant</th>
     </tr>
   );
 }
@@ -306,6 +331,7 @@ function LiveDraw({
               const archivedAlbum = archivedAlbums.find((album) =>
                 sameAlbum(entry, album),
               );
+              const previewCover = previewCoverUrl(entry, archivedAlbum);
               return (
                 <tr
                   className={[
@@ -328,19 +354,21 @@ function LiveDraw({
                     {entry.album_title ? (
                       <span className="sheet-album-link">
                         {archivedAlbum ? (
-                          <Link
-                            className="sheet-album-title-link"
+                          <AlbumTitlePreview
                             href={`/albums/${archivedAlbum.slug}`}
-                          >
-                            <b>{entry.album_title}</b>
-                          </Link>
+                            title={entry.album_title}
+                            artist={entry.album_artist}
+                            cover={previewCover}
+                            label="Tirage en cours"
+                          />
                         ) : (
-                          <Link
-                            className="sheet-album-title-link"
+                          <AlbumTitlePreview
                             href={`/albums/live-${entry.id}`}
-                          >
-                            <b>{entry.album_title}</b>
-                          </Link>
+                            title={entry.album_title}
+                            artist={entry.album_artist}
+                            cover={previewCover}
+                            label="Tirage en cours"
+                          />
                         )}
                         <span>{entry.album_artist}</span>
                       </span>
@@ -350,18 +378,10 @@ function LiveDraw({
                       </span>
                     )}
                   </td>
-                  <td>
-                    <span className="sheet-member">
-                      {memberName(entry.proposed_by_name)}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="sheet-member">
-                      {memberName(entry.listened_by_name)}
-                    </span>
-                  </td>
+                  <td><MemberProfileLink name={entry.proposed_by_name} /></td>
+                  <td><MemberProfileLink name={entry.listened_by_name} /></td>
                   <td className="sheet-review">
-                    <ReviewPreview review={review?.review} />
+                    <ReviewPreview title={review?.review_title} review={review?.review} />
                   </td>
                   <td>
                     {review ? (

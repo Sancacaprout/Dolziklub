@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { type FormEvent, useState } from "react";
-import { AlbumLookup, TrackLookup } from "@/components/music-assist";
+import { AlbumLookup } from "@/components/music-assist";
 import { type MusicCandidate } from "@/lib/music-matching";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 
@@ -15,6 +15,7 @@ export type AssistedEntry = {
   youtube_music_url?: string | null;
 };
 export type AssistedReview = {
+  review_title: string | null;
   review: string;
   rating: number;
   best_track: string | null;
@@ -29,6 +30,7 @@ export type AssistedProposalPayload = {
 };
 export type AssistedReviewPayload = {
   entryId: string;
+  reviewTitle?: string;
   review: string;
   rating: number;
   bestTrack: string;
@@ -37,7 +39,7 @@ export type AssistedReviewPayload = {
   worstMatch?: MusicCandidate | null;
 };
 
-const ratings = Array.from({ length: 6 }, (_, index) => index);
+const ratings = Array.from({ length: 11 }, (_, index) => index / 2);
 
 function isFilled(entry: AssistedEntry) {
   return Boolean(entry.album_title?.trim() && entry.album_artist?.trim());
@@ -187,22 +189,21 @@ export function ReviewAssistantCard({
   onSave: (payload: AssistedReviewPayload) => void;
   onReset: (entryId: string) => void;
 }) {
+  const [reviewTitle, setReviewTitle] = useState(existing?.review_title ?? "");
   const [review, setReview] = useState(existing?.review ?? "");
   const [rating, setRating] = useState(String(existing?.rating ?? ""));
   const [bestTrack, setBestTrack] = useState(existing?.best_track ?? "");
   const [worstTrack, setWorstTrack] = useState(existing?.worst_track ?? "");
-  const [bestMatch, setBestMatch] = useState<MusicCandidate | null>(null);
-  const [worstMatch, setWorstMatch] = useState<MusicCandidate | null>(null);
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSave({
       entryId: entry.id,
+      reviewTitle,
       review,
       rating: Number(rating),
       bestTrack,
       worstTrack,
-      bestMatch,
-      worstMatch,
     });
   };
   const reset = () => {
@@ -246,6 +247,16 @@ export function ReviewAssistantCard({
       </div>
       <form className="review-form" onSubmit={submit}>
         <label>
+          <span>Titre de ton avis</span>
+          <input
+            required
+            maxLength={160}
+            value={reviewTitle}
+            onChange={(event) => setReviewTitle(event.target.value)}
+            placeholder="Ex. Une écoute qui monte en puissance."
+          />
+        </label>
+        <label className="review-form__opinion">
           <span>Ton avis</span>
           <textarea
             required
@@ -255,44 +266,40 @@ export function ReviewAssistantCard({
             placeholder="Ton verdict, sans filtre."
           />
         </label>
-        <label>
+        <label className="review-form__rating">
           <span>Ta note</span>
           <select
             required
             value={rating}
             onChange={(event) => setRating(event.target.value)}
           >
-            <option value="" disabled>
-              Choisir une note
-            </option>
+            <option value="" disabled>Choisir une note</option>
             {ratings.map((choice) => (
               <option key={choice} value={choice}>
-                {choice} / 5
+                {String(choice).replace(".", ",")} / 5
               </option>
             ))}
           </select>
         </label>
         <div className="review-form__tracks">
-          <TrackLookup
-            label="Best track"
-            title={bestTrack}
-            artist={entry.album_artist ?? ""}
-            albumTitle={entry.album_title ?? ""}
-            selected={bestMatch}
-            disabled={saving}
-            onTitleChange={setBestTrack}
-            onSelect={setBestMatch}
-          />
-          <TrackLookup
-            label="Worst track"
-            title={worstTrack}
-            artist={entry.album_artist ?? ""}
-            albumTitle={entry.album_title ?? ""}
-            selected={worstMatch}
-            disabled={saving}
-            onTitleChange={setWorstTrack}
-            onSelect={setWorstMatch}
-          />
+          <label>
+            <span>Best track</span>
+            <input
+              maxLength={160}
+              value={bestTrack}
+              onChange={(event) => setBestTrack(event.target.value)}
+              placeholder="Ton meilleur morceau"
+            />
+          </label>
+          <label>
+            <span>Worst track</span>
+            <input
+              maxLength={160}
+              value={worstTrack}
+              onChange={(event) => setWorstTrack(event.target.value)}
+              placeholder="Le morceau le moins convaincant"
+            />
+          </label>
         </div>
         <div className="review-form__actions">
           <button type="submit" className="button" disabled={saving}>

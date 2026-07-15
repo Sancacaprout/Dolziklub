@@ -1,0 +1,5 @@
+import { LegalPage } from "@/components/legal-page";
+
+export default function CookiesPage() {
+  return <LegalPage eyebrow="TRANSPARENCE" title="Politique relative aux cookies"><section><h2>Cookies nécessaires</h2><p>Le site utilise les mécanismes de session nécessaires à la connexion et à la sécurité des comptes. Ils permettent notamment de maintenir une session authentifiée et de protéger les échanges avec l’application.</p></section><section><h2>Mesure d’audience</h2><p>Cette version du site ne propose pas de bannière publicitaire. Si des outils de mesure d’audience ou des services supplémentaires sont ajoutés, cette page sera mise à jour pour préciser leur rôle et vos choix.</p></section><section><h2>Services externes</h2><p>Le bouton de soutien ouvre PayPal dans un nouvel onglet. Une fois sur ce service, ses propres règles de confidentialité et de cookies s’appliquent.</p></section><section><h2>Gérer vos préférences</h2><p>Vous pouvez supprimer ou bloquer les cookies depuis les réglages de votre navigateur. Certaines fonctions, notamment la connexion, peuvent alors ne plus fonctionner correctement.</p></section></LegalPage>;
+}

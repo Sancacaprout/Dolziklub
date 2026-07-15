@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Kouize = { default_style?: string; dislikes?: string; curious_about?: string; first_hook?: string; note?: string };
@@ -31,8 +32,9 @@ export function MemberPublicProfile({ displayName, username, role }: { displayNa
 
   const avatar = profile?.avatar_path ? `${getSupabaseBrowserClient().storage.from("member-avatars").getPublicUrl(profile.avatar_path).data.publicUrl}?v=${encodeURIComponent(profile.updated_at ?? profile.avatar_path)}` : null;
   const answers = profile ? labels.filter(([key]) => profile.kouize[key]).map(([key, label]) => ({ label, value: profile.kouize[key] })) : [];
-  const kouizeNote = profile?.kouize.note;
   const profileColor = normaliseColor(profile?.profile_color);
   const foreground = isDark(profileColor) ? "#f5f1e8" : "#111111";
-  return <><section className="member-profile"><div className="member-profile__initial member-profile__avatar">{avatar ? <Image src={avatar} alt={`Affiche de ${displayName}`} width={220} height={220} /> : displayName[0]}</div><div><p className="eyebrow">MEMBRE DU DOL ZIKLUB</p><h1>{displayName}</h1><p>{role === "admin" ? "Membre (admin)" : "Membre"} · @{username}</p></div></section>{(profile?.bio || answers.length > 0 || kouizeNote) && <section className="member-kouize" style={{ backgroundColor: profileColor, color: foreground }}><div><p className="eyebrow">KOUIZE DE {displayName.toUpperCase()}</p><h2>Ce qui lui<br/><em>fait tendre l’oreille.</em></h2>{profile?.bio && <p className="member-kouize__bio">{profile.bio}</p>}</div><div className="member-kouize__answers">{answers.map((answer) => <div key={answer.label}><span>{answer.label}</span><b>{answer.value}</b></div>)}{kouizeNote && <p>“{kouizeNote}”</p>}</div></section>}</>;
+  const kouizeStyle = { "--member-kouize-custom": profileColor, "--member-kouize-text": foreground } as CSSProperties;
+
+  return <><section className="member-profile"><div className="member-profile__initial member-profile__avatar">{avatar ? <Image src={avatar} alt={`Affiche de ${displayName}`} width={220} height={220} /> : displayName[0]}</div><div><p className="eyebrow">MEMBRE DU DOL ZIKLUB</p><h1>{displayName}</h1><p>{role === "admin" ? "Membre (admin)" : "Membre"} · @{username}</p></div></section>{(profile?.bio || answers.length > 0 || profile?.kouize.note) && <section className="member-kouize" style={kouizeStyle}><div><p className="eyebrow">KOUIZE DE {displayName.toUpperCase()}</p><h2>Ce qui lui<br /><em>fait tendre l’oreille.</em></h2>{profile?.bio && <p className="member-kouize__bio">{profile.bio}</p>}</div><div className="member-kouize__answers">{answers.map((answer) => <div key={answer.label}><span>{answer.label}</span><b>{answer.value}</b></div>)}{profile?.kouize.note && <p>“{profile.kouize.note}”</p>}</div></section>}</>;
 }

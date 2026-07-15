@@ -15,6 +15,7 @@ type LiveEntry = {
   youtube_music_url: string | null;
 };
 type LiveReview = {
+  review_title: string | null;
   review: string;
   rating: number;
   best_track: string | null;
@@ -45,7 +46,7 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
       .maybeSingle(),
     supabase
       .from("member_album_reviews")
-      .select("review, rating, best_track, worst_track")
+      .select("review_title, review, rating, best_track, worst_track")
       .eq("album_id", match[1])
       .maybeSingle(),
   ]);
@@ -73,8 +74,8 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
     proposedBy: entry.proposed_by_name,
     listenedBy: entry.listened_by_name,
     rating,
-    shortReview: review?.review ?? null,
-    detailedReview: null,
+    shortReview: review?.review_title ?? review?.review ?? null,
+    detailedReview: review?.review_title ? review.review : null,
     bestTrack: { title: review?.best_track ?? null, url: null },
     worstTrack: { title: review?.worst_track ?? null, url: null },
     albumUrl: entry.youtube_music_url ?? null,

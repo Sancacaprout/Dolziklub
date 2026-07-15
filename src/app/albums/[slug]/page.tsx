@@ -8,6 +8,7 @@ import { albums, getAlbum } from "@/data/albums";
 import { getMemberDisplayName } from "@/data/members";
 import { getLiveAlbum } from "@/lib/live-albums";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import { MusicChoiceButton } from "@/components/music-player";
 
 export function generateStaticParams() {
   return albums.map(({ slug }) => ({ slug }));
@@ -77,17 +78,17 @@ export default async function AlbumPage({
             {isLive ? "FICHE DU TIRAGE" : "FICHE D’ARCHIVE"}
           </p>
           <h1>
-            <a
+            <MusicChoiceButton
               className="album-title-link"
-              href={albumUrl}
-              target="_blank"
-              rel="noreferrer"
-              title={`Écouter ${album.title} sur YouTube Music`}
+              title={album.title}
+              artist={album.artist}
+              sourceUrl={albumUrl}
+              externalUrl={albumUrl}
             >
               {album.title}
               <br />
               <em>{album.artist}</em>
-            </a>
+            </MusicChoiceButton>
           </h1>
           <RatingDisplay rating={album.rating} />
           <dl>
@@ -104,9 +105,9 @@ export default async function AlbumPage({
               <dd>{status}</dd>
             </div>
           </dl>
-          <a className="music-link" href={albumUrl} target="_blank" rel="noreferrer">
+          <MusicChoiceButton className="music-link" title={album.title} artist={album.artist} sourceUrl={albumUrl} externalUrl={albumUrl}>
             Écouter l’album sur YouTube Music <span aria-hidden="true">↗</span>
-          </a>
+          </MusicChoiceButton>
         </div>
       </section>
 
@@ -141,19 +142,19 @@ export default async function AlbumPage({
           <div className="track-card track-card--best">
             <span>Best track</span>
             {album.bestTrack.title && trackLink(album.bestTrack.title) ? (
-              <a href={trackLink(album.bestTrack.title)!} target="_blank" rel="noreferrer">
+              <MusicChoiceButton title={album.bestTrack.title} artist={album.artist} sourceUrl={trackLink(album.bestTrack.title)!} externalUrl={trackLink(album.bestTrack.title)!}>
                 {album.bestTrack.title}
                 <small>Écouter sur YouTube Music ↗</small>
-              </a>
+              </MusicChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
           <div className="track-card track-card--worst">
             <span>Worst track</span>
             {album.worstTrack.title && trackLink(album.worstTrack.title) ? (
-              <a href={trackLink(album.worstTrack.title)!} target="_blank" rel="noreferrer">
+              <MusicChoiceButton title={album.worstTrack.title} artist={album.artist} sourceUrl={trackLink(album.worstTrack.title)!} externalUrl={trackLink(album.worstTrack.title)!}>
                 {album.worstTrack.title}
                 <small>Écouter sur YouTube Music ↗</small>
-              </a>
+              </MusicChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
         </div>
