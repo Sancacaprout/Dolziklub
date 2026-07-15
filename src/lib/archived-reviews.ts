@@ -8,7 +8,20 @@ export type ArchivedReviewOverride = {
   best_track: string | null;
   worst_track: string | null;
   is_modified: boolean;
+  review_title?: string | null;
 };
+
+// Une ancienne importation a d?cal? les lignes apr?s le double album de South Arcade.
+// Les fiches statiques gardent les bons albums : on lit donc la ligne Supabase correspondante.
+export function sourceArchiveReviewId(albumId: string) {
+  const match = /^archive-(\d+)$/.exec(albumId);
+  if (!match) return albumId;
+
+  const archiveNumber = Number(match[1]);
+  if (archiveNumber === 27) return null;
+  if (archiveNumber >= 28 && archiveNumber <= 45) return `archive-${archiveNumber - 1}`;
+  return albumId;
+}
 
 function getArchiveReviewReader() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,11 +36,14 @@ function getArchiveReviewReader() {
 }
 
 export async function getArchivedReviewOverride(albumId: string) {
+  const sourceAlbumId = sourceArchiveReviewId(albumId);
+  if (!sourceAlbumId) return null;
+
   const supabase = getArchiveReviewReader();
   const { data } = await supabase
     .from("archived_album_reviews")
-    .select("review, rating, best_track, worst_track, is_modified")
-    .eq("album_id", albumId)
+    .select("review, rating, best_track, worst_track, is_modified, review_title")
+    .eq("album_id", sourceAlbumId)
     .maybeSingle();
 
   return (data as ArchivedReviewOverride | null) ?? null;
