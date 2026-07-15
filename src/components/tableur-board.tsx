@@ -68,6 +68,30 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
   const artist = entry.album_artist?.trim() ?? "";
   return !title || !artist || /^album\s*[-–—]\s*artiste$/i.test(title);
 }
+
+function remapHistoricalRecords(records: ArchivedReview[]) {
+  return records.flatMap((record) => {
+    const match = /^archive-(\d+)$/.exec(record.album_id);
+    if (!match) return [record];
+
+    const archiveNumber = Number(match[1]);
+    if (archiveNumber === 45) return [];
+    if (archiveNumber >= 27 && archiveNumber <= 44) {
+      return [{ ...record, album_id: `archive-${archiveNumber + 1}` }];
+    }
+    return [record];
+  });
+}
+
+function storageArchiveRecordId(albumId: string) {
+  const match = /^archive-(\d+)$/.exec(albumId);
+  if (!match) return albumId;
+
+  const archiveNumber = Number(match[1]);
+  if (archiveNumber >= 28 && archiveNumber <= 45) return `archive-${archiveNumber - 1}`;
+  return albumId;
+}
+
 function isHistoricalListener(album: Album, member: SignedMember) {
   return [member.username, member.displayName].some((name) => normalizedMember(name) === normalizedMember(album.listenedBy));
 }
@@ -110,7 +134,7 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
   const loadRecords = useCallback(async () => {
     if (!configured) return;
     const { data } = await getSupabaseBrowserClient().from("archived_album_reviews").select("album_id, review, rating, best_track, worst_track, is_modified");
-    setRecords((data ?? []) as ArchivedReview[]);
+    setRecords(remapHistoricalRecords((data ?? []) as ArchivedReview[]));
   }, [configured]);
   useEffect(() => {
     if (!configured) return;
@@ -129,7 +153,8 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
   const saveRecord = async (record: Omit<ArchivedReview, "is_modified">) => {
     if (!member || !Number.isFinite(record.rating ?? 0) && record.rating !== null) return;
     setSavingId(record.album_id); setMessage("");
-    const { error } = await getSupabaseBrowserClient().from("archived_album_reviews").update({ review: record.review, rating: record.rating, best_track: record.best_track, worst_track: record.worst_track, is_modified: true }).eq("album_id", record.album_id);
+    const storageAlbumId = storageArchiveRecordId(record.album_id);
+    const { error } = await getSupabaseBrowserClient().from("archived_album_reviews").update({ review: record.review, rating: record.rating, best_track: record.best_track, worst_track: record.worst_track, is_modified: true }).eq("album_id", storageAlbumId);
     setSavingId(null);
     if (error) setMessage("La modification n'a pas pu être enregistrée.");
     else { setMessage("Tes modifications sont enregistrées dans le tirage."); await loadRecords(); }
