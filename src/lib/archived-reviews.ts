@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { sourceArchiveReviewId as getAlignedSourceArchiveReviewId } from "@/lib/archive-review-alignment";
 
 export type ArchivedReviewOverride = {
   review: string | null;
@@ -14,13 +15,7 @@ export type ArchivedReviewOverride = {
 // Une ancienne importation a d?cal? les lignes apr?s le double album de South Arcade.
 // Les fiches statiques gardent les bons albums : on lit donc la ligne Supabase correspondante.
 export function sourceArchiveReviewId(albumId: string) {
-  const match = /^archive-(\d+)$/.exec(albumId);
-  if (!match) return albumId;
-
-  const archiveNumber = Number(match[1]);
-  if (archiveNumber === 27) return null;
-  if (archiveNumber >= 28 && archiveNumber <= 45) return `archive-${archiveNumber - 1}`;
-  return albumId;
+  return getAlignedSourceArchiveReviewId(albumId);
 }
 
 function getArchiveReviewReader() {

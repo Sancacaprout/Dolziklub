@@ -6,6 +6,7 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { albums as archivedAlbums } from "@/data/albums";
 import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { displayArchiveReviewId, sourceArchiveReviewId } from "@/lib/archive-review-alignment";
 import { normalizeMusicText } from "@/lib/music-matching";
 import { RatingDisplay } from "@/components/rating-display";
 import { MusicChoiceButton } from "@/components/music-player";
@@ -70,26 +71,25 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
 }
 
 function remapHistoricalRecords(records: ArchivedReview[]) {
-  return records.flatMap((record) => {
-    const match = /^archive-(\d+)$/.exec(record.album_id);
-    if (!match) return [record];
+  const remapped = records
+    .filter((record) => record.is_modified)
+    .map((record) => ({ ...record, album_id: displayArchiveReviewId(record.album_id) }));
 
-    const archiveNumber = Number(match[1]);
-    if (archiveNumber === 45) return [];
-    if (archiveNumber >= 27 && archiveNumber <= 44) {
-      return [{ ...record, album_id: `archive-${archiveNumber + 1}` }];
-    }
-    return [record];
-  });
+  return [
+    ...remapped,
+    ...["archive-27", "archive-29", "archive-38"].map((album_id) => ({
+      album_id,
+      review: null,
+      rating: null,
+      best_track: null,
+      worst_track: null,
+      is_modified: true,
+    })),
+  ];
 }
 
 function storageArchiveRecordId(albumId: string) {
-  const match = /^archive-(\d+)$/.exec(albumId);
-  if (!match) return albumId;
-
-  const archiveNumber = Number(match[1]);
-  if (archiveNumber >= 28 && archiveNumber <= 45) return `archive-${archiveNumber - 1}`;
-  return albumId;
+  return sourceArchiveReviewId(albumId);
 }
 
 function isHistoricalListener(album: Album, member: SignedMember) {
@@ -154,6 +154,11 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
     if (!member || !Number.isFinite(record.rating ?? 0) && record.rating !== null) return;
     setSavingId(record.album_id); setMessage("");
     const storageAlbumId = storageArchiveRecordId(record.album_id);
+    if (!storageAlbumId) {
+      setSavingId(null);
+      setMessage("Cet avis est encore en attente dans l'archive source.");
+      return;
+    }
     const { error } = await getSupabaseBrowserClient().from("archived_album_reviews").update({ review: record.review, rating: record.rating, best_track: record.best_track, worst_track: record.worst_track, is_modified: true }).eq("album_id", storageAlbumId);
     setSavingId(null);
     if (error) setMessage("La modification n'a pas pu être enregistrée.");
