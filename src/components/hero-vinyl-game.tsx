@@ -49,8 +49,8 @@ const BEST_SCORE_KEY = "dol-ziklub-vinyl-runner-best";
 const TARGET_FRAME_MS = 1000 / 60;
 const FRAME_TOLERANCE_MS = 1.25;
 const MAX_CANVAS_PIXELS = 2_200_000;
-const LAUNCH_LOADING_MS = 950;
-const ENTRY_TRANSITION_MS = 720;
+const LAUNCH_LOADING_MS = 3_000;
+const ENTRY_TRANSITION_MS = 1_050;
 const OBSTACLE_ASSET_PATHS: Record<ObstacleVariant, string> = {
   "blocker-a": "/game/obstacles/blocker-a.png",
   "blocker-b": "/game/obstacles/blocker-b.png",
