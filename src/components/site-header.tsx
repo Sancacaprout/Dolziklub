@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 
 const links = [["Accueil", "/"], ["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Idées", "/idees"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
 
@@ -18,8 +19,9 @@ export function SiteHeader() {
       setAccountLabel(data.user?.app_metadata?.username ? `@${data.user.app_metadata.username}` : "Mon compte");
     };
     void sync();
-    const { data: listener } = supabase.auth.onAuthStateChange(() => void sync());
-    return () => listener.subscription.unsubscribe();
+    const deferredSync = createDeferredAuthSync(sync);
+    const { data: listener } = supabase.auth.onAuthStateChange(deferredSync.schedule);
+    return () => { deferredSync.cancel(); listener.subscription.unsubscribe(); };
   }, []);
 
   const accountHref = accountLabel === "Connexion" ? "/connexion" : "/compte";

@@ -8,6 +8,22 @@ const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%
 const internalDomain = "auth.dolziklub.local";
 const apply = process.argv.includes("--apply");
 const reconcile = process.argv.includes("--reconcile");
+const usernameArgumentIndex = process.argv.indexOf("--username");
+const requestedUsername = usernameArgumentIndex >= 0 ? process.argv[usernameArgumentIndex + 1]?.trim().toLowerCase() : null;
+
+if (usernameArgumentIndex >= 0 && !requestedUsername) {
+  console.error("L'option --username doit être suivie d'un identifiant.");
+  process.exit(1);
+}
+
+const selectedRoster = requestedUsername
+  ? roster.filter((member) => member.username?.toLowerCase() === requestedUsername)
+  : roster;
+
+if (requestedUsername && selectedRoster.length === 0) {
+  console.error(`Membre introuvable dans le registre : ${requestedUsername}.`);
+  process.exit(1);
+}
 
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
@@ -15,8 +31,8 @@ function password() {
   return Array.from(randomBytes(24), (byte) => alphabet[byte % alphabet.length]).join("");
 }
 
-function internalEmail(username) {
-  return `${username}@${internalDomain}`;
+function internalEmail(member) {
+  return member.authEmail ?? `${member.username}@${internalDomain}`;
 }
 
 function writePrivateReadme(lines) {
@@ -41,7 +57,7 @@ if (!url || !serviceRoleKey) {
   process.exit(1);
 }
 
-if (existsSync(outputDirectory) && !existsSync(`${outputDirectory}/README.txt`)) {
+if (existsSync(outputDirectory) && !existsSync(`${outputDirectory}/README.txt`) && !requestedUsername) {
   console.error("Le dossier generated-credentials contient déjà des fichiers. Déplacez-les avant de relancer le provisionnement.");
   process.exit(1);
 }
@@ -68,9 +84,9 @@ if (reconcile) {
     console.error(`Impossible de lire les comptes existants : ${error.message}`);
     process.exit(1);
   }
-  for (const member of roster) {
+  for (const member of selectedRoster) {
     if (!member.username) continue;
-    const user = data.users.find((candidate) => candidate.email === internalEmail(member.username));
+    const user = data.users.find((candidate) => candidate.email === internalEmail(member));
     if (!user) {
       skipped.push(`${member.displayName} : compte introuvable`);
       continue;
@@ -84,7 +100,7 @@ if (reconcile) {
   process.exit();
 }
 
-for (const member of roster) {
+for (const member of selectedRoster) {
   if (!member.username) {
     skipped.push(`${member.displayName} : identifiant manquant`);
     continue;
@@ -95,7 +111,7 @@ for (const member of roster) {
   }
   const secret = password();
   const { data, error } = await supabase.auth.admin.createUser({
-    email: internalEmail(member.username),
+    email: internalEmail(member),
     password: secret,
     email_confirm: true,
     app_metadata: { role: member.role, username: member.username, display_name: member.displayName },
@@ -130,7 +146,7 @@ for (const member of roster) {
 
 writePrivateReadme([
   "DOL ZIKLUB — identifiants privés générés.",
-  `Comptes créés : ${created.length}/${roster.length}.`,
+  `Comptes créés : ${created.length}/${selectedRoster.length}.`,
   "Un fichier individuel est disponible pour chaque compte créé. Ce dossier est ignoré par Git.",
   ...(created.length ? ["", "Créés :", ...created.map((name) => `- ${name}`)] : []),
   ...(skipped.length ? ["", "Non créés :", ...skipped.map((name) => `- ${name}`)] : []),

@@ -1,3 +1,5 @@
+import { members } from "@/data/members";
+
 const INTERNAL_AUTH_DOMAIN = "auth.dolziklub.local";
 export function normalizeUsername(username: string) {
   return username.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -5,5 +7,7 @@ export function normalizeUsername(username: string) {
 export function usernameToInternalEmail(username: string) {
   const normalized = normalizeUsername(username);
   if (!normalized) throw new Error("Identifiant invalide");
+  const member = members.find((candidate) => candidate.username === normalized);
+  if (member?.authEmail) return member.authEmail;
   return `${normalized}@${INTERNAL_AUTH_DOMAIN}`;
 }

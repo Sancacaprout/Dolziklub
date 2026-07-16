@@ -1,23 +1,30 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlbumCard } from "@/components/album-card";
 import { RatingDisplay } from "@/components/rating-display";
-import { albums, getAlbum } from "@/data/albums";
+import { albums } from "@/data/albums";
 import { getMemberDisplayName } from "@/data/members";
-import { getLiveAlbum } from "@/lib/live-albums";
+import { getSynchronizedAlbums } from "@/lib/live-albums";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
-import { MusicChoiceButton } from "@/components/music-player";
+import { MusicChoiceButton, MusicTrackChoiceButton } from "@/components/music-player";
+import { AlbumEditorialEditor } from "@/components/album-editorial-editor";
 
 export function generateStaticParams() {
   return albums.map(({ slug }) => ({ slug }));
 }
 
 export const dynamicParams = true;
+export const dynamic = "force-dynamic";
+
+const loadSynchronizedCatalog = cache(async () =>
+  getSynchronizedAlbums().catch(() => albums),
+);
 
 async function resolveAlbum(slug: string) {
-  return getAlbum(slug) ?? getLiveAlbum(slug).catch(() => null);
+  return (await loadSynchronizedCatalog()).find((album) => album.slug === slug) ?? null;
 }
 
 export async function generateMetadata({
@@ -44,14 +51,17 @@ export default async function AlbumPage({
   const album = await resolveAlbum((await params).slug);
   if (!album) notFound();
 
-  const isLive = album.id.startsWith("live-");
-  const related = albums.filter((item) => item.id !== album.id).slice(-3).reverse();
+  const synchronizedAlbums = await loadSynchronizedCatalog();
+  const isCurrentDraw = album.drawNumber != null && album.status === "pending";
+  const isLive = album.id.startsWith("live-") || isCurrentDraw;
+  const related = synchronizedAlbums.filter((item) => item.id !== album.id).slice(-3).reverse();
   const status =
     album.status === "rated"
       ? "Écouté et évalué"
       : "Compte rendu encore scellé";
   const albumUrl = album.albumUrl ?? youtubeMusicSearchUrl(album.title, album.artist);
   const description = cleanDescription(album.albumDescription);
+  const artistDescription = cleanDescription(album.artistDescription);
   const reviewer = getMemberDisplayName(album.listenedBy);
   const trackLink = (track: string | null) =>
     track ? youtubeMusicSearchUrl(track, album.artist, album.title) : null;
@@ -75,7 +85,7 @@ export default async function AlbumPage({
         </div>
         <div className="album-sheet__info">
           <p className="eyebrow">
-            {isLive ? "FICHE DU TIRAGE" : "FICHE D’ARCHIVE"}
+            {isCurrentDraw || album.id.startsWith("live-") ? "FICHE DU TIRAGE" : "FICHE D’ARCHIVE"}
           </p>
           <h1>
             <MusicChoiceButton
@@ -111,14 +121,22 @@ export default async function AlbumPage({
         </div>
       </section>
 
-      {(description || isLive) && (
+      {(description || artistDescription || isLive) && (
         <section className="album-description">
-          <div>
-            <p className="eyebrow">À PROPOS DE L’ALBUM</p>
-            <p>
-              {description ??
-                "Les informations sur cet album seront ajoutées au fur et à mesure des propositions du club."}
-            </p>
+          <div className="album-description__copy">
+            <div>
+              <p className="eyebrow">À PROPOS DE L’ALBUM</p>
+              <p>
+                {description ??
+                  "Les informations sur cet album seront ajoutées au fur et à mesure des propositions du club."}
+              </p>
+            </div>
+            {artistDescription && (
+              <div>
+                <p className="eyebrow">À PROPOS DE L’ARTISTE</p>
+                <p>{artistDescription}</p>
+              </div>
+            )}
           </div>
           {(album.projectType || album.releaseYear || album.origin || album.language || album.genres.length > 0) && (
             <ul>
@@ -142,23 +160,37 @@ export default async function AlbumPage({
           <div className="track-card track-card--best">
             <span>Best track</span>
             {album.bestTrack.title && trackLink(album.bestTrack.title) ? (
-              <MusicChoiceButton title={album.bestTrack.title} artist={album.artist} sourceUrl={trackLink(album.bestTrack.title)!} externalUrl={trackLink(album.bestTrack.title)!}>
+              <MusicTrackChoiceButton
+                title={album.bestTrack.title}
+                artist={album.artist}
+                albumTitle={album.title}
+                youtubeMusicUrl={trackLink(album.bestTrack.title)!}
+              >
                 {album.bestTrack.title}
-                <small>Écouter sur YouTube Music ↗</small>
-              </MusicChoiceButton>
+                <small>YouTube Music ou Deezer ▶</small>
+              </MusicTrackChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
           <div className="track-card track-card--worst">
             <span>Worst track</span>
             {album.worstTrack.title && trackLink(album.worstTrack.title) ? (
-              <MusicChoiceButton title={album.worstTrack.title} artist={album.artist} sourceUrl={trackLink(album.worstTrack.title)!} externalUrl={trackLink(album.worstTrack.title)!}>
+              <MusicTrackChoiceButton
+                title={album.worstTrack.title}
+                artist={album.artist}
+                albumTitle={album.title}
+                youtubeMusicUrl={trackLink(album.worstTrack.title)!}
+              >
                 {album.worstTrack.title}
-                <small>Écouter sur YouTube Music ↗</small>
-              </MusicChoiceButton>
+                <small>YouTube Music ou Deezer ▶</small>
+              </MusicTrackChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
         </div>
       </section>
+
+      {album.liveEntryId && (
+        <AlbumEditorialEditor album={album} drawEntryId={album.liveEntryId} />
+      )}
 
       <section className="section">
         <div className="section-heading"><h2>À fouiller ensuite</h2></div>

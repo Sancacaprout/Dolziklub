@@ -1,6 +1,7 @@
+import { isSameMemberIdentity } from "@/data/members";
 import type { Album } from "@/types/album";
 
-const rated = (albums: Album[]) => albums.filter((album) => album.rating !== null && album.rating > 0);
+const rated = (albums: Album[]) => albums.filter((album) => album.rating !== null);
 const average = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
 
 export function getClubStats(albums: Album[]) {
@@ -12,13 +13,15 @@ export function getClubStats(albums: Album[]) {
     pending: albums.filter((album) => album.status === "pending").length,
     averageRating,
     completionRate: albums.length ? (scored.length / albums.length) * 100 : 0,
-    distribution: [1, 2, 3, 4, 5].map((score) => ({ score, count: scored.filter((album) => Math.floor(album.rating!) === score).length })),
+    distribution: Array.from({ length: 11 }, (_, index) => index / 2).map((score) => ({
+      score,
+      count: scored.filter((album) => album.rating === score).length,
+    })),
   };
 }
 
 export function getMemberStats(albums: Album[], slug: string) {
-  const normalizedSlug = slug.trim().toLocaleLowerCase();
-  const belongsToMember = (name: string | null) => name?.trim().toLocaleLowerCase() === normalizedSlug;
+  const belongsToMember = (name: string | null) => isSameMemberIdentity(name, slug);
   const proposed = albums.filter((album) => belongsToMember(album.proposedBy));
   const listened = albums.filter((album) => belongsToMember(album.listenedBy));
   return {

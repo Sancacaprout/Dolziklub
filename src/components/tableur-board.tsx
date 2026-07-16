@@ -6,7 +6,8 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { albums as archivedAlbums } from "@/data/albums";
 import { members } from "@/data/members";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { displayArchiveReviewId, sourceArchiveReviewId } from "@/lib/archive-review-alignment";
+import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
+import { sourceArchiveReviewId } from "@/lib/archive-review-alignment";
 import { normalizeMusicText } from "@/lib/music-matching";
 import { RatingDisplay } from "@/components/rating-display";
 import { MusicChoiceButton } from "@/components/music-player";
@@ -71,21 +72,7 @@ function isEmptyAlbumSlot(entry: Pick<DrawEntry, "album_title" | "album_artist">
 }
 
 function remapHistoricalRecords(records: ArchivedReview[]) {
-  const remapped = records
-    .filter((record) => record.is_modified)
-    .map((record) => ({ ...record, album_id: displayArchiveReviewId(record.album_id) }));
-
-  return [
-    ...remapped,
-    ...["archive-27", "archive-29", "archive-38"].map((album_id) => ({
-      album_id,
-      review: null,
-      rating: null,
-      best_track: null,
-      worst_track: null,
-      is_modified: true,
-    })),
-  ];
+  return records.filter((record) => record.is_modified);
 }
 
 function storageArchiveRecordId(albumId: string) {
@@ -147,8 +134,9 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
       setMember({ id: data.user.id, username: profile.username, displayName: profile.display_name });
     };
     const timer = setTimeout(() => { void syncMember(); void loadRecords(); }, 0);
-    const { data: listener } = supabase.auth.onAuthStateChange(() => void syncMember());
-    return () => { clearTimeout(timer); listener.subscription.unsubscribe(); };
+    const deferredSync = createDeferredAuthSync(syncMember);
+    const { data: listener } = supabase.auth.onAuthStateChange(deferredSync.schedule);
+    return () => { clearTimeout(timer); deferredSync.cancel(); listener.subscription.unsubscribe(); };
   }, [configured, loadRecords]);
   const saveRecord = async (record: Omit<ArchivedReview, "is_modified">) => {
     if (!member || !Number.isFinite(record.rating ?? 0) && record.rating !== null) return;
@@ -167,7 +155,7 @@ function HistoricalDraws({ albums }: { albums: Album[] }) {
   const ordered = [...albums].sort((a, b) => Number(a.id.replace("archive-", "")) - Number(b.id.replace("archive-", "")));
   const placeholder = (id: string, proposedBy: string, listenedBy: string): Album => ({ id, slug: id, title: "Album – Artiste", artist: "", cover: null, releaseYear: null, origin: null, language: null, genres: [], projectType: null, proposedBy, listenedBy, rating: null, shortReview: "Avis à compléter", detailedReview: null, bestTrack: { title: null, url: null }, worstTrack: { title: null, url: null }, albumUrl: null, artistDescription: null, albumDescription: null, status: "pending" });
   const inRange = (from: number, to: number) => ordered.filter((album) => { const position = Number(album.id.replace("archive-", "")); return position >= from && position <= to; });
-  const groups = [{ draw: 1, albums: inRange(1, 10), isCurrent: false }, { draw: 2, albums: inRange(11, 19), isCurrent: false }, { draw: 3, albums: inRange(20, 28), isCurrent: false }, { draw: 4, albums: inRange(29, 37), isCurrent: false }, { draw: 5, albums: inRange(38, 45), isCurrent: false }, ...(!configured ? [{ draw: 6, albums: [placeholder("pending-yuna-enzo", "Yuna", "Enzo"), ...inRange(46, 46), placeholder("pending-enzo-motem", "Enzo", "Motem"), ...inRange(47, 49), placeholder("pending-chacha-bono", "Chacha", "Bono"), placeholder("pending-bono-chacha", "Bono", "Chacha")], isCurrent: true }] : [])];
+  const groups = [{ draw: 1, albums: inRange(1, 10), isCurrent: false }, { draw: 2, albums: inRange(11, 19), isCurrent: false }, { draw: 3, albums: inRange(20, 28), isCurrent: false }, { draw: 4, albums: inRange(29, 36), isCurrent: false }, { draw: 5, albums: inRange(37, 45), isCurrent: false }, ...(!configured ? [{ draw: 6, albums: [placeholder("pending-yuna-enzo", "Yuna", "Enzo"), ...inRange(46, 46), placeholder("pending-enzo-motem", "Enzo", "Motem"), ...inRange(47, 49), placeholder("pending-chacha-bono", "Chacha", "Bono"), placeholder("pending-bono-chacha", "Bono", "Chacha")], isCurrent: true }] : [])];
   const recordMap = new Map(records.map((record) => [record.album_id, record]));
   return <>{message && <p className="selection-message" role="status">{message}</p>}{[...groups].reverse().map(({ draw, albums: group, isCurrent }) => {
     const canEditDraw = Boolean(member && group.some((album) => album.id.startsWith("archive-") && isHistoricalListener(album, member)));
@@ -310,7 +298,7 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
   const loadPublicReviews = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().rpc("get_public_draw_reviews"); if (!error) setPublicReviews((data ?? []) as ReviewRecord[]); }, [configured]);
   const syncAccess = useCallback(async () => { if (!configured) return; const supabase = getSupabaseBrowserClient(); const { data } = await supabase.auth.getUser(); const user = data.user; if (!user) { setMember(null); setIsAdmin(false); setReviews([]); return; } const { data: profile } = await supabase.from("member_profiles").select("role, username, display_name").eq("id", user.id).maybeSingle(); const metadataUsername = typeof user.app_metadata.username === "string" ? user.app_metadata.username : user.email?.split("@")[0] ?? "membre"; const username = profile?.username ?? metadataUsername; const displayName = profile?.display_name ?? roster.find((entry) => entry.username === username)?.displayName ?? username; setMember((current) => current && current.id === user.id && current.username === username && current.displayName === displayName ? current : { id: user.id, username, displayName }); setIsAdmin(profile?.role === "admin"); await loadReviews(); }, [configured, loadReviews]);
   useEffect(() => { const timer = setTimeout(() => { void loadEntries(); void loadDraws(); void loadPublicReviews(); void syncAccess(); if (configured) void getSupabaseBrowserClient().from("member_public_profiles").select("username, kouize").then((result: { data: unknown }) => setKouizeProfiles((result.data ?? []) as PublicKouizeProfile[])); }, 0); return () => clearTimeout(timer); }, [configured, loadDraws, loadEntries, loadPublicReviews, syncAccess]);
-  useEffect(() => { if (!configured) return; const { data } = getSupabaseBrowserClient().auth.onAuthStateChange(() => void syncAccess()); return () => data.subscription.unsubscribe(); }, [configured, syncAccess]);
+  useEffect(() => { if (!configured) return; const deferredSync = createDeferredAuthSync(syncAccess); const { data } = getSupabaseBrowserClient().auth.onAuthStateChange(deferredSync.schedule); return () => { deferredSync.cancel(); data.subscription.unsubscribe(); }; }, [configured, syncAccess]);
   const goToProposal = (id: string) => { setFocusedProposal(id); setFocusedReview(null); setActiveTab("selection"); };
   const goToReview = (id: string) => { setFocusedReview(id); setFocusedProposal(null); setActiveTab("selection"); };
   const returnToDraw = (entryId: string) => { setFocusedProposal(null); setFocusedReview(null); setArchiveFocusId(entryId); setActiveTab("archive"); };

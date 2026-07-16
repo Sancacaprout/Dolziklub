@@ -1,4 +1,4 @@
-import "server-only";
+﻿import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import { sourceArchiveReviewId as getAlignedSourceArchiveReviewId } from "@/lib/archive-review-alignment";
@@ -12,8 +12,7 @@ export type ArchivedReviewOverride = {
   review_title?: string | null;
 };
 
-// Une ancienne importation a d?cal? les lignes apr?s le double album de South Arcade.
-// Les fiches statiques gardent les bons albums : on lit donc la ligne Supabase correspondante.
+// Supabase archive rows use the same album id in the catalog, table and API routes.
 export function sourceArchiveReviewId(albumId: string) {
   return getAlignedSourceArchiveReviewId(albumId);
 }
