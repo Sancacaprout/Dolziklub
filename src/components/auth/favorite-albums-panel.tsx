@@ -2,6 +2,8 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
+import { AlbumLookup } from "@/components/music-assist";
+import type { MusicCandidate } from "@/lib/music-matching";
 import type { ProfileThemeId } from "@/lib/profile-themes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -10,12 +12,14 @@ type Favorite = {
   title: string;
   artist: string;
   coverPath: string | null;
+  coverSourceUrl: string | null;
 };
 type FavoriteRow = {
   id: string;
   title: string;
   artist_name: string;
   cover_path: string | null;
+  cover_source_url: string | null;
 };
 
 const makeFavorite = (): Favorite => ({
@@ -23,6 +27,7 @@ const makeFavorite = (): Favorite => ({
   title: "",
   artist: "",
   coverPath: null,
+  coverSourceUrl: null,
 });
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -31,7 +36,7 @@ function coverUrl(favorite: Favorite) {
     ? getSupabaseBrowserClient().storage
         .from("profile-favorites")
         .getPublicUrl(favorite.coverPath).data.publicUrl
-    : null;
+    : favorite.coverSourceUrl;
 }
 
 export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
@@ -47,6 +52,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
+  const [selectedMatches, setSelectedMatches] = useState<Record<string, MusicCandidate | null>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -56,7 +62,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
       setMemberId(auth.user.id);
       const { data, error } = await supabase
         .from("profile_favorite_albums")
-        .select("id,title,artist_name,cover_path")
+        .select("id,title,artist_name,cover_path,cover_source_url")
         .eq("participant_id", auth.user.id)
         .order("display_order");
       if (error) {
@@ -68,6 +74,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
         title: item.title,
         artist: item.artist_name,
         coverPath: item.cover_path,
+        coverSourceUrl: item.cover_source_url,
       }));
       setFavorites(
         [...saved, ...Array.from({ length: Math.max(0, 3 - saved.length) }, makeFavorite)].slice(0, 3),
@@ -94,6 +101,22 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
     } else {
       void getSupabaseBrowserClient().storage.from("profile-favorites").remove([path]);
     }
+  };
+
+  const selectAlbum = (index: number, candidate: MusicCandidate | null) => {
+    const favorite = favorites[index];
+    setSelectedMatches((current) => ({ ...current, [favorite.id]: candidate }));
+    if (!candidate) {
+      update(index, { coverSourceUrl: null });
+      return;
+    }
+    queueOldCoverForCleanup(favorite.coverPath);
+    update(index, {
+      title: candidate.title,
+      artist: candidate.artist,
+      coverPath: null,
+      coverSourceUrl: candidate.thumbnailUrl ?? null,
+    });
   };
 
   const remove = (index: number) => {
@@ -133,7 +156,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
       return;
     }
     queueOldCoverForCleanup(favorite.coverPath);
-    update(index, { coverPath: path });
+    update(index, { coverPath: path, coverSourceUrl: null });
     setMessage("Nouvelle jaquette prête : enregistre pour la publier.");
   };
 
@@ -170,7 +193,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
             title: item.title.trim(),
             artist_name: item.artist.trim(),
             cover_path: item.coverPath,
-            cover_source_url: null,
+            cover_source_url: item.coverSourceUrl,
             source_catalog_key: null,
             display_order: index + 1,
           })),
@@ -222,8 +245,9 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
                 {cover ? <img key={cover} src={cover} alt={`Jaquette de ${favorite.title || "l’album favori"}`} /> : <div><strong>◉</strong><b>{isEmpty ? "Ajoute ton album" : "Ajoute une jaquette"}</b><small>Ta sélection apparaîtra sur ton profil.</small></div>}
               </div>
               <div className="favorite-album-card__fields">
-                <label>Titre<input value={favorite.title} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’album…" onChange={(event) => update(index, { title: event.target.value })} /></label>
-                <label>Artiste<input value={favorite.artist} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’artiste…" onChange={(event) => update(index, { artist: event.target.value })} /></label>
+                <label>Titre<input value={favorite.title} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’album…" onChange={(event) => { setSelectedMatches((current) => ({ ...current, [favorite.id]: null })); update(index, { title: event.target.value, coverSourceUrl: null }); }} /></label>
+                <AlbumLookup title={favorite.title} artist={favorite.artist} selected={selectedMatches[favorite.id] ?? null} disabled={uploading || saving} onSelect={(candidate) => selectAlbum(index, candidate)} />
+                <label>Artiste<input value={favorite.artist} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’artiste…" onChange={(event) => { setSelectedMatches((current) => ({ ...current, [favorite.id]: null })); update(index, { artist: event.target.value, coverSourceUrl: null }); }} /></label>
               </div>
               <label className={uploading ? "favorite-album-card__upload is-uploading" : "favorite-album-card__upload"}><span>⇧</span><b>{uploading ? "Import en cours…" : cover ? "Remplacer la jaquette" : "Importer une jaquette"}</b><small>PNG, JPG ou WebP · 5 Mo max.</small><input type="file" disabled={uploading || saving} accept="image/jpeg,image/png,image/webp" onClick={(event) => { event.currentTarget.value = ""; }} onChange={(event) => void upload(index, event.target.files?.[0] ?? null)} /></label>
             </article>

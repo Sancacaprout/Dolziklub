@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 
 const paypalUrl = "https://paypal.me/TMeyro";
 
@@ -22,8 +23,9 @@ export function Footer() {
       if (active) setIsAdmin(data?.role === "admin");
     };
     void syncAdmin();
-    const { data: listener } = getSupabaseBrowserClient().auth.onAuthStateChange(() => void syncAdmin());
-    return () => { active = false; listener.subscription.unsubscribe(); };
+    const deferredSync = createDeferredAuthSync(syncAdmin);
+    const { data: listener } = getSupabaseBrowserClient().auth.onAuthStateChange(deferredSync.schedule);
+    return () => { active = false; deferredSync.cancel(); listener.subscription.unsubscribe(); };
   }, []);
   useEffect(() => {
     if (!isSupportOpen) return;

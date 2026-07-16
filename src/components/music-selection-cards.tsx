@@ -64,6 +64,7 @@ export function ProposalAssistantCard({
   const [match, setMatch] = useState<MusicCandidate | null | undefined>(
     undefined,
   );
+
   const filled = isFilled(entry);
   const previewCover = match?.thumbnailUrl ?? coverUrl;
   const previewTitle = match?.title ?? (filled ? entry.album_title : null);
@@ -194,6 +195,8 @@ export function ReviewAssistantCard({
   const [rating, setRating] = useState(String(existing?.rating ?? ""));
   const [bestTrack, setBestTrack] = useState(existing?.best_track ?? "");
   const [worstTrack, setWorstTrack] = useState(existing?.worst_track ?? "");
+
+
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -22,4 +22,6 @@ export interface Album {
   artistDescription: string | null;
   albumDescription: string | null;
   status: AlbumStatus;
+  drawNumber?: number | null;
+  liveEntryId?: string | null;
 }

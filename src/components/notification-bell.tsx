@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 
 type Notification = {
   id: string;
@@ -53,11 +54,13 @@ export function NotificationBell() {
       else setNotifications([]);
     };
     void syncMember();
-    const { data: authListener } = supabase.auth.onAuthStateChange(() => void syncMember());
+    const deferredSync = createDeferredAuthSync(syncMember);
+    const { data: authListener } = supabase.auth.onAuthStateChange(deferredSync.schedule);
     const channel = supabase.channel("member-notifications")
       .on("postgres_changes", { event: "*", schema: "public", table: "member_notifications" }, () => void loadNotifications())
       .subscribe();
     return () => {
+      deferredSync.cancel();
       authListener.subscription.unsubscribe();
       void supabase.removeChannel(channel);
     };

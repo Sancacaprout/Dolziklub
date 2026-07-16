@@ -1,32 +1,34 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlbumCard } from "@/components/album-card";
+import { LiveClubRefresh } from "@/components/live-club-refresh";
 import { MemberFavoriteAlbums } from "@/components/member-favorite-albums";
 import { MemberPublicProfile } from "@/components/member-public-profile";
 import { MemberStatsCards } from "@/components/member-stats-cards";
 import { ProfileThemeBoundary } from "@/components/profile-theme-boundary";
-import { albums } from "@/data/albums";
-import { getMember } from "@/data/members";
+import { memberIdentityKeys } from "@/data/members";
+import { getClubSnapshot } from "@/lib/club-snapshot";
 import { getMemberStats } from "@/lib/statistics";
+
+export const dynamic = "force-dynamic";
 
 export default async function MemberPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const member = getMember((await params).slug);
+  const requestedSlug = (await params).slug.trim().toLocaleLowerCase();
+  const snapshot = await getClubSnapshot();
+  const member = snapshot.members.find((item) => memberIdentityKeys(item).includes(requestedSlug));
   if (!member) notFound();
 
-  const stats = getMemberStats(albums, member.slug);
-  const rated = (items: typeof stats.proposed) =>
-    items.filter((album) => album.rating !== null && album.rating > 0).length;
+  const stats = getMemberStats(snapshot.albums, member.slug);
 
   return (
     <ProfileThemeBoundary username={member.username}>
       <main className="page member-profile-page">
-        <Link className="back" href="/membres">
-          ← Tous les membres
-        </Link>
+        <LiveClubRefresh />
+        <Link className="back" href="/membres">← Tous les membres</Link>
         <MemberPublicProfile
           displayName={member.displayName}
           username={member.username}
@@ -39,9 +41,7 @@ export default async function MemberPage({
             proposed: stats.proposed.length,
             listened: stats.listened.length,
             givenAverage: stats.givenAverage,
-            givenCount: rated(stats.listened),
             receivedAverage: stats.receivedAverage,
-            receivedCount: rated(stats.proposed),
           }}
         />
         <section className="member-archive">
@@ -51,14 +51,10 @@ export default async function MemberPage({
           </div>
           {stats.listened.length ? (
             <div className="album-grid">
-              {stats.listened.map((album) => (
-                <AlbumCard key={album.id} album={album} />
-              ))}
+              {stats.listened.map((album) => <AlbumCard key={album.id} album={album} />)}
             </div>
           ) : (
-            <p className="member-archive__empty">
-              Aucune écoute n’est encore archivée.
-            </p>
+            <p className="member-archive__empty">Aucune écoute n’est encore enregistrée.</p>
           )}
         </section>
         <section className="member-archive">
@@ -68,14 +64,10 @@ export default async function MemberPage({
           </div>
           {stats.proposed.length ? (
             <div className="album-grid">
-              {stats.proposed.map((album) => (
-                <AlbumCard key={album.id} album={album} />
-              ))}
+              {stats.proposed.map((album) => <AlbumCard key={album.id} album={album} />)}
             </div>
           ) : (
-            <p className="member-archive__empty">
-              Aucune proposition n’est encore archivée.
-            </p>
+            <p className="member-archive__empty">Aucune proposition n’est encore enregistrée.</p>
           )}
         </section>
       </main>

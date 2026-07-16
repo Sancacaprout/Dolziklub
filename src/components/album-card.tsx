@@ -15,9 +15,16 @@ export function AlbumCard({
   list?: boolean;
   currentDraw?: boolean;
 }) {
-  const isLive = currentDraw || album.id.startsWith("live-");
+  const isArchive = album.id.startsWith("archive-");
+  const isCurrentDraw = currentDraw || (album.drawNumber != null && album.status === "pending");
+  const archiveLabel = isCurrentDraw
+    ? "Tirage en cours"
+    : isArchive
+      ? `Archive #${album.id.replace("archive-", "")}`
+      : album.drawNumber != null
+        ? `Tirage ${String(album.drawNumber).padStart(2, "0")}`
+        : "Tirage";
   const href = `/albums/${album.slug}`;
-  const archiveLabel = isLive ? "Tirage en cours" : `Archive #${album.id.replace("archive-", "")}`;
   const cover = album.cover ? <Image src={album.cover} alt={`Pochette de ${album.title} par ${album.artist}`} fill quality={90} sizes={list ? "170px" : "(max-width: 700px) 46vw, 260px"} /> : <span>Sans pochette</span>;
 
   if (list) return <Link className="album-card album-card--list" href={href}><div className="cover-frame">{cover}</div><div className="album-card__list-main"><p className="eyebrow">{archiveLabel}</p><h3>{album.title}</h3><p>{album.artist}</p></div><div className="album-card__list-credits"><p>Proposé par <b>{getMemberDisplayName(album.proposedBy)}</b></p><p>Écouté par <b>{getMemberDisplayName(album.listenedBy)}</b></p></div><div className="album-card__list-rating"><RatingDisplay rating={album.rating} /></div></Link>;
