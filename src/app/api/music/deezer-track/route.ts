@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const score = (item: DeezerItem) => Number(normalized(item.title ?? "") === expectedTitle) * 4 + Number(normalized(item.artist?.name ?? "") === expectedArtist) * 3 + Number(Boolean(expectedAlbum) && normalized(item.album?.title ?? "") === expectedAlbum);
     const match = candidates.sort((left, right) => score(right) - score(left))[0];
     if (!match?.id || !match.title || !match.artist?.name) return NextResponse.json({ error: "Aucun morceau Deezer correspondant n’a été trouvé." }, { status: 404 });
-    return NextResponse.json({ track: { id: match.id, title: match.title, artist: match.artist.name, album: match.album?.title ?? null } });
+    return NextResponse.json({ track: { id: match.id, title: match.title, artist: match.artist.name, album: match.album?.title ?? null, url: `https://www.deezer.com/track/${match.id}` } });
   } catch {
     return NextResponse.json({ error: "La recherche Deezer est momentanément indisponible." }, { status: 503 });
   }

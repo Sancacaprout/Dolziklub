@@ -75,10 +75,13 @@ test("uses Animation only during loading and removes passed obstacles early", ()
   assert.match(styles, /wheely-loader-cross/);
   assert.equal(GAME.albumDespawnDepth, 0.83);
   assert.equal(GAME.obstacleDespawnDepth, 0.85);
-  assert.match(game, /const LAUNCH_LOADING_MS = 3_000/);
-  assert.match(game, /const ENTRY_TRANSITION_MS = 1_050/);
-  assert.match(styles, /hero-vinyl-portal 1s/);
-  assert.match(styles, /wheely-loader-cross 3s/);
+  assert.match(game, /const WHEELY_CROSSING_MS = 6_000/);
+  assert.match(game, /const VINYL_EXPANSION_MS = 1_200/);
+  assert.match(game, /const LAUNCH_LOADING_MS = WHEELY_CROSSING_MS \+ VINYL_EXPANSION_MS/);
+  assert.match(game, /const ENTRY_TRANSITION_MS = 450/);
+  assert.match(styles, /wheely-loader-cross 6s/);
+  assert.match(styles, /wheely-loader-disc-expand 1\.2s[^;]+6s both/);
+  assert.match(styles, /\.vinyl-runner__entry::before \{ display:none; \}/);
 });
 
 test("keeps Canvas work close to 60 FPS without per-frame sorting or blur filters", () => {

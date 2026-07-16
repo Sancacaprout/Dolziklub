@@ -49,8 +49,28 @@ const BEST_SCORE_KEY = "dol-ziklub-vinyl-runner-best";
 const TARGET_FRAME_MS = 1000 / 60;
 const FRAME_TOLERANCE_MS = 1.25;
 const MAX_CANVAS_PIXELS = 2_200_000;
-const LAUNCH_LOADING_MS = 3_000;
-const ENTRY_TRANSITION_MS = 1_050;
+const WHEELY_CROSSING_MS = 6_000;
+const VINYL_EXPANSION_MS = 1_200;
+const LAUNCH_LOADING_MS = WHEELY_CROSSING_MS + VINYL_EXPANSION_MS;
+const ENTRY_TRANSITION_MS = 450;
+
+function readBestScore() {
+  try {
+    return Number(window.localStorage.getItem(BEST_SCORE_KEY) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function persistBestScore(score: number) {
+  const best = Math.max(score, readBestScore());
+  try {
+    window.localStorage.setItem(BEST_SCORE_KEY, String(best));
+  } catch {
+    // Safari can disable storage in private/restricted contexts. The run still works.
+  }
+  return best;
+}
 const OBSTACLE_ASSET_PATHS: Record<ObstacleVariant, string> = {
   "blocker-a": "/game/obstacles/blocker-a.png",
   "blocker-b": "/game/obstacles/blocker-b.png",
@@ -321,6 +341,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const [hud, setHud] = useState({ score: 0, distance: 0, best: 0, speed: 1 });
   const [resumeCountdown, setResumeCountdown] = useState(3);
   const [muted, setMuted] = useState(false);
+  const [soundNeedsGesture, setSoundNeedsGesture] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const characterRef = useRef<HTMLImageElement | null>(null);
@@ -335,6 +356,19 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const updatePhase = useCallback((next: GamePhase) => { phaseRef.current = next; setPhase(next); }, []);
   const clearTimer = useCallback(() => { if (timerRef.current !== null) { window.clearInterval(timerRef.current); timerRef.current = null; } }, []);
   const stopAudio = useCallback(() => { const audio = audioRef.current; if (audio) { audio.pause(); audio.currentTime = 0; } }, []);
+  const playAudio = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return false;
+    audio.muted = muted;
+    try {
+      await audio.play();
+      setSoundNeedsGesture(false);
+      return true;
+    } catch {
+      setSoundNeedsGesture(!muted);
+      return false;
+    }
+  }, [muted]);
 
   const action = useCallback((kind: "left" | "right" | "jump" | "slide") => {
     if (phaseRef.current !== "playing") return;
@@ -369,10 +403,11 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     runtimeRef.current = emptyRuntime();
     setHud((current) => ({ score: 0, distance: 0, best: current.best, speed: 1 }));
     const audio = audioRef.current;
-    if (audio) { audio.currentTime = 0; audio.muted = muted; void audio.play().catch(() => undefined); }
+    if (audio) audio.currentTime = 0;
+    void playAudio();
     runtimeRef.current.lastFrame = performance.now();
     updatePhase("playing");
-  }, [clearTimer, muted, updatePhase]);
+  }, [clearTimer, playAudio, updatePhase]);
 
   const finishRun = useCallback((outcome: "game-over" | "victory") => {
     if (phaseRef.current !== "playing") return;
@@ -380,8 +415,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     if (outcome === "game-over") runtime.playerState = "hit";
     const distance = Math.floor(runtime.distance * 10);
     const score = distance + runtime.avoided * GAME.avoidedObstacleBonus;
-    const best = Math.max(score, Number(window.localStorage.getItem(BEST_SCORE_KEY) ?? 0));
-    window.localStorage.setItem(BEST_SCORE_KEY, String(best));
+    const best = persistBestScore(score);
     audioRef.current?.pause();
     setHud((current) => ({ ...current, score, distance, best }));
     updatePhase(outcome);
@@ -393,6 +427,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const close = useCallback(() => {
     clearTimer();
     stopAudio();
+    setSoundNeedsGesture(false);
     setOpen(false);
     setLaunching(false);
     runtimeRef.current = emptyRuntime();
@@ -415,18 +450,18 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       next -= 1;
       if (next <= 0) {
         clearTimer();
-        const audio = audioRef.current;
-        if (audio) { audio.muted = muted; void audio.play().catch(() => undefined); }
+        void playAudio();
         runtimeRef.current.lastFrame = performance.now();
         updatePhase("playing");
         return;
       }
       setResumeCountdown(next);
     }, 700);
-  }, [clearTimer, muted, updatePhase]);
+  }, [clearTimer, playAudio, updatePhase]);
 
   const openGame = useCallback(() => {
     if (launching) return;
+    audioRef.current?.load();
     setLaunching(true);
     window.setTimeout(() => {
       setOpen(true);
@@ -546,7 +581,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
           runtime.lastHud = now;
           const distance = Math.floor(runtime.distance * 10);
           const score = distance + runtime.avoided * GAME.avoidedObstacleBonus;
-          setHud((current) => ({ score, distance, best: Math.max(current.best, Number(window.localStorage.getItem(BEST_SCORE_KEY) ?? 0)), speed: Number((runtime.speed / GAME.startSpeed).toFixed(1)) }));
+          setHud((current) => ({ score, distance, best: Math.max(current.best, readBestScore()), speed: Number((runtime.speed / GAME.startSpeed).toFixed(1)) }));
         }
       }
       const shouldPaint = isAnimating || !idlePainted;
@@ -568,7 +603,14 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
 
   useEffect(() => () => { clearTimer(); stopAudio(); }, [clearTimer, stopAudio]);
 
-  const toggleMuted = () => { const next = !muted; setMuted(next); if (audioRef.current) audioRef.current.muted = next; };
+  const toggleMuted = () => {
+    const next = !muted;
+    setMuted(next);
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = next;
+    if (!next && audio.paused && phaseRef.current === "playing") void audio.play().then(() => setSoundNeedsGesture(false)).catch(() => setSoundNeedsGesture(true));
+  };
   const onPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => { touchRef.current = { x: event.clientX, y: event.clientY }; };
   const onPointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const start = touchRef.current; touchRef.current = null;
@@ -579,6 +621,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   };
 
   return <>
+    <audio ref={audioRef} src="/game/music/wheely-opening.m4a" preload="auto" onEnded={win} onPlay={() => setSoundNeedsGesture(false)} />
     <button className={`hero-vinyl-button${launching ? " is-launching" : ""}`} type="button" onClick={openGame} aria-label="Ouvrir le mini-jeu Wheely">
       <span className="hero-vinyl-button__disc" aria-hidden="true" />
     </button>
@@ -589,10 +632,10 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       </span>
       <span className="wheely-launch-loader__label">WHEELY SE MET EN PISTE…</span>
     </div> : null}    {open ? <section className={`vinyl-runner vinyl-runner--${phase}`} aria-label="Wheely sur le vinyle">
-      <audio ref={audioRef} src="/game/music/wheely-opening.m4a" preload="auto" onEnded={win} />
+
       <canvas ref={canvasRef} className="vinyl-runner__canvas" onPointerDown={onPointerDown} onPointerUp={onPointerUp} />
       <header className="vinyl-runner__hud" aria-live="polite"><span>SCORE <b>{hud.score}</b></span><span>DISTANCE <b>{hud.distance} M</b></span><span>VITESSE <b>{hud.speed}X</b></span><span>BEST <b>{hud.best}</b></span></header>
-      <div className="vinyl-runner__actions"><button type="button" onClick={toggleMuted} aria-label={muted ? "Activer le son" : "Couper le son"}>{muted ? "SON OFF" : "SON ON"}</button><button type="button" onClick={pause} aria-label="Mettre le jeu en pause">PAUSE</button><button type="button" onClick={close} aria-label="Quitter le mini-jeu">SORTIR ×</button></div>
+      <div className="vinyl-runner__actions">{soundNeedsGesture ? <button className="vinyl-runner__sound-unlock" type="button" onClick={() => void playAudio()}>LANCER LE SON</button> : null}<button type="button" onClick={toggleMuted} aria-label={muted ? "Activer le son" : "Couper le son"}>{muted ? "SON OFF" : "SON ON"}</button><button type="button" onClick={pause} aria-label="Mettre le jeu en pause">PAUSE</button><button type="button" onClick={close} aria-label="Quitter le mini-jeu">SORTIR ×</button></div>
       {phase === "entering" ? <div className="vinyl-runner__entry" aria-hidden="true" /> : null}
       {phase === "resuming" ? <div className="vinyl-runner__countdown" aria-live="assertive">{resumeCountdown}</div> : null}
       {phase === "paused" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">SILLON EN PAUSE</p><h2>On reprend<br /><em>quand tu veux.</em></h2><button type="button" className="vinyl-runner__primary" onClick={resume}>Reprendre →</button></div> : null}
