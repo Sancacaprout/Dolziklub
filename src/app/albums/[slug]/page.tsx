@@ -10,6 +10,7 @@ import { getMemberDisplayName } from "@/data/members";
 import { getSynchronizedAlbums } from "@/lib/live-albums";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import { MusicChoiceButton, MusicTrackChoiceButton } from "@/components/music-player";
+import { getArchivedReviewOverride } from "@/lib/archived-reviews";
 import { AlbumEditorialEditor } from "@/components/album-editorial-editor";
 
 export function generateStaticParams() {
@@ -48,8 +49,28 @@ export default async function AlbumPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const album = await resolveAlbum((await params).slug);
+  let album = await resolveAlbum((await params).slug);
   if (!album) notFound();
+
+  const archivedReview = album.id.startsWith("archive-")
+    ? await getArchivedReviewOverride(album.id).catch(() => null)
+    : null;
+  if (archivedReview?.is_modified) {
+    album = {
+      ...album,
+      rating: archivedReview.rating ?? album.rating,
+      shortReview: archivedReview.review ?? album.shortReview,
+      detailedReview: null,
+      bestTrack: {
+        title: archivedReview.best_track ?? album.bestTrack.title,
+        url: archivedReview.best_track ? null : album.bestTrack.url,
+      },
+      worstTrack: {
+        title: archivedReview.worst_track ?? album.worstTrack.title,
+        url: archivedReview.worst_track ? null : album.worstTrack.url,
+      },
+    };
+  }
 
   const synchronizedAlbums = await loadSynchronizedCatalog();
   const isCurrentDraw = album.drawNumber != null && album.status === "pending";
