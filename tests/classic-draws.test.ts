@@ -18,4 +18,8 @@ test("keeps classic draw editing directional and sends archive history to Supaba
   assert.match(tableur, /return proposer && listener \? `\$\{proposer\}\|\$\{listener\}` : ""/);
   assert.match(tableur, /p_legacy_forbidden_pairs: legacyForbiddenPairs/);
   assert.match(tableur, /Duos générés aléatoirement/);
+  assert.match(tableur, /const proposedOptions = options\.filter\(\(member\) => member\.username !== current\.listener\)/);
+  assert.match(tableur, /const listenerOptions = options\.filter\(\(member\) => member\.username !== current\.proposer\)/);
+  assert.match(tableur, /duplicateProposers/);
+  assert.match(tableur, /p_proposer_username: "", p_listener_username: ""/);
 });
