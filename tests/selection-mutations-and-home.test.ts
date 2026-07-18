@@ -64,3 +64,9 @@ test("reuses complete archive records for the current draw without duplicates", 
   assert.match(liveAlbums, /getSynchronizedAlbums/);
   assert.match(home, /albumIdentityKey\(album\.title, album\.artist\)/);
 });
+
+
+test("keeps proposals and listens limited to the active published draw", () => {
+  assert.match(tableur, /const availableDraws = new Set\(draws\.filter\(\(draw\) => draw\.status === "published"\)\.map/);
+  assert.doesNotMatch(tableur, /availableDraws = new Set\(draws\.filter\(\(draw\) => draw\.status === "published" \|\| draw\.status === "locked"/);
+});

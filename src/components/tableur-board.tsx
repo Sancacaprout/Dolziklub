@@ -248,7 +248,7 @@ function HistoricalPendingReviews({ albums, member }: { albums: Album[]; member:
 }
 
 function SelectionWorkspace({ albums, entries, draws, member, reviews, focusedProposal, focusedReview, savingId, onProposal, onDeleteProposal, onReview, onResetReview }: { albums: Album[]; entries: DrawEntry[]; draws: DrawMeta[]; member: SignedMember | null; reviews: ReviewRecord[]; focusedProposal: string | null; focusedReview: string | null; savingId: string | null; onProposal: (payload: ProposalPayload) => void; onDeleteProposal: (entryId: string) => void; onReview: (payload: ReviewPayload) => void; onResetReview: (entryId: string) => void }) {
-  const availableDraws = new Set(draws.filter((draw) => draw.status === "published" || draw.status === "locked").map((draw) => draw.draw_number));
+  const availableDraws = new Set(draws.filter((draw) => draw.status === "published").map((draw) => draw.draw_number));
   const drawByNumber = new Map(draws.map((draw) => [draw.draw_number, draw]));
   const currentEntries = entries.filter((entry) => availableDraws.has(entry.draw_number));
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
