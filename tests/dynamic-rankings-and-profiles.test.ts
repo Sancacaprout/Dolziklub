@@ -101,3 +101,16 @@ test("Axel is available to the club with an empty profile", () => {
   assert.equal(stats.proposed.length, 0);
   assert.equal(stats.listened.length, 0);
 });
+
+test("Tibo is available to the club with an empty profile", () => {
+  const tibo = members.find((member) => member.slug === "tibo");
+  assert.ok(tibo);
+  assert.equal(tibo.displayName, "Tibo");
+  assert.equal(tibo.username, "tibo");
+  assert.equal(tibo.role, "member");
+  assert.equal(usernameToInternalEmail("Tibo"), "tibo@dolziklub.vercel.app");
+
+  const stats = getMemberStats([], tibo.slug);
+  assert.equal(stats.proposed.length, 0);
+  assert.equal(stats.listened.length, 0);
+});

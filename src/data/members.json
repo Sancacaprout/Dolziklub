@@ -9,6 +9,7 @@
   { "slug": "motem", "displayName": "Motem", "username": "motem", "role": "member", "bio": null, "dataStatus": "confirmed" },
   { "slug": "pep", "displayName": "Pep", "username": "pep", "role": "member", "bio": null, "dataStatus": "confirmed" },
   { "slug": "syke", "displayName": "Syke", "username": "syke", "authEmail": "syke@dolziklub.vercel.app", "role": "member", "bio": null, "dataStatus": "confirmed" },
+  { "slug": "tibo", "displayName": "Tibo", "username": "tibo", "authEmail": "tibo@dolziklub.vercel.app", "role": "member", "bio": null, "dataStatus": "confirmed" },
   { "slug": "toma", "displayName": "Toma", "username": "thomas", "role": "admin", "bio": null, "dataStatus": "confirmed" },
   { "slug": "yuna", "displayName": "Yuna", "username": "yuna", "role": "member", "bio": null, "dataStatus": "confirmed" }
 ]
