@@ -9,8 +9,9 @@ import { albums as archivedAlbums } from "@/data/albums";
 import { members } from "@/data/members";
 import { normalizeMusicText } from "@/lib/music-matching";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
-import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import { MusicTrackChoiceButton } from "@/components/music-player";
 import type { Album } from "@/types/album";
+import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 
 type Entry = {
   id: string;
@@ -392,42 +393,20 @@ function LiveDraw({
                   </td>
                   <td>
                     {review?.best_track ? (
-                      <a
-                        className="sheet-track-link sheet-track-link--best"
-                        href={
-                          review.best_track_youtube_music_url ??
-                          youtubeMusicSearchUrl(
-                            entry.album_artist,
-                            review.best_track,
-                          )
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <MusicTrackChoiceButton className="sheet-track-link sheet-track-link--best" title={review.best_track} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? undefined} youtubeMusicUrl={review.best_track_youtube_music_url ?? youtubeMusicSearchUrl(review.best_track, entry.album_artist, entry.album_title)}>
                         {review.best_track}
                         <span>↗</span>
-                      </a>
+                      </MusicTrackChoiceButton>
                     ) : (
                       <span className="sheet-track-empty">—</span>
                     )}
                   </td>
                   <td>
                     {review?.worst_track ? (
-                      <a
-                        className="sheet-track-link sheet-track-link--worst"
-                        href={
-                          review.worst_track_youtube_music_url ??
-                          youtubeMusicSearchUrl(
-                            entry.album_artist,
-                            review.worst_track,
-                          )
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <MusicTrackChoiceButton className="sheet-track-link sheet-track-link--worst" title={review.worst_track} artist={entry.album_artist ?? ""} albumTitle={entry.album_title ?? undefined} youtubeMusicUrl={review.worst_track_youtube_music_url ?? youtubeMusicSearchUrl(review.worst_track, entry.album_artist, entry.album_title)}>
                         {review.worst_track}
                         <span>↗</span>
-                      </a>
+                      </MusicTrackChoiceButton>
                     ) : (
                       <span className="sheet-track-empty">—</span>
                     )}

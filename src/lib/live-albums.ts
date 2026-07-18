@@ -28,6 +28,8 @@ type LiveReview = {
   rating: number;
   best_track: string | null;
   worst_track: string | null;
+  best_track_youtube_music_url?: string | null;
+  worst_track_youtube_music_url?: string | null;
 };
 
 type PublicLiveReview = LiveReview & { album_id: string };
@@ -109,11 +111,11 @@ function materializeLiveAlbum(
       detailedReview,
       bestTrack: {
         title: review?.best_track ?? null,
-        url: archived.bestTrack.url,
+        url: review?.best_track_youtube_music_url ?? archived.bestTrack.url,
       },
       worstTrack: {
         title: review?.worst_track ?? null,
-        url: archived.worstTrack.url,
+        url: review?.worst_track_youtube_music_url ?? archived.worstTrack.url,
       },
       albumUrl: entry.youtube_music_url ?? archived.albumUrl,
       cover: resolveEntryCover(entry, supabase) ?? archived.cover ?? liveCover,
@@ -141,8 +143,8 @@ function materializeLiveAlbum(
     rating,
     shortReview,
     detailedReview,
-    bestTrack: { title: review?.best_track ?? null, url: null },
-    worstTrack: { title: review?.worst_track ?? null, url: null },
+    bestTrack: { title: review?.best_track ?? null, url: review?.best_track_youtube_music_url ?? null },
+    worstTrack: { title: review?.worst_track ?? null, url: review?.worst_track_youtube_music_url ?? null },
     albumUrl: entry.youtube_music_url ?? null,
     artistDescription: editorial?.artist_description ?? null,
     albumDescription: editorial?.album_description ?? null,
@@ -219,7 +221,7 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
 
   const supabase = getOptionalSupabaseServerReader();
   if (!supabase) return null;
-  const [{ data: entryData }, { data: reviewData }, { data: editorialData }] = await Promise.all([
+  const [{ data: entryData }, { data: reviewData }, { data: editorialData }, { data: trackData }] = await Promise.all([
     supabase
       .from("club_draw_entries")
       .select(LIVE_ENTRY_FIELDS)
@@ -235,14 +237,21 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
       .select(EDITORIAL_FIELDS)
       .eq("draw_entry_id", match[1])
       .maybeSingle(),
+    supabase.rpc("get_public_draw_reviews"),
   ]);
   const entry = entryData as unknown as LiveEntry | null;
   const review = reviewData as unknown as LiveReview | null;
+  const trackReview = ((trackData ?? []) as unknown as PublicLiveReview[])
+    .find((candidate) => candidate.album_id === match[1]);
+  const linkedReview = review ? { ...review,
+    best_track_youtube_music_url: trackReview?.best_track_youtube_music_url ?? null,
+    worst_track_youtube_music_url: trackReview?.worst_track_youtube_music_url ?? null,
+  } : undefined;
   const editorial = editorialData as unknown as EditorialMetadata | null;
 
   if (!entry?.album_title?.trim() || !entry.album_artist?.trim()) return null;
   return applyArchiveCoverOverrides(
-    [materializeLiveAlbum(entry, review ?? undefined, editorial ?? undefined, supabase)], await getArchiveCoverOverrides(supabase), supabase,
+    [materializeLiveAlbum(entry, linkedReview, editorial ?? undefined, supabase)], await getArchiveCoverOverrides(supabase), supabase,
   )[0] ?? null;
 }
 

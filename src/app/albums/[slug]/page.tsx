@@ -63,8 +63,8 @@ export default async function AlbumPage({
   const description = cleanDescription(album.albumDescription);
   const artistDescription = cleanDescription(album.artistDescription);
   const reviewer = getMemberDisplayName(album.listenedBy);
-  const trackLink = (track: string | null) =>
-    track ? youtubeMusicSearchUrl(track, album.artist, album.title) : null;
+  const trackLink = (track: string | null, storedUrl: string | null = null) =>
+    track ? storedUrl ?? youtubeMusicSearchUrl(track, album.artist, album.title) : null;
 
   return (
     <main className="page album-page">
@@ -159,12 +159,12 @@ export default async function AlbumPage({
         <div className="track-box">
           <div className="track-card track-card--best">
             <span>Best track</span>
-            {album.bestTrack.title && trackLink(album.bestTrack.title) ? (
+            {album.bestTrack.title && trackLink(album.bestTrack.title, album.bestTrack.url) ? (
               <MusicTrackChoiceButton
                 title={album.bestTrack.title}
                 artist={album.artist}
                 albumTitle={album.title}
-                youtubeMusicUrl={trackLink(album.bestTrack.title)!}
+                youtubeMusicUrl={trackLink(album.bestTrack.title, album.bestTrack.url)!}
               >
                 {album.bestTrack.title}
                 <small>YouTube Music ou Deezer ▶</small>
@@ -173,12 +173,12 @@ export default async function AlbumPage({
           </div>
           <div className="track-card track-card--worst">
             <span>Worst track</span>
-            {album.worstTrack.title && trackLink(album.worstTrack.title) ? (
+            {album.worstTrack.title && trackLink(album.worstTrack.title, album.worstTrack.url) ? (
               <MusicTrackChoiceButton
                 title={album.worstTrack.title}
                 artist={album.artist}
                 albumTitle={album.title}
-                youtubeMusicUrl={trackLink(album.worstTrack.title)!}
+                youtubeMusicUrl={trackLink(album.worstTrack.title, album.worstTrack.url)!}
               >
                 {album.worstTrack.title}
                 <small>YouTube Music ou Deezer ▶</small>
