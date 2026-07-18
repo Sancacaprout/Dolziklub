@@ -188,7 +188,7 @@ export default async function AlbumPage({
                 youtubeMusicUrl={trackLink(album.bestTrack.title, album.bestTrack.url)!}
               >
                 {album.bestTrack.title}
-                <small>YouTube Music ou Deezer ▶</small>
+                <small>{"\u00C9couter sur YouTube Music \u2197"}</small>
               </MusicTrackChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
@@ -202,7 +202,7 @@ export default async function AlbumPage({
                 youtubeMusicUrl={trackLink(album.worstTrack.title, album.worstTrack.url)!}
               >
                 {album.worstTrack.title}
-                <small>YouTube Music ou Deezer ▶</small>
+                <small>{"\u00C9couter sur YouTube Music \u2197"}</small>
               </MusicTrackChoiceButton>
             ) : <p>Pas encore renseigné</p>}
           </div>
