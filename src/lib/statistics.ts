@@ -1,21 +1,24 @@
 import { isSameMemberIdentity } from "@/data/members";
 import type { Album } from "@/types/album";
 
-const rated = (albums: Album[]) => albums.filter((album) => album.rating !== null);
 const average = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+const verdictRatings = (album: Album) => album.globalReviews
+  ? album.globalReviews.flatMap((review) => review.rating === null ? [] : [review.rating])
+  : album.rating === null ? [] : [album.rating];
 
 export function getClubStats(albums: Album[]) {
-  const scored = rated(albums);
-  const averageRating = average(scored.map((album) => album.rating!));
+  const ratings = albums.flatMap(verdictRatings);
+  const verdictSlots = albums.reduce((total, album) => total + (album.globalReviews?.length ?? 1), 0);
+  const averageRating = average(ratings);
   return {
     total: albums.length,
-    rated: scored.length,
-    pending: albums.filter((album) => album.status === "pending").length,
+    rated: ratings.length,
+    pending: albums.filter((album) => album.globalReviews ? album.globalReviews.some((review) => review.rating === null) : album.status === "pending").length,
     averageRating,
-    completionRate: albums.length ? (scored.length / albums.length) * 100 : 0,
+    completionRate: verdictSlots ? (ratings.length / verdictSlots) * 100 : 0,
     distribution: Array.from({ length: 11 }, (_, index) => index / 2).map((score) => ({
       score,
-      count: scored.filter((album) => album.rating === score).length,
+      count: ratings.filter((rating) => rating === score).length,
     })),
   };
 }
@@ -23,12 +26,30 @@ export function getClubStats(albums: Album[]) {
 export function getMemberStats(albums: Album[], slug: string) {
   const belongsToMember = (name: string | null) => isSameMemberIdentity(name, slug);
   const proposed = albums.filter((album) => belongsToMember(album.proposedBy));
-  const listened = albums.filter((album) => belongsToMember(album.listenedBy));
+  const listened = albums.flatMap((album) => {
+    if (!album.globalReviews) return belongsToMember(album.listenedBy) ? [album] : [];
+    return album.globalReviews
+      .filter((review) => belongsToMember(review.listenedBy))
+      .map((review) => ({
+        ...album,
+        id: `${album.id}:review:${review.entryId}`,
+        slug: `live-${review.entryId}`,
+        liveEntryId: review.entryId,
+        listenedBy: review.listenedBy,
+        rating: review.rating,
+        shortReview: review.shortReview,
+        detailedReview: review.detailedReview,
+        bestTrack: review.bestTrack,
+        worstTrack: review.worstTrack,
+        status: review.rating === null ? "pending" as const : "rated" as const,
+        globalReviews: undefined,
+      }));
+  });
   return {
     proposed,
     listened,
-    givenAverage: average(rated(listened).map((album) => album.rating!)),
-    receivedAverage: average(rated(proposed).map((album) => album.rating!)),
+    givenAverage: average(listened.flatMap((album) => album.rating === null ? [] : [album.rating])),
+    receivedAverage: average(proposed.flatMap(verdictRatings)),
   };
 }
 

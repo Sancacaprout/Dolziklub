@@ -36,7 +36,7 @@ type Review = {
   best_track_youtube_music_url?: string | null;
   worst_track_youtube_music_url?: string | null;
 };
-type Draw = { draw_number: number; status: "draft" | "published" | "locked" };
+type Draw = { draw_number: number; status: "draft" | "published" | "locked"; draw_type?: "standard" | "global" };
 type Member = { id: string; username: string; displayName: string };
 type StickyHeader = {
   left: number;
@@ -304,7 +304,7 @@ function LiveDraw({
       <div className="draw-heading">
         <span className="eyebrow">
           TIRAGE {String(draw.draw_number).padStart(2, "0")} ·{" "}
-          {draw.status === "locked" ? "ARCHIVÉ" : "EN COURS"}
+          {draw.status === "locked" ? "ARCHIVÉ" : "EN COURS"}{draw.draw_type === "global" ? " · ÉCOUTE GLOBALE" : ""}
         </span>
         <span>
           {rows.length} emplacement{rows.length > 1 ? "s" : ""}

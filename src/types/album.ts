@@ -1,5 +1,15 @@
 export type AlbumStatus = "pending" | "rated" | "archived";
 
+export type GlobalAlbumReview = {
+  entryId: string;
+  listenedBy: string | null;
+  rating: number | null;
+  shortReview: string | null;
+  detailedReview: string | null;
+  bestTrack: { title: string | null; url: string | null };
+  worstTrack: { title: string | null; url: string | null };
+};
+
 export interface Album {
   id: string;
   slug: string;
@@ -24,4 +34,5 @@ export interface Album {
   status: AlbumStatus;
   drawNumber?: number | null;
   liveEntryId?: string | null;
+  globalReviews?: GlobalAlbumReview[];
 }

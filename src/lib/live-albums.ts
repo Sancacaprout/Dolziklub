@@ -127,10 +127,48 @@ function materializeLiveAlbum(
   };
 }
 
+function collapseGlobalDrawAlbums(albums: Album[], globalDrawNumbers: Set<number>) {
+  const result: Album[] = [];
+  const consumed = new Set<number>();
+  for (const album of albums) {
+    const drawNumber = album.drawNumber ?? -1;
+    if (!globalDrawNumbers.has(drawNumber)) {
+      result.push(album);
+      continue;
+    }
+    if (consumed.has(drawNumber)) continue;
+    consumed.add(drawNumber);
+    const group = albums.filter((candidate) => candidate.drawNumber === drawNumber);
+    const ratings = group.flatMap((candidate) => candidate.rating === null ? [] : [candidate.rating]);
+    const completed = ratings.length === group.length;
+    result.push({
+      ...group[0],
+      listenedBy: null,
+      rating: ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : null,
+      shortReview: ratings.length ? ratings.length + " verdict" + (ratings.length > 1 ? "s" : "") + " rendu" + (ratings.length > 1 ? "s" : "") + " sur " + group.length + "." : null,
+      detailedReview: null,
+      bestTrack: { title: null, url: null },
+      worstTrack: { title: null, url: null },
+      status: completed ? "rated" : "pending",
+      globalReviews: group.map((candidate) => ({
+        entryId: candidate.liveEntryId!,
+        listenedBy: candidate.listenedBy,
+        rating: candidate.rating,
+        shortReview: candidate.shortReview,
+        detailedReview: candidate.detailedReview,
+        bestTrack: candidate.bestTrack,
+        worstTrack: candidate.worstTrack,
+      })),
+    });
+  }
+  return result;
+}
+
 async function materializeEntries(
   entries: LiveEntry[],
   reviews: PublicLiveReview[],
   supabase: SupabaseClient,
+  globalDrawNumbers: Set<number> = new Set(),
 ) {
   const entryIds = entries.map((entry) => entry.id);
   const { data: editorialData } = entryIds.length
@@ -143,12 +181,11 @@ async function materializeEntries(
   const editorialMap = new Map(
     ((editorialData ?? []) as unknown as EditorialMetadata[]).map((item) => [item.draw_entry_id, item]),
   );
-
-  return entries.map((entry) =>
+  const albums = entries.map((entry) =>
     materializeLiveAlbum(entry, reviewMap.get(entry.id), editorialMap.get(entry.id), supabase),
   );
+  return collapseGlobalDrawAlbums(albums, globalDrawNumbers);
 }
-
 export async function getLiveAlbum(slug: string): Promise<Album | null> {
   const match = LIVE_SLUG.exec(slug);
   if (!match) return null;
@@ -186,7 +223,7 @@ export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {
   const safeLimit = Math.max(1, Math.min(limit, 24));
   const { data: drawData, error: drawError } = await supabase
     .from("club_draws")
-    .select("draw_number")
+    .select("draw_number, draw_type")
     .in("status", ["published", "locked"])
     .order("draw_number", { ascending: false })
     .limit(1)
@@ -210,6 +247,7 @@ export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {
     (entryData ?? []) as unknown as LiveEntry[],
     (reviewData ?? []) as PublicLiveReview[],
     supabase,
+    new Set(drawData.draw_type === "global" ? [Number(drawData.draw_number)] : []),
   );
 }
 
@@ -218,7 +256,7 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
   if (!supabase) return [];
   const { data: drawData, error: drawError } = await supabase
     .from("club_draws")
-    .select("draw_number")
+    .select("draw_number, draw_type")
     .in("status", ["published", "locked"])
     .order("draw_number", { ascending: true });
   if (drawError || !drawData?.length) return [];
@@ -242,6 +280,7 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
     (entryData ?? []) as unknown as LiveEntry[],
     (reviewData ?? []) as PublicLiveReview[],
     supabase,
+    new Set((drawData as Array<{ draw_number: number; draw_type?: string }>).filter((draw) => draw.draw_type === "global").map((draw) => Number(draw.draw_number))),
   );
 }
 
