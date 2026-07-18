@@ -1,9 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 type TrackItem = { title: string; artist: string; albumTitle?: string; youtubeMusicUrl?: string; sourceUrl?: string; externalUrl?: string };
-type DeezerTrack = { id: number; title: string; artist: string; album: string | null; url: string };
+type DeezerTrack = { id: number; title: string; artist: string; album: string | null; preview: string | null; url: string };
 type PlayerContextValue = { openTrack: (item: TrackItem) => void };
 const MusicPlayerContext = createContext<PlayerContextValue | null>(null);
 
@@ -12,6 +12,12 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState<DeezerTrack | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const previewRef = useRef<HTMLAudioElement>(null);
+  const [volume, setVolume] = useState(0.8);
+  const [previewPaused, setPreviewPaused] = useState(true);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
+  useEffect(() => { setPreviewUnavailable(false); setPreviewPaused(true); }, [playing?.id]);
+  useEffect(() => { const audio = previewRef.current; if (audio) { audio.volume = volume; audio.muted = volume === 0; } }, [playing?.id, volume]);
   useEffect(() => {
     const renameHeaders = () => document.querySelectorAll("th").forEach((header) => {
       const label = header.textContent?.trim();
@@ -27,6 +33,12 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, []);
+  const togglePreview = () => {
+    const audio = previewRef.current;
+    if (!audio) return;
+    if (audio.paused) void audio.play().catch(() => setPreviewPaused(true));
+    else audio.pause();
+  };
   const playInClub = async () => {
     if (!choice || loading) return;
     setLoading(true); setError("");
@@ -43,6 +55,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
     {children}
     {choice && <div className="music-choice" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !loading) setChoice(null); }}><section className="music-choice__dialog" role="dialog" aria-modal="true" aria-labelledby="music-choice-title"><button className="music-choice__close" type="button" onClick={() => setChoice(null)} aria-label="Fermer">×</button><p className="eyebrow">CHOISIR L’ÉCOUTE</p><h2 id="music-choice-title">{choice.title}</h2><p>{choice.artist}{choice.albumTitle ? ` · ${choice.albumTitle}` : ""}</p><div className="music-choice__actions"><a className="music-choice__external" href={choice.youtubeMusicUrl ?? choice.externalUrl ?? choice.sourceUrl ?? "https://music.youtube.com"} target="_blank" rel="noopener noreferrer" onClick={() => setChoice(null)}>Ouvrir YouTube Music <span aria-hidden="true">↗</span></a><button className="music-choice__player" type="button" disabled={loading} onClick={() => void playInClub()}>{loading ? "Recherche Deezer…" : "Écouter dans le Klub"}<span aria-hidden="true">▶</span></button>{error && <p className="music-choice__unavailable">{error}</p>}<small className="music-choice__preview">Le lecteur Deezer officiel diffuse un extrait musical.</small></div></section></div>}
     {playing && <aside className="club-player" aria-label={`Lecteur Deezer de ${playing.title}`}><div className="club-player__bar"><div><span>LECTEUR DEEZER · EXTRAIT</span><b>{playing.title}</b><small>{playing.artist}</small></div><button type="button" onClick={() => setPlaying(null)} aria-label="Fermer le lecteur">×</button></div><iframe title={`Deezer : ${playing.title}`} src={`https://widget.deezer.com/widget/dark/track/${playing.id}?tracklist=false`} allow="autoplay; encrypted-media; clipboard-write" loading="eager" referrerPolicy="strict-origin-when-cross-origin" /><a className="club-player__deezer-link" href={playing.url || `https://www.deezer.com/track/${playing.id}`} target="_blank" rel="noopener noreferrer">Ouvrir directement dans Deezer <span aria-hidden="true">↗</span></a></aside>}
+    {playing?.preview && !previewUnavailable && <aside className="club-player club-player--native" aria-label={`Contr?les Deezer de ${playing.title}`}><div className="club-player__bar"><div><span>LECTEUR DEEZER ? EXTRAIT</span><b>{playing.title}</b><small>{playing.artist}</small></div><button type="button" onClick={() => setPlaying(null)} aria-label="Fermer le lecteur">?</button></div><div className="club-player__preview"><audio ref={previewRef} src={playing.preview} autoPlay preload="metadata" onPlay={() => setPreviewPaused(false)} onPause={() => setPreviewPaused(true)} onError={() => setPreviewUnavailable(true)} /><div className="club-player__controls" role="group" aria-label="Contr?les du son"><button type="button" onClick={togglePreview}>{previewPaused ? "Lire" : "Pause"}</button><label>VOLUME <input type="range" min="0" max="100" value={Math.round(volume * 100)} onChange={(event) => setVolume(Number(event.target.value) / 100)} aria-label="Volume de l?extrait Deezer" /></label><output>{Math.round(volume * 100)}%</output></div><small>Extrait Deezer de 30 secondes</small></div><a className="club-player__deezer-link" href={playing.url || `https://www.deezer.com/track/${playing.id}`} target="_blank" rel="noopener noreferrer">Ouvrir directement dans Deezer <span aria-hidden="true">?</span></a></aside>}
   </MusicPlayerContext.Provider>;
 }
 

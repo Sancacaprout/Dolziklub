@@ -25,6 +25,8 @@ test("keeps Deezer usable when Safari cannot render the embedded widget", () => 
   assert.match(player, /referrerPolicy="strict-origin-when-cross-origin"/);
   assert.match(player, /Ouvrir directement dans Deezer/);
   assert.match(player, /target="_blank" rel="noopener noreferrer"/);
+  assert.match(player, /type="range"/);
+  assert.match(deezerApi, /preview/);
   assert.match(deezerApi, /https:\/\/www\.deezer\.com\/track\/\$\{match\.id\}/);
 });
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 const clean = (value: string | null, length: number) => value?.trim().slice(0, length) ?? "";
 const normalized = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-type DeezerItem = { id?: number; title?: string; artist?: { name?: string }; album?: { title?: string } };
+type DeezerItem = { id?: number; title?: string; artist?: { name?: string }; album?: { title?: string }; preview?: string };
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
     const score = (item: DeezerItem) => Number(normalized(item.title ?? "") === expectedTitle) * 4 + Number(normalized(item.artist?.name ?? "") === expectedArtist) * 3 + Number(Boolean(expectedAlbum) && normalized(item.album?.title ?? "") === expectedAlbum);
     const match = candidates.sort((left, right) => score(right) - score(left))[0];
     if (!match?.id || !match.title || !match.artist?.name) return NextResponse.json({ error: "Aucun morceau Deezer correspondant n’a été trouvé." }, { status: 404 });
-    return NextResponse.json({ track: { id: match.id, title: match.title, artist: match.artist.name, album: match.album?.title ?? null, url: `https://www.deezer.com/track/${match.id}` } });
+    return NextResponse.json({ track: { id: match.id, title: match.title, artist: match.artist.name, album: match.album?.title ?? null, preview: typeof match.preview === "string" && match.preview.startsWith("https://") ? match.preview : null, url: `https://www.deezer.com/track/${match.id}` } });
   } catch {
     return NextResponse.json({ error: "La recherche Deezer est momentanément indisponible." }, { status: 503 });
   }
