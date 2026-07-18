@@ -48,7 +48,8 @@ test("creates a global draw with one proposer and one row per other participant"
 
 test("offers the global draw type and designated proposer in the tableur", () => {
   assert.match(tableur, /Écoute globale/);
-  assert.match(tableur, /Qui choisit l’album commun/);
+  assert.match(tableur, /GlobalDrawWheel/);
+  assert.match(tableur, /Math\.random\(\) \* globalOptions\.length/);
   assert.match(tableur, /p_global_proposer_username: globalProposer/);
   assert.match(tableur, /draw_type, global_proposer_username/);
   assert.match(liveAlbums, /collapseGlobalDrawAlbums/);
