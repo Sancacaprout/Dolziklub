@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { authenticatedUser, cleanText, error } from "@/lib/music-server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
+
+function getAuthenticatedSupabase(request: Request) {
+  const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!token || !url || !key) throw new Error("supabase_user_client_unavailable");
+
+  return createClient(url, key, {
+    accessToken: async () => token,
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +37,15 @@ export async function POST(request: Request) {
     return error("Album invalide.", 400);
   }
 
-  // This route, not the browser, performs the upload. It keeps the storage
-  // bucket public for reading while making the administrative mutation private.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase: any = getSupabaseAdmin();
-  const { data: profile } = await supabase.from("member_profiles").select("role").eq("id", user.id).maybeSingle();
+  // The admin's own access token is propagated to Supabase. RLS remains the
+  // authorization boundary, so this does not require a service-role key.
+  const supabase = getAuthenticatedSupabase(request);
+  const { data: profile, error: profileError } = await supabase.from("member_profiles").select("role").eq("id", user.id).maybeSingle();
+  if (profileError) return error("Le statut administrateur n'a pas pu etre verifie.", 503);
   if (profile?.role !== "admin") return error("Acc?s administrateur requis.", 403);
 
   const target = archiveAlbumId || drawEntryId;
-  const path = `editorial/${target}/${Date.now()}.${extensionFor(file.type)}`;
+  const path = `${user.id}/editorial/${target}/${Date.now()}.${extensionFor(file.type)}`;
   const { error: uploadError } = await supabase.storage.from("album-covers").upload(path, await file.arrayBuffer(), {
     contentType: file.type,
     cacheControl: "31536000",
@@ -42,7 +54,10 @@ export async function POST(request: Request) {
   if (uploadError) return error("La pochette n'a pas pu etre envoyee.", 503);
 
   if (drawEntryId) {
-    const { error: drawError } = await supabase.from("club_draw_entries").update({ cover_path: path, cover_source_url: null }).eq("id", drawEntryId);
+    const { error: drawError } = await supabase.rpc("admin_set_club_draw_cover", {
+      p_entry_id: drawEntryId,
+      p_cover_path: path,
+    });
     if (drawError) return error("La pochette a ete envoyee, mais le tirage n'a pas pu etre mis a jour.", 503);
   }
   if (archiveAlbumId) {
