@@ -66,6 +66,7 @@ export default async function RankingsPage() {
         archiveRated={stats.rated}
         currentAlbums={currentAlbums.length}
         distribution={stats.distribution}
+        styles={stats.styles}
       />
     </main>
   );

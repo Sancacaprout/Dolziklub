@@ -66,7 +66,7 @@ test("reuses complete archive records for the current draw without duplicates", 
 });
 
 
-test("keeps proposals and listens limited to the active published draw", () => {
-  assert.match(tableur, /const availableDraws = new Set\(draws\.filter\(\(draw\) => draw\.status === "published"\)\.map/);
-  assert.doesNotMatch(tableur, /availableDraws = new Set\(draws\.filter\(\(draw\) => draw\.status === "published" \|\| draw\.status === "locked"/);
+test("keeps proposals and listens limited to the latest published draw", () => {
+  assert.match(tableur, /const latestPublishedDraw = \[\.\.\.draws\]\.filter\(\(draw\) => draw\.status === "published"\)\.sort/);
+  assert.match(tableur, /const availableDraws = new Set\(latestPublishedDraw \? \[latestPublishedDraw\.draw_number\] : \[\]\)/);
 });

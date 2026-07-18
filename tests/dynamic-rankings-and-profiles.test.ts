@@ -114,3 +114,9 @@ test("Tibo is available to the club with an empty profile", () => {
   assert.equal(stats.proposed.length, 0);
   assert.equal(stats.listened.length, 0);
 });
+test("the rankings expose styles calculated from the synchronized catalog", () => {
+  const catalog = [album({ id: "rap", genres: ["Rap", "Soul"] }), album({ id: "rap-2", genres: ["rap"] })];
+  assert.deepEqual(getClubStats(catalog).styles, [{ name: "Rap", count: 2 }, { name: "Soul", count: 1 }]);
+  assert.match(rankings, /styles=\{stats\.styles\}/);
+  assert.match(board, /Les styles les plus/);
+});

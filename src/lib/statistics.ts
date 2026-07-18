@@ -6,6 +6,19 @@ const verdictRatings = (album: Album) => album.globalReviews
   ? album.globalReviews.flatMap((review) => review.rating === null ? [] : [review.rating])
   : album.rating === null ? [] : [album.rating];
 
+export function getRepresentedStyles(albums: Album[]) {
+  const styles = new Map<string, { name: string; count: number }>();
+  for (const album of albums) {
+    const albumStyles = new Set(album.genres.map((genre) => genre.trim()).filter(Boolean));
+    for (const style of albumStyles) {
+      const key = style.toLocaleLowerCase("fr");
+      const current = styles.get(key);
+      styles.set(key, current ? { ...current, count: current.count + 1 } : { name: style, count: 1 });
+    }
+  }
+  return [...styles.values()].sort((first, second) => second.count - first.count || first.name.localeCompare(second.name, "fr"));
+}
+
 export function getClubStats(albums: Album[]) {
   const ratings = albums.flatMap(verdictRatings);
   const verdictSlots = albums.reduce((total, album) => total + (album.globalReviews?.length ?? 1), 0);
@@ -20,6 +33,7 @@ export function getClubStats(albums: Album[]) {
       score,
       count: ratings.filter((rating) => rating === score).length,
     })),
+    styles: getRepresentedStyles(albums),
   };
 }
 
