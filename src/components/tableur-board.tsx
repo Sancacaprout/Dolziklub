@@ -226,9 +226,9 @@ function HistoricalPendingReviews({ albums, member }: { albums: Album[]; member:
   const pending = albums.filter((album) => {
     if (!isHistoricalListener(album, member)) return false;
     if (activeEntries.some((entry) => !isEmptyAlbumSlot(entry) && normalizedMember(entry.album_title) === normalizedMember(album.title) && normalizedMember(entry.album_artist) === normalizedMember(album.artist))) return false;
-    const record = recordMap.get(album.id);
+    const record = recordMap.get(storageArchiveRecordId(album.id)) ?? recordMap.get(album.id);
     const effectiveRating = record?.is_modified ? record.rating : album.rating;
-    return album.rating === null;
+    return effectiveRating === null || effectiveRating === undefined;
   });
   const save = async ({ entryId, reviewTitle, review, rating, bestTrack, worstTrack }: ReviewPayload) => {
     if (!configured || !review.trim() || !isHalfStepRating(rating) || rating < 0 || rating > 5) return;

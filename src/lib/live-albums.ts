@@ -43,16 +43,41 @@ type EditorialMetadata = {
   album_description: string | null;
 };
 
+type AlbumCoverOverride = { album_id: string; cover_path: string };
+
+async function getArchiveCoverOverrides(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("album_cover_overrides")
+    .select("album_id, cover_path");
+  if (error) return new Map<string, string>();
+  return new Map(
+    ((data ?? []) as unknown as AlbumCoverOverride[]).map((override) => [override.album_id, override.cover_path]),
+  );
+}
+
+function applyArchiveCoverOverrides(albums: Album[], overrides: Map<string, string>, supabase: SupabaseClient) {
+  return albums.map((album) => {
+    const path = overrides.get(album.id);
+    return path
+      ? { ...album, cover: supabase.storage.from("album-covers").getPublicUrl(path).data.publicUrl }
+      : album;
+  });
+}
+
+function resolveEntryCover(entry: LiveEntry, supabase: SupabaseClient) {
+  if (entry.cover_path) {
+    return supabase.storage.from("album-covers").getPublicUrl(entry.cover_path).data.publicUrl;
+  }
+  return entry.cover_source_url;
+}
+
 const EDITORIAL_FIELDS =
   "draw_entry_id, release_year, origin, language, genres, project_type, artist_description, album_description";
 const LIVE_ENTRY_FIELDS =
   "id, draw_number, position, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url";
 
 function resolveLiveCover(entry: LiveEntry, supabase: SupabaseClient) {
-  if (entry.cover_path) {
-    return supabase.storage.from("album-covers").getPublicUrl(entry.cover_path).data.publicUrl;
-  }
-  return entry.cover_source_url ?? "/album-a-venir.png";
+  return resolveEntryCover(entry, supabase) ?? "/album-a-venir.png";
 }
 
 function materializeLiveAlbum(
@@ -91,7 +116,7 @@ function materializeLiveAlbum(
         url: archived.worstTrack.url,
       },
       albumUrl: entry.youtube_music_url ?? archived.albumUrl,
-      cover: archived.cover ?? liveCover,
+      cover: resolveEntryCover(entry, supabase) ?? archived.cover ?? liveCover,
       artistDescription: editorial?.artist_description ?? archived.artistDescription,
       albumDescription: editorial?.album_description ?? archived.albumDescription,
       status: rating === null ? "pending" : "rated",
@@ -184,7 +209,9 @@ async function materializeEntries(
   const albums = entries.map((entry) =>
     materializeLiveAlbum(entry, reviewMap.get(entry.id), editorialMap.get(entry.id), supabase),
   );
-  return collapseGlobalDrawAlbums(albums, globalDrawNumbers);
+  return applyArchiveCoverOverrides(
+    collapseGlobalDrawAlbums(albums, globalDrawNumbers), await getArchiveCoverOverrides(supabase), supabase,
+  );
 }
 export async function getLiveAlbum(slug: string): Promise<Album | null> {
   const match = LIVE_SLUG.exec(slug);
@@ -214,7 +241,9 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
   const editorial = editorialData as unknown as EditorialMetadata | null;
 
   if (!entry?.album_title?.trim() || !entry.album_artist?.trim()) return null;
-  return materializeLiveAlbum(entry, review ?? undefined, editorial ?? undefined, supabase);
+  return applyArchiveCoverOverrides(
+    [materializeLiveAlbum(entry, review ?? undefined, editorial ?? undefined, supabase)], await getArchiveCoverOverrides(supabase), supabase,
+  )[0] ?? null;
 }
 
 export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {
@@ -286,6 +315,8 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
 
 export async function getSynchronizedAlbums(): Promise<Album[]> {
   const liveAlbums = await getPublishedLiveAlbums();
+  const supabase = getOptionalSupabaseServerReader();
+  const overrides = supabase ? await getArchiveCoverOverrides(supabase) : new Map<string, string>();
   const synchronizedByArchiveId = new Map(
     liveAlbums
       .filter((album) => album.id.startsWith("archive-"))
@@ -296,8 +327,9 @@ export async function getSynchronizedAlbums(): Promise<Album[]> {
     liveOnlyAlbums.set(albumIdentityKey(album.title, album.artist), album);
   }
 
-  return [
+  const synchronized = [
     ...archivedAlbums.map((album) => synchronizedByArchiveId.get(album.id) ?? album),
     ...liveOnlyAlbums.values(),
   ];
+  return supabase ? applyArchiveCoverOverrides(synchronized, overrides, supabase) : synchronized;
 }

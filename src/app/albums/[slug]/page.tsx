@@ -188,8 +188,8 @@ export default async function AlbumPage({
         </div>
       </section>
 
-      {album.liveEntryId && (
-        <AlbumEditorialEditor album={album} drawEntryId={album.liveEntryId} />
+      {(album.liveEntryId || album.id.startsWith("archive-")) && (
+        <AlbumEditorialEditor album={album} drawEntryId={album.liveEntryId ?? null} archiveAlbumId={album.id.startsWith("archive-") ? album.id : null} />
       )}
 
       <section className="section">

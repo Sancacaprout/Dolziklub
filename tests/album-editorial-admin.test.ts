@@ -15,6 +15,8 @@ const editor = readFileSync(resolve("src/components/album-editorial-editor.tsx")
 const albumPage = readFileSync(resolve("src/app/albums/[slug]/page.tsx"), "utf8");
 const liveAlbums = readFileSync(resolve("src/lib/live-albums.ts"), "utf8");
 
+const coverMigration = readFileSync(resolve("supabase/migrations/20260718074218_add_album_cover_overrides.sql"), "utf8");
+const coverRoute = readFileSync(resolve("src/app/api/admin/album-cover/route.ts"), "utf8");
 test("protects album editorial writes with admin-only Supabase policies", () => {
   assert.match(schemaMigration, /alter table public\.album_editorial_metadata enable row level security/);
   assert.match(schemaMigration, /private\.is_member_admin\(\)/);
@@ -57,4 +59,15 @@ test("merges Supabase editorial metadata into synchronized album records", () =>
   assert.match(liveAlbums, /editorial\?\.artist_description/);
   assert.match(albumPage, /À PROPOS DE L’ARTISTE/);
   assert.match(liveAlbums, /liveEntryId: entry\.id/);
+});
+test("allows only admins to replace live and archived album covers", () => {
+  assert.match(editor, /Modifier la pochette/);
+  assert.match(editor, /fetch\("\/api\/admin\/album-cover"/);
+  assert.match(albumPage, /archiveAlbumId=/);
+  assert.match(coverRoute, /authenticatedUser\(request\)/);
+  assert.match(coverRoute, /profile\?\.role !== "admin"/);
+  assert.match(coverRoute, /album_cover_overrides/);
+  assert.match(coverMigration, /enable row level security/);
+  assert.match(coverMigration, /private\.is_member_admin\(\)/);
+  assert.match(liveAlbums, /applyArchiveCoverOverrides/);
 });
