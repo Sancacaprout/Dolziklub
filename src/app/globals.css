@@ -535,6 +535,8 @@ img,svg,video,canvas { max-width:100%; }
 .album-title-link { border:0; padding:0; background:transparent; color:inherit; cursor:pointer; text-align:left; }
 .music-link { cursor:pointer; }
 .track-card button { width:100%; border:0; padding:0; background:transparent; color:white; cursor:pointer; text-align:left; }
+.track-card button { display:grid; gap:.65rem; font-size:clamp(1.45rem,2.45vw,2.15rem); letter-spacing:-.035em; }
+.track-card button small { display:block; font-size:.69rem; letter-spacing:.08em; }
 .track-card button:hover { color:var(--acid); }
 .track-card--worst button small { color:#ffb0a8; }
 .music-choice { position:fixed; z-index:60; inset:0; display:grid; place-items:center; padding:1rem; background:#0e1428b8; }
