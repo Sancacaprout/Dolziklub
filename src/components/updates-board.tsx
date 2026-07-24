@@ -7,16 +7,16 @@ import type { SiteUpdate, UpdateChange, UpdateKind } from "@/data/site-updates";
 type UpdateFilter = "all" | UpdateKind;
 
 const filters: readonly { id: UpdateFilter; label: string }[] = [
-  { id: "all", label: "Tout" },
-  { id: "added", label: "Nouveautés" },
-  { id: "fixed", label: "Corrections" },
-  { id: "improved", label: "Améliorations" },
+  { id: "all", label: "\u{1F4DA} Tout" },
+  { id: "added", label: "\u{2728} Nouveautés" },
+  { id: "fixed", label: "\u{1F6E0}\u{FE0F} Corrections" },
+  { id: "improved", label: "\u{1F680} Améliorations" },
 ];
 
 const sectionLabels: Record<UpdateKind, string> = {
-  added: "Nouveautés",
-  fixed: "Corrections",
-  improved: "Améliorations",
+  added: "\u{2728} Nouveautés",
+  fixed: "\u{1F6E0}\u{FE0F} Corrections",
+  improved: "\u{1F680} Améliorations",
 };
 
 function formatDate(date: SiteUpdate["date"]) {

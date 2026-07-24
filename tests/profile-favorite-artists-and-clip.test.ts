@@ -69,3 +69,11 @@ test("migration keeps public reads and owner-only writes behind RLS", () => {
   assert.match(migration, /favorite_clip_youtube_id ~ '\^\[A-Za-z0-9_-\]\{11\}\$'/);
   assert.doesNotMatch(migration, /disable row level security/i);
 });
+
+test("artist ranks use gold, silver and bronze medals with spaced search controls", () => {
+  for (const symbol of ["1F947", "1F948", "1F949"]) {
+    assert.match(artistEditor, new RegExp(`\\\\u\\{${symbol}\\}`));
+    assert.match(artistPublic, new RegExp(`\\\\u\\{${symbol}\\}`));
+  }
+  assert.match(css, /favorite-artist-editor-card > \.favorite-track-search \{ margin-top:\.75rem; \}/);
+});

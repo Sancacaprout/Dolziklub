@@ -303,11 +303,6 @@ export function DeezerTrackLookup({
     [artist, canSearch, title],
   );
 
-  useEffect(() => {
-    if (!canSearch) return;
-    const timer = window.setTimeout(() => void search(true), 700);
-    return () => window.clearTimeout(timer);
-  }, [canSearch, search]);
 
   return (
     <div className="favorite-track-search">
@@ -332,7 +327,11 @@ export function DeezerTrackLookup({
           className="favorite-track-search__result"
           type="button"
           key={candidate.id}
-          onClick={() => onSelect(candidate)}
+          onClick={() => {
+            setCandidates([]);
+            setMessage("");
+            onSelect(candidate);
+          }}
         >
           {candidate.coverUrl ? <img src={candidate.coverUrl} alt="" /> : null}
           <span>

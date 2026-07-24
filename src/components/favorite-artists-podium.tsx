@@ -14,9 +14,9 @@ export type FavoriteArtist = {
 };
 
 const medals = {
-  1: { symbol: "★", label: "médaille d’or" },
-  2: { symbol: "●", label: "médaille d’argent" },
-  3: { symbol: "◆", label: "médaille de bronze" },
+  1: { symbol: "\u{1F947}", label: "m\u{00E9}daille d\u{2019}or" },
+  2: { symbol: "\u{1F948}", label: "m\u{00E9}daille d\u{2019}argent" },
+  3: { symbol: "\u{1F949}", label: "m\u{00E9}daille de bronze" },
 } as const;
 
 function artistImage(artist: FavoriteArtist) {

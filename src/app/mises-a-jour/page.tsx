@@ -14,6 +14,7 @@ export default function UpdatesPage() {
         <p className="eyebrow">JOURNAL DU CLUB</p>
         <h1>LES MISES<br /><em>À JOUR</em></h1>
         <p className="page-lede">Tout ce qui change dans DOL ZIKLUB, sans le blabla inutile.</p>
+        <span className="updates-page__vinyl" aria-hidden="true"><i /></span>
         <aside>
           <b>{siteUpdates.length}</b>
           <span>versions consignées</span>

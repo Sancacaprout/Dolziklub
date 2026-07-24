@@ -34,7 +34,7 @@ type ArtistCandidate = {
 
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const visualRanks: Rank[] = [2, 1, 3];
-const medalSymbols: Record<Rank, string> = { 1: "★", 2: "●", 3: "◆" };
+const medalSymbols: Record<Rank, string> = { 1: "\u{1F947}", 2: "\u{1F948}", 3: "\u{1F949}" };
 
 function emptyArtist(rank: Rank): ArtistDraft {
   return {

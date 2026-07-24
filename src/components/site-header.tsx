@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 
-const links = [["Accueil", "/"], ["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Idées", "/idees"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
+const links = [["Accueil", "/"], ["Albums", "/albums"], ["Membres", "/membres"], ["Classements", "/classements"], ["Mises \u{00E0} jour", "/mises-a-jour"], ["Idées", "/idees"], ["Mèmes", "/memes"], ["Le concept", "/concept"]] as const;
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);

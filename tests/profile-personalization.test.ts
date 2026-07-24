@@ -65,5 +65,18 @@ test("shared Deezer assistance requires an explicit album or track choice", () =
   assert.match(musicAssist, /\/api\/music\/search-favorite-tracks/);
   assert.match(musicAssist, /Rechercher sur Deezer/);
   assert.match(musicAssist, /Rien n’est sélectionné/);
-  assert.match(musicAssist, /onClick=\{\(\) => onSelect\(candidate\)\}/);
+  assert.match(musicAssist, /onSelect\(candidate\)/);
+});
+
+test("favorite tracks only reveal Deezer results after a manual search", () => {
+  const favoriteTrackLookup = musicAssist.slice(
+    musicAssist.indexOf("export function DeezerTrackLookup"),
+    musicAssist.indexOf("export function TrackLookup"),
+  );
+  assert.doesNotMatch(favoriteTrackLookup, /setTimeout|search\(true\)/);
+  assert.match(favoriteTrackLookup, /onClick=\{\(\) => void search\(\)\}/);
+  assert.match(
+    favoriteTrackLookup,
+    /onClick=\{\(\) => \{\s*setCandidates\(\[\]\);\s*setMessage\(""\);\s*onSelect\(candidate\);/,
+  );
 });
