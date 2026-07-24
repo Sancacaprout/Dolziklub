@@ -216,6 +216,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
 
   return <section className="meme-gallery-section">
     <div className="meme-gallery-actions">
+      <a className="button meme-create-button" href="https://imgflip.com/memetemplates" target="_blank" rel="noopener noreferrer">Créer un mème</a>
       {memberId ? <button className="button meme-add-button" onClick={() => setIsUploadOpen((open) => !open)}>{isUploadOpen ? "Fermer l'ajout" : "Ajouter un mème ↗"}</button> : <Link className="button meme-add-button" href="/connexion">Connexion pour ajouter ↗</Link>}
     </div>
     {isUploadOpen && <form className="meme-upload" onSubmit={uploadMeme}>

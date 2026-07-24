@@ -10,9 +10,19 @@ export const profileThemeIds = [
   "punk-poster",
   "jazz-lounge",
   "acid-rave",
+  "wheely",
 ] as const;
 
 export type ProfileThemeId = (typeof profileThemeIds)[number];
+export const wheelyThemeAssets = {
+  character: "/game/character/wheely.png",
+  obstacles: [
+    { id: "blocker-a", src: "/game/obstacles/blocker-a.png" },
+    { id: "blocker-b", src: "/game/obstacles/blocker-b.png" },
+    { id: "low-barrier", src: "/game/obstacles/low-barrier.png" },
+    { id: "overhead-barrier", src: "/game/obstacles/overhead-barrier.png" },
+  ],
+} as const;
 
 export type ProfileTheme = {
   id: ProfileThemeId;
@@ -20,6 +30,7 @@ export type ProfileTheme = {
   description: string;
   previewColors: readonly [string, string, string];
   artPath: string;
+  previewVariant?: "default" | "wheely";
 };
 
 export const profileThemes: readonly ProfileTheme[] = [
@@ -34,6 +45,7 @@ export const profileThemes: readonly ProfileTheme[] = [
   { id: "punk-poster", name: "Punk Poster", description: "Affiche déchirée, noir, blanc et rouge frontal.", previewColors: ["#F6F3EB", "#090909", "#EF2720"], artPath: "/profile-themes/punk-poster/torn-ticket.svg" },
   { id: "jazz-lounge", name: "Jazz Lounge", description: "Bordeaux, doré discret et velours de club.", previewColors: ["#3C101B", "#F4E7D1", "#C9A35C"], artPath: "/profile-themes/jazz-lounge/lounge-notes.svg" },
   { id: "acid-rave", name: "Acid Rave", description: "Flyer technique, vert acide et jaune fluorescent.", previewColors: ["#111312", "#F2F4EE", "#C8FF00"], artPath: "/profile-themes/acid-rave/scanner-grid.svg" },
+  { id: "wheely", name: "Wheely", description: "Profil arcade : vinyle géant, skateboard et score de runner musical.", previewColors: ["#111111", "#F4EFE4", "#B5F50D"], artPath: wheelyThemeAssets.character, previewVariant: "wheely" },
 ] as const;
 
 export const defaultProfileTheme: ProfileThemeId = "dol-ziklub";

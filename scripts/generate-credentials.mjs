@@ -25,6 +25,7 @@ if (requestedUsername && selectedRoster.length === 0) {
   process.exit(1);
 }
 
+if (existsSync(".env.production.local")) process.loadEnvFile(".env.production.local");
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
 function password() {

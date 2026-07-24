@@ -16,7 +16,6 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
   const [volume, setVolume] = useState(0.8);
   const [previewPaused, setPreviewPaused] = useState(true);
   const [previewUnavailable, setPreviewUnavailable] = useState(false);
-  useEffect(() => { setPreviewUnavailable(false); setPreviewPaused(true); }, [playing?.id]);
   useEffect(() => { const audio = previewRef.current; if (audio) { audio.volume = volume; audio.muted = volume === 0; } }, [playing?.id, volume]);
   useEffect(() => {
     const renameHeaders = () => document.querySelectorAll("th").forEach((header) => {
@@ -47,7 +46,7 @@ export function MusicPlayerProvider({ children }: { children: ReactNode }) {
       const response = await fetch(`/api/music/deezer-track?${query}`);
       const payload = await response.json().catch(() => null) as { track?: DeezerTrack; error?: string } | null;
       if (!response.ok || !payload?.track) throw new Error(payload?.error ?? "Ce morceau n’a pas été trouvé dans Deezer.");
-      setPlaying(payload.track); setChoice(null);
+      setPreviewUnavailable(false); setPreviewPaused(true); setPlaying(payload.track); setChoice(null);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Le lecteur Deezer est indisponible."); }
     finally { setLoading(false); }
   };

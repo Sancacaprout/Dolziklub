@@ -17,6 +17,9 @@ const liveAlbums = readFileSync(resolve("src/lib/live-albums.ts"), "utf8");
 
 const coverMigration = readFileSync(resolve("supabase/migrations/20260718074218_add_album_cover_overrides.sql"), "utf8");
 const coverRoute = readFileSync(resolve("src/app/api/admin/album-cover/route.ts"), "utf8");
+const albumCatalogPage = readFileSync(resolve("src/app/albums/page.tsx"), "utf8");
+const liveRefresh = readFileSync(resolve("src/components/live-club-refresh.tsx"), "utf8");
+const userScopedCoverMigration = readFileSync(resolve("supabase/migrations/20260718081436_admin_album_cover_user_scoped_upload.sql"), "utf8");
 test("protects album editorial writes with admin-only Supabase policies", () => {
   assert.match(schemaMigration, /alter table public\.album_editorial_metadata enable row level security/);
   assert.match(schemaMigration, /private\.is_member_admin\(\)/);
@@ -70,4 +73,8 @@ test("allows only admins to replace live and archived album covers", () => {
   assert.match(coverMigration, /enable row level security/);
   assert.match(coverMigration, /private\.is_member_admin\(\)/);
   assert.match(liveAlbums, /applyArchiveCoverOverrides/);
+  assert.match(albumCatalogPage, /<LiveClubRefresh/);
+  assert.match(albumPage, /<LiveClubRefresh/);
+  assert.match(liveRefresh, /table: "album_cover_overrides"/);
+  assert.match(userScopedCoverMigration, /album_cover_overrides_cover_path_check/);
 });

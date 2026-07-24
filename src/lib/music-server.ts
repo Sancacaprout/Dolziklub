@@ -59,7 +59,7 @@ export function cleanText(value: unknown, limit: number) {
 
 export async function consumeSearchQuota(
   userId: string,
-  type: "album" | "track",
+  type: "album" | "track" | "artist",
 ) {
   if (!hasSupabaseAdminConfig()) return true;
   // Supabase types are generated separately; this server-only path reaches new tables immediately after migration.

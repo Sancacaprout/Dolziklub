@@ -33,6 +33,9 @@ export interface Album {
   albumDescription: string | null;
   status: AlbumStatus;
   drawNumber?: number | null;
+  drawStatus?: "draft" | "published" | "locked" | null;
+  drawUpdatedAt?: string | null;
+  archiveNumber?: number | null;
   liveEntryId?: string | null;
   globalReviews?: GlobalAlbumReview[];
 }

@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AlbumCard } from "@/components/album-card";
 import { getMemberDisplayName, members } from "@/data/members";
 import { normalizeMusicText } from "@/lib/music-matching";
+import { resolvedArchiveNumber } from "@/lib/archive-number-fallbacks";
 import {
   getSupabaseBrowserClient,
   isSupabaseConfigured,
 } from "@/lib/supabase/client";
 import type { Album } from "@/types/album";
+
+type DrawStatus = "draft" | "published" | "locked";
 
 type LiveEntry = {
   id: string;
@@ -21,9 +24,17 @@ type LiveEntry = {
   cover_path: string | null;
   cover_source_url: string | null;
   youtube_music_url: string | null;
+  draw_status: DrawStatus;
+  updated_at: string;
+  archive_number: number | null;
 };
 const memberName = (value: string | null) =>
   getMemberDisplayName(value).toLocaleLowerCase("fr");
+
+function archiveNumber(album: Album) {
+  return resolvedArchiveNumber(album) ?? 0;
+}
+
 function coverUrl(path: string | null, sourceUrl: string | null) {
   return path
     ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(path)
@@ -53,6 +64,10 @@ function liveAlbum(entry: LiveEntry): Album {
     artistDescription: null,
     albumDescription: null,
     status: "pending",
+    drawNumber: entry.draw_number,
+    drawStatus: entry.draw_status,
+    drawUpdatedAt: entry.updated_at,
+    archiveNumber: entry.archive_number,
   };
 }
 function isArchived(entry: LiveEntry, album: Album) {
@@ -96,38 +111,62 @@ export function AlbumExplorer({ albums }: { albums: Album[] }) {
     | "listened"
   >("latest");
   const [member, setMember] = useState("");
-  // The archive is chronological. Its contiguous pending tail is the draw
-  // currently being listened to: these albums keep their complete archive
-  // pages, while the catalogue identifies them as a live draw rather than as
-  // already closed archives.
-  const currentDrawArchiveIds = useMemo(() => {
-    const ids = new Set<string>();
-    const newestFirst = [...albums].sort(
-      (left, right) =>
-        Number(right.id.replace("archive-", "")) -
-        Number(left.id.replace("archive-", "")),
-    );
-    for (const album of newestFirst) {
-      if (album.status !== "pending") break;
-      ids.add(album.id);
-    }
-    return ids;
-  }, [albums]);
+  const currentDrawArchiveIds = useMemo(
+    () =>
+      new Set(
+        albums
+          .filter((album) => album.drawStatus === "published" && album.status === "pending")
+          .map((album) => album.id),
+      ),
+    [albums],
+  );
   useEffect(() => {
     if (!configured) return;
     const timer = setTimeout(() => {
-      void getSupabaseBrowserClient()
-        .from("club_draw_entries")
-        .select(
-          "id, draw_number, position, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url",
-        )
-        .not("album_title", "is", null)
-        .not("album_artist", "is", null)
-        .order("draw_number", { ascending: false })
-        .order("position", { ascending: true })
-        .then((result: { data: unknown }) =>
-          setLive((result.data ?? []) as LiveEntry[]),
+      const supabase = getSupabaseBrowserClient();
+      const loadEntries = async () => {
+        const withArchiveNumber = await supabase
+          .from("club_draw_entries")
+          .select(
+            "id, draw_number, position, archive_number, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url",
+          )
+          .not("album_title", "is", null)
+          .not("album_artist", "is", null)
+          .order("draw_number", { ascending: false })
+          .order("position", { ascending: true });
+        if (!withArchiveNumber.error) return withArchiveNumber;
+
+        // A stale PostgREST schema must never hide the club's recent draws.
+        return supabase
+          .from("club_draw_entries")
+          .select(
+            "id, draw_number, position, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url",
+          )
+          .not("album_title", "is", null)
+          .not("album_artist", "is", null)
+          .order("draw_number", { ascending: false })
+          .order("position", { ascending: true });
+      };
+
+      void Promise.all([
+        loadEntries(),
+        supabase.from("club_draws").select("draw_number, status"),
+      ]).then(([entriesResult, drawsResult]) => {
+        const statuses = new Map(
+          ((drawsResult.data ?? []) as Array<{ draw_number: number; status: DrawStatus }>).map(
+            (draw) => [Number(draw.draw_number), draw.status],
+          ),
         );
+        setLive(
+          ((entriesResult.data ?? []) as Array<Omit<LiveEntry, "draw_status">>).map(
+            (entry) => ({
+              ...entry,
+              archive_number: entry.archive_number ?? null,
+              draw_status: statuses.get(entry.draw_number) ?? "draft",
+            }),
+          ),
+        );
+      });
     }, 0);
     return () => clearTimeout(timer);
   }, [configured]);
@@ -156,16 +195,40 @@ export function AlbumExplorer({ albums }: { albums: Album[] }) {
             ),
         )
         .sort((a, b) => {
-          const position = (album: Album) =>
-            album.id.startsWith("live-")
-              ? 1_000_000
-              : Number(album.id.replace("archive-", ""));
-          if (sort === "latest") return position(b) - position(a);
-          if (sort === "oldest") return position(a) - position(b);
+          // The date an album entered the club is represented by its draw
+          // number. Archive positions are only used as a legacy fallback.
+          const livePositions = new Map<string, number>(
+            live.map((entry): [string, number] => [`live-${entry.id}`, entry.position]),
+          );
+          const chronology = (album: Album) => {
+            const archivePosition = album.id.startsWith("archive-")
+              ? Number(album.id.replace("archive-", ""))
+              : 0;
+            return {
+              draw: album.drawNumber ?? Math.ceil(archivePosition / 9),
+              position: livePositions.get(album.id) ?? archivePosition,
+            };
+          };
+          const compareByDateGiven = (left: Album, right: Album) => {
+            const leftDate = chronology(left);
+            const rightDate = chronology(right);
+            return (
+              rightDate.draw - leftDate.draw ||
+              rightDate.position - leftDate.position
+            );
+          };
+          if (sort === "latest") {
+            return (
+              archiveNumber(b) - archiveNumber(a) ||
+              compareByDateGiven(a, b) ||
+              a.title.localeCompare(b.title, "fr")
+            );
+          }
+          if (sort === "oldest") return archiveNumber(a) - archiveNumber(b) || compareByDateGiven(b, a) || a.title.localeCompare(b.title, "fr");
           if (sort === "pending")
             return (
               Number(a.status !== "pending") - Number(b.status !== "pending") ||
-              position(b) - position(a)
+              compareByDateGiven(a, b)
             );
           if (sort === "rating") return (b.rating ?? -1) - (a.rating ?? -1);
           if (sort === "proposed")

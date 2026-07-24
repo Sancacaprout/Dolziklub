@@ -67,11 +67,18 @@ export function NotificationBell() {
   }, [configured, loadNotifications]);
 
   useEffect(() => {
-    const onPointerDown = (event: MouseEvent) => {
+    const onPointerDown = (event: PointerEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", onPointerDown);
-    return () => document.removeEventListener("mousedown", onPointerDown);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, []);
 
   const markRead = useCallback(async () => {
@@ -102,13 +109,13 @@ export function NotificationBell() {
   const unreadCount = notifications.filter((notification) => !notification.read_at).length;
 
   return <aside className="notification-bell" ref={panelRef} aria-label="Notifications">
-    <button className="notification-bell__trigger" type="button" onClick={toggle} aria-label={`Notifications${unreadCount ? `, ${unreadCount} non lue${unreadCount > 1 ? "s" : ""}` : ""}`} aria-expanded={open}>
+    <button className="notification-bell__trigger" type="button" onClick={toggle} aria-label={`Notifications${unreadCount ? `, ${unreadCount} non lue${unreadCount > 1 ? "s" : ""}` : ""}`} aria-controls="notification-panel" aria-expanded={open} aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
       {unreadCount > 0 && <span className="notification-bell__count">{unreadCount > 9 ? "9+" : unreadCount}</span>}
     </button>
-    {open && <div className="notification-bell__panel" role="dialog" aria-label="Boîte de notifications">
+    {open && <><button className="notification-bell__backdrop" type="button" tabIndex={-1} aria-label="Fermer les notifications" onClick={() => setOpen(false)} /><div id="notification-panel" className="notification-bell__panel" role="dialog" aria-modal="true" aria-label="Bo�te de notifications" tabIndex={-1} onPointerDown={(event) => event.stopPropagation()}>
       <header><div><span>BOÎTE DU KLUB</span><h2>Notifications</h2></div>{notifications.length > 0 && <button className="notification-bell__clear" type="button" onClick={() => void clear()} title="Vider la corbeille">Vider</button>}</header>
       {notifications.length === 0 ? <div className="notification-bell__empty"><b>Rien de nouveau.</b><span>Ta boîte est parfaitement calme.</span></div> : <ul>{notifications.map((notification) => <li key={notification.id} className={notification.read_at ? "" : "is-unread"}><Link href={notification.href} onClick={() => setOpen(false)}><i aria-hidden="true">{icons[notification.kind]}</i><span><b>{notification.title}</b><small>{notification.body}</small><time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time></span></Link><button type="button" onClick={() => void remove(notification.id)} aria-label={`Supprimer : ${notification.title}`} title="Supprimer">×</button></li>)}</ul>}
-    </div>}
+    </div></>}
   </aside>;
 }

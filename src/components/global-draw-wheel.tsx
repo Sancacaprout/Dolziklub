@@ -22,7 +22,7 @@ export function GlobalDrawWheel({ participants, winnerUsername, drawNumber, onCo
     <section className="global-wheel-dialog">
       <p className="eyebrow">{mode === "creation" ? "TIRAGE GLOBAL" : `TIRAGE ${String(drawNumber ?? 0).padStart(2, "0")} \u00b7 \u00c9COUTE GLOBALE`}</p>
       <h2 id="global-wheel-title">{finished ? "Le choix du club est fait." : "La roue du club tourne..."}</h2>
-      <p>{finished ? <><b>{winner.displayName}</b> choisit l'album que tout le monde va \u00e9couter.</> : "Un seul membre va proposer l'album commun."}</p>
+      <p>{finished ? <><b>{winner.displayName}</b> choisit l&apos;album que tout le monde va \u00e9couter.</> : "Un seul membre va proposer l'album commun."}</p>
       <div className="global-wheel-stage" aria-label={`La roue choisit ${winner.displayName}`}>
         <span className="global-wheel-pointer" aria-hidden="true" />
         <div className="global-wheel" style={{ "--wheel-rotation": `${rotation}deg`, "--wheel-segments": participants.length } as CSSProperties}>

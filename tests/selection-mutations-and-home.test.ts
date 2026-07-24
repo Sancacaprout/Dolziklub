@@ -14,11 +14,15 @@ const home = readFileSync(resolve("src/app/page.tsx"), "utf8");
 const liveAlbums = readFileSync(resolve("src/lib/live-albums.ts"), "utf8");
 const game = readFileSync(resolve("src/components/hero-vinyl-game.tsx"), "utf8");
 
+const explorer = readFileSync(resolve("src/components/album-explorer.tsx"), "utf8");
+const albumCard = readFileSync(resolve("src/components/album-card.tsx"), "utf8");
+
 test("accepts half-step verdicts and returns the saved review", () => {
   assert.match(migration, /drop constraint if exists member_album_reviews_integer_rating/);
   assert.match(migration, /check \(rating \* 2 = trunc\(rating \* 2\)\)/);
   assert.match(tableur, /Array\.from\(\{ length: 11 \}, \(_, index\) => index \/ 2\)/);
-  assert.match(tableur, /upsert\([\s\S]*?onConflict: "album_id,member_id"[\s\S]*?\.select\("id"\)\.single\(\)/);
+  assert.match(tableur, /rpc\("save_my_draw_review"/);
+  assert.match(tableur, /rpc\("reset_my_draw_review"/);
 });
 
 test("lets a proposer replace an album and clears the obsolete verdict", () => {
@@ -69,4 +73,12 @@ test("reuses complete archive records for the current draw without duplicates", 
 test("keeps proposals and listens limited to the latest published draw", () => {
   assert.match(tableur, /const latestPublishedDraw = \[\.\.\.draws\]\.filter\(\(draw\) => draw\.status === "published"\)\.sort/);
   assert.match(tableur, /const availableDraws = new Set\(latestPublishedDraw \? \[latestPublishedDraw\.draw_number\] : \[\]\)/);
+});
+
+test("sorts the catalogue by archive number", () => {
+  assert.match(explorer, /archiveNumber\(b\) - archiveNumber\(a\)/);
+  assert.match(explorer, /archiveNumber\(a\) - archiveNumber\(b\)/);
+  assert.match(albumCard, /Archive #\$\{archiveNumber\}/);
+  assert.match(albumCard, /Archive #\$\{archiveNumber\} - Tirage/);
+  assert.doesNotMatch(albumCard, /Tirage en cours/);
 });

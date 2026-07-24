@@ -17,6 +17,7 @@ const memberPage = source("src/app/membres/[slug]/page.tsx");
 const refresh = source("src/components/live-club-refresh.tsx");
 const metrics = source("src/components/club-live-metrics.tsx");
 const board = source("src/components/rankings-board.tsx");
+const archivedSyncMigration = source("supabase/migrations/20260718163602_synchronize_archived_review_catalog.sql");
 
 function album(overrides: Partial<Album>): Album {
   return {
@@ -54,6 +55,14 @@ test("the catalog overlays every published draw and keeps live-only albums", () 
   assert.match(snapshot, /getLatestLiveAlbums\(24\)/);
 });
 
+test("archived verdict overrides update the shared catalog and refresh live pages", () => {
+  assert.match(liveAlbums, /getArchivedReviewOverrides/);
+  assert.match(liveAlbums, /applyArchivedReviewOverrides/);
+  assert.match(liveAlbums, /archived_album_reviews/);
+  assert.match(refresh, /archived_album_reviews/);
+  assert.match(archivedSyncMigration, /is_modified = true/);
+});
+
 test("rankings and profiles share the same server snapshot", () => {
   for (const page of [rankings, membersPage, memberPage]) {
     assert.match(page, /export const dynamic = "force-dynamic"/);
@@ -68,7 +77,7 @@ test("revalidates profile and ranking data after database changes", () => {
   assert.match(refresh, /club_draw_entries/);
   assert.match(refresh, /member_album_reviews/);
   assert.match(refresh, /member_public_profiles/);
-  assert.match(refresh, /30_000/);
+  assert.doesNotMatch(refresh, /setInterval/);
   assert.match(refresh, /router\.refresh\(\)/);
 });
 
@@ -102,6 +111,19 @@ test("Axel is available to the club with an empty profile", () => {
   assert.equal(stats.listened.length, 0);
 });
 
+test("Nadia is available to the club with an empty profile", () => {
+  const nadia = members.find((member) => member.slug === "nadia");
+  assert.ok(nadia);
+  assert.equal(nadia.displayName, "Nadia");
+  assert.equal(nadia.username, "nadia");
+  assert.equal(nadia.role, "member");
+  assert.equal(usernameToInternalEmail("Nadia"), "nadia@dolziklub.vercel.app");
+
+  const stats = getMemberStats([], nadia.slug);
+  assert.equal(stats.proposed.length, 0);
+  assert.equal(stats.listened.length, 0);
+});
+
 test("Tibo is available to the club with an empty profile", () => {
   const tibo = members.find((member) => member.slug === "tibo");
   assert.ok(tibo);
@@ -117,6 +139,7 @@ test("Tibo is available to the club with an empty profile", () => {
 test("the rankings expose styles calculated from the synchronized catalog", () => {
   const catalog = [album({ id: "rap", genres: ["Rap", "Soul"] }), album({ id: "rap-2", genres: ["rap"] })];
   assert.deepEqual(getClubStats(catalog).styles, [{ name: "Rap", count: 2 }, { name: "Soul", count: 1 }]);
-  assert.match(rankings, /styles=\{stats\.styles\}/);
+  assert.match(rankings, /const styles = stats\.styles\.map/);
+  assert.match(rankings, /styles=\{styles\}/);
   assert.match(board, /Les styles les plus/);
 });

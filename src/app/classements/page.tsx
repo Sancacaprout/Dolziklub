@@ -14,6 +14,17 @@ export default async function RankingsPage() {
     .filter((album) => album.rating !== null)
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.title.localeCompare(b.title, "fr"))
     .slice(0, 5);
+  const styles = stats.styles.map((style) => {
+    const styleKey = style.name.trim().toLocaleLowerCase("fr");
+    const styleAlbums = albums
+      .filter((album) => album.genres.some((genre) => genre.trim().toLocaleLowerCase("fr") === styleKey))
+      .sort((first, second) => (second.archiveNumber ?? 0) - (first.archiveNumber ?? 0) || first.title.localeCompare(second.title, "fr"));
+
+    return {
+      ...style,
+      albums: styleAlbums.map((album) => ({ slug: album.slug, title: album.title, artist: album.artist })),
+    };
+  });
   const rankingMembers: RankingMember[] = members.map((member) => {
     const memberStats = getMemberStats(albums, member.slug);
     const given = memberStats.listened.filter((album) => album.rating !== null);
@@ -66,7 +77,7 @@ export default async function RankingsPage() {
         archiveRated={stats.rated}
         currentAlbums={currentAlbums.length}
         distribution={stats.distribution}
-        styles={stats.styles}
+        styles={styles}
       />
     </main>
   );

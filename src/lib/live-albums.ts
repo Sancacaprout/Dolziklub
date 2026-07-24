@@ -1,17 +1,20 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import { albums as archivedAlbums } from "@/data/albums";
 import { albumIdentityKey, findArchiveAlbumMatch } from "@/lib/album-live-sync";
 import { getOptionalSupabaseServerReader } from "@/lib/supabase/server-reader";
 import type { Album } from "@/types/album";
 
 const LIVE_SLUG = /^live-([0-9a-f-]{36})$/i;
+type DrawStatus = "draft" | "published" | "locked";
 
 type LiveEntry = {
   id: string;
   draw_number: number;
   position: number;
+  archive_number: number | null;
   updated_at: string;
   proposed_by_name: string | null;
   listened_by_name: string | null;
@@ -33,6 +36,16 @@ type LiveReview = {
 };
 
 type PublicLiveReview = LiveReview & { album_id: string };
+
+type ArchivedReviewOverride = {
+  album_id: string;
+  review_title: string | null;
+  review: string | null;
+  rating: number | null;
+  best_track: string | null;
+  worst_track: string | null;
+  is_modified: boolean;
+};
 
 type EditorialMetadata = {
   draw_entry_id: string;
@@ -66,6 +79,38 @@ function applyArchiveCoverOverrides(albums: Album[], overrides: Map<string, stri
   });
 }
 
+
+async function getArchivedReviewOverrides(supabase: SupabaseClient) {
+  const { data, error } = await supabase
+    .from("archived_album_reviews")
+    .select("album_id, review_title, review, rating, best_track, worst_track, is_modified");
+  if (error) return new Map<string, ArchivedReviewOverride>();
+  return new Map(
+    ((data ?? []) as unknown as ArchivedReviewOverride[]).map((review) => [review.album_id, review]),
+  );
+}
+
+function applyArchivedReviewOverrides(
+  albums: Album[],
+  overrides: Map<string, ArchivedReviewOverride>,
+): Album[] {
+  return albums.map((album) => {
+    const review = overrides.get(album.id);
+    if (!review?.is_modified) return album;
+    const rating = review.rating === null ? null : Number(review.rating);
+    const status: Album["status"] = rating === null ? "pending" : "rated";
+    return {
+      ...album,
+      rating,
+      shortReview: review.review_title ?? review.review,
+      detailedReview: review.review_title ? review.review : null,
+      bestTrack: { ...album.bestTrack, title: review.best_track },
+      worstTrack: { ...album.worstTrack, title: review.worst_track },
+      status,
+    };
+  });
+}
+
 function resolveEntryCover(entry: LiveEntry, supabase: SupabaseClient) {
   if (entry.cover_path) {
     return supabase.storage.from("album-covers").getPublicUrl(entry.cover_path).data.publicUrl;
@@ -76,7 +121,7 @@ function resolveEntryCover(entry: LiveEntry, supabase: SupabaseClient) {
 const EDITORIAL_FIELDS =
   "draw_entry_id, release_year, origin, language, genres, project_type, artist_description, album_description";
 const LIVE_ENTRY_FIELDS =
-  "id, draw_number, position, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url";
+  "id, draw_number, position, archive_number, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url";
 
 function resolveLiveCover(entry: LiveEntry, supabase: SupabaseClient) {
   return resolveEntryCover(entry, supabase) ?? "/album-a-venir.png";
@@ -87,6 +132,7 @@ function materializeLiveAlbum(
   review: LiveReview | undefined,
   editorial: EditorialMetadata | undefined,
   supabase: SupabaseClient,
+  drawStatus: DrawStatus | null = null,
 ): Album {
   const title = entry.album_title!.trim();
   const artist = entry.album_artist!.trim();
@@ -123,6 +169,9 @@ function materializeLiveAlbum(
       albumDescription: editorial?.album_description ?? archived.albumDescription,
       status: rating === null ? "pending" : "rated",
       drawNumber: entry.draw_number,
+      drawStatus,
+      drawUpdatedAt: entry.updated_at,
+      archiveNumber: entry.archive_number,
       liveEntryId: entry.id,
     };
   }
@@ -150,6 +199,9 @@ function materializeLiveAlbum(
     albumDescription: editorial?.album_description ?? null,
     status: rating === null ? "pending" : "rated",
     drawNumber: entry.draw_number,
+    drawStatus,
+    drawUpdatedAt: entry.updated_at,
+    archiveNumber: entry.archive_number,
     liveEntryId: entry.id,
   };
 }
@@ -196,6 +248,7 @@ async function materializeEntries(
   reviews: PublicLiveReview[],
   supabase: SupabaseClient,
   globalDrawNumbers: Set<number> = new Set(),
+  drawStatusByNumber: Map<number, DrawStatus> = new Map(),
 ) {
   const entryIds = entries.map((entry) => entry.id);
   const { data: editorialData } = entryIds.length
@@ -209,7 +262,13 @@ async function materializeEntries(
     ((editorialData ?? []) as unknown as EditorialMetadata[]).map((item) => [item.draw_entry_id, item]),
   );
   const albums = entries.map((entry) =>
-    materializeLiveAlbum(entry, reviewMap.get(entry.id), editorialMap.get(entry.id), supabase),
+    materializeLiveAlbum(
+      entry,
+      reviewMap.get(entry.id),
+      editorialMap.get(entry.id),
+      supabase,
+      drawStatusByNumber.get(entry.draw_number) ?? null,
+    ),
   );
   return applyArchiveCoverOverrides(
     collapseGlobalDrawAlbums(albums, globalDrawNumbers), await getArchiveCoverOverrides(supabase), supabase,
@@ -250,8 +309,21 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
   const editorial = editorialData as unknown as EditorialMetadata | null;
 
   if (!entry?.album_title?.trim() || !entry.album_artist?.trim()) return null;
+  const { data: drawData } = await supabase
+    .from("club_draws")
+    .select("status")
+    .eq("draw_number", entry.draw_number)
+    .maybeSingle();
   return applyArchiveCoverOverrides(
-    [materializeLiveAlbum(entry, linkedReview, editorial ?? undefined, supabase)], await getArchiveCoverOverrides(supabase), supabase,
+    [materializeLiveAlbum(
+      entry,
+      linkedReview,
+      editorial ?? undefined,
+      supabase,
+      (drawData?.status as DrawStatus | undefined) ?? null,
+    )],
+    await getArchiveCoverOverrides(supabase),
+    supabase,
   )[0] ?? null;
 }
 
@@ -261,7 +333,7 @@ export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {
   const safeLimit = Math.max(1, Math.min(limit, 24));
   const { data: drawData, error: drawError } = await supabase
     .from("club_draws")
-    .select("draw_number, draw_type")
+    .select("draw_number, draw_type, status")
     .in("status", ["published", "locked"])
     .order("draw_number", { ascending: false })
     .limit(1)
@@ -286,6 +358,7 @@ export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {
     (reviewData ?? []) as PublicLiveReview[],
     supabase,
     new Set(drawData.draw_type === "global" ? [Number(drawData.draw_number)] : []),
+    new Map([[Number(drawData.draw_number), drawData.status as DrawStatus]]),
   );
 }
 
@@ -294,14 +367,14 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
   if (!supabase) return [];
   const { data: drawData, error: drawError } = await supabase
     .from("club_draws")
-    .select("draw_number, draw_type")
+    .select("draw_number, draw_type, status")
     .in("status", ["published", "locked"])
     .order("draw_number", { ascending: true });
   if (drawError || !drawData?.length) return [];
 
   const drawNumbers = drawData.map((draw) => Number(draw.draw_number));
-  const [{ data: entryData, error: entryError }, { data: reviewData, error: reviewError }] = await Promise.all([
-    supabase
+  const loadEntries = async () => {
+    const withArchiveNumber = await supabase
       .from("club_draw_entries")
       .select(LIVE_ENTRY_FIELDS)
       .in("draw_number", drawNumbers)
@@ -309,7 +382,23 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
       .not("album_artist", "is", null)
       .order("draw_number", { ascending: true })
       .order("position", { ascending: true })
-      .limit(1000),
+      .limit(1000);
+    if (!withArchiveNumber.error) return withArchiveNumber;
+
+    // Keep every published archive visible while the PostgREST schema refreshes.
+    return supabase
+      .from("club_draw_entries")
+      .select("id, draw_number, position, updated_at, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url")
+      .in("draw_number", drawNumbers)
+      .not("album_title", "is", null)
+      .not("album_artist", "is", null)
+      .order("draw_number", { ascending: true })
+      .order("position", { ascending: true })
+      .limit(1000);
+  };
+
+  const [{ data: entryData, error: entryError }, { data: reviewData, error: reviewError }] = await Promise.all([
+    loadEntries(),
     supabase.rpc("get_public_draw_reviews"),
   ]);
   if (entryError || reviewError) return [];
@@ -319,13 +408,15 @@ export async function getPublishedLiveAlbums(): Promise<Album[]> {
     (reviewData ?? []) as PublicLiveReview[],
     supabase,
     new Set((drawData as Array<{ draw_number: number; draw_type?: string }>).filter((draw) => draw.draw_type === "global").map((draw) => Number(draw.draw_number))),
+    new Map((drawData as Array<{ draw_number: number; status: DrawStatus }>).map((draw) => [Number(draw.draw_number), draw.status])),
   );
 }
 
-export async function getSynchronizedAlbums(): Promise<Album[]> {
+async function loadSynchronizedAlbums(): Promise<Album[]> {
   const liveAlbums = await getPublishedLiveAlbums();
   const supabase = getOptionalSupabaseServerReader();
   const overrides = supabase ? await getArchiveCoverOverrides(supabase) : new Map<string, string>();
+  const archivedReviewOverrides = supabase ? await getArchivedReviewOverrides(supabase) : new Map<string, ArchivedReviewOverride>();
   const synchronizedByArchiveId = new Map(
     liveAlbums
       .filter((album) => album.id.startsWith("archive-"))
@@ -340,5 +431,11 @@ export async function getSynchronizedAlbums(): Promise<Album[]> {
     ...archivedAlbums.map((album) => synchronizedByArchiveId.get(album.id) ?? album),
     ...liveOnlyAlbums.values(),
   ];
-  return supabase ? applyArchiveCoverOverrides(synchronized, overrides, supabase) : synchronized;
+  const reviewed = applyArchivedReviewOverrides(synchronized, archivedReviewOverrides);
+  return supabase ? applyArchiveCoverOverrides(reviewed, overrides, supabase) : reviewed;
 }
+export const getSynchronizedAlbums = unstable_cache(
+  loadSynchronizedAlbums,
+  ["club-synchronized-albums-v1"],
+  { revalidate: 20, tags: ["club-data"] },
+);

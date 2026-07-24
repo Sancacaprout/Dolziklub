@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { FavoriteAlbumsPanel } from "@/components/auth/favorite-albums-panel";
+import { FavoriteTracksPanel } from "@/components/auth/favorite-tracks-panel";
+import { FavoriteArtistsPanel } from "@/components/auth/favorite-artists-panel";
+import { FavoriteClipPanel } from "@/components/auth/favorite-clip-panel";
 import { defaultProfileTheme, isProfileThemeId, type ProfileThemeId } from "@/lib/profile-themes";
 import {
   getSupabaseBrowserClient,
@@ -162,7 +164,6 @@ function StatColorControl({
 }
 
 export function AccountPanel() {
-  const router = useRouter();
   const configured = isSupabaseConfigured();
   const [account, setAccount] = useState<Account>(null);
   const [bio, setBio] = useState("");
@@ -171,8 +172,25 @@ export function AccountPanel() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarPreviewUrlRef = useRef<string | null>(null);
   const [activeTheme, setActiveTheme] = useState<ProfileThemeId>(defaultProfileTheme);
   const classicTheme = activeTheme === defaultProfileTheme;
+  useEffect(() => () => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+    }
+  }, []);
+  const handleAvatarFile = (file: File | null) => {
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+    }
+    const preview = file ? URL.createObjectURL(file) : null;
+    avatarPreviewUrlRef.current = preview;
+    setAvatarFile(file);
+    setAvatarPreview(preview);
+  };
   useEffect(() => {
     const syncTheme = () => {
       const theme = document.body.dataset.profileTheme;
@@ -270,7 +288,8 @@ export function AccountPanel() {
   const uploadAvatar = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!account) return;
-    const file = new FormData(event.currentTarget).get("avatar") as File | null;
+    const form = event.currentTarget;
+    const file = new FormData(form).get("avatar") as File | null;
     if (!file || file.size === 0) {
       setMessage("Choisis une image pour ton affiche.");
       return;
@@ -305,6 +324,8 @@ export function AccountPanel() {
       );
     } else {
       setAccount({ ...account, avatarPath: path });
+      form.reset();
+      handleAvatarFile(null);
       setMessage("Nouvelle affiche enregistrée.");
     }
     setUploading(false);
@@ -359,21 +380,38 @@ export function AccountPanel() {
           </p>
         </div>
       </section>
-      <form className="avatar-form" onSubmit={uploadAvatar}>
-        <label>
-          Changer mon affiche
+      <form className="avatar-form avatar-picker" onSubmit={uploadAvatar}>
+        <div className="avatar-picker__preview" aria-live="polite">
+          {avatarPreview ? (
+            <Image src={avatarPreview} alt="Aperçu de la nouvelle photo" width={128} height={128} unoptimized />
+          ) : photo ? (
+            <Image src={photo} alt="Photo actuelle" width={128} height={128} />
+          ) : (
+            <span aria-hidden="true">{account.displayName.slice(0, 1)}</span>
+          )}
+        </div>
+        <div className="avatar-picker__controls">
+          <label className="button avatar-picker__choose" htmlFor="account-avatar-file">
+            Choisir une nouvelle photo
+          </label>
           <input
+            id="account-avatar-file"
+            className="visually-hidden"
             name="avatar"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             required
+            onChange={(event) => handleAvatarFile(event.target.files?.[0] ?? null)}
           />
-        </label>
-        <button className="button" type="submit" disabled={uploading}>
+          <p className="avatar-picker__filename">
+            {avatarFile ? avatarFile.name : "Aucun nouveau fichier sélectionné"}
+          </p>
+          <small>JPG, PNG, WebP ou GIF · 3 Mo maximum.</small>
+        </div>
+        <button className="button avatar-picker__submit" type="submit" disabled={uploading || !avatarFile}>
           {uploading ? "Envoi…" : "Mettre à jour la photo"}
         </button>
       </form>
-      <FavoriteAlbumsPanel theme={activeTheme} />
       <form
         className="member-kouize account-kouize-editor"
         onSubmit={saveProfile}
@@ -494,22 +532,15 @@ export function AccountPanel() {
           </button>
         </div>
       </form>
+      <FavoriteAlbumsPanel theme={activeTheme} />
+      <FavoriteTracksPanel theme={activeTheme} />
+      <FavoriteArtistsPanel theme={activeTheme} />
+      <FavoriteClipPanel theme={activeTheme} />
       {message && (
         <p className="account-message" role="status">
           {message}
         </p>
       )}
-      <button
-        className="text-link account-signout"
-        type="button"
-        onClick={async () => {
-          await getSupabaseBrowserClient().auth.signOut();
-          router.push("/connexion");
-          router.refresh();
-        }}
-      >
-        Se déconnecter
-      </button>
     </section>
   );
 }

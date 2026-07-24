@@ -12,6 +12,7 @@ import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import { MusicChoiceButton, MusicTrackChoiceButton } from "@/components/music-player";
 import { getArchivedReviewOverride } from "@/lib/archived-reviews";
 import { AlbumEditorialEditor } from "@/components/album-editorial-editor";
+import { LiveClubRefresh } from "@/components/live-club-refresh";
 
 export function generateStaticParams() {
   return albums.map(({ slug }) => ({ slug }));
@@ -73,7 +74,10 @@ export default async function AlbumPage({
   }
 
   const synchronizedAlbums = await loadSynchronizedCatalog();
-  const isCurrentDraw = album.drawNumber != null && album.status === "pending";
+  const isCurrentDraw =
+    album.drawNumber != null &&
+    album.drawStatus !== "locked" &&
+    album.status === "pending";
   const isLive = album.id.startsWith("live-") || isCurrentDraw;
   const related = synchronizedAlbums.filter((item) => item.id !== album.id).slice(-3).reverse();
   const status =
@@ -89,6 +93,7 @@ export default async function AlbumPage({
 
   return (
     <main className="page album-page">
+      <LiveClubRefresh />
       <Link className="back" href="/albums">
         ← Retour au bac
       </Link>

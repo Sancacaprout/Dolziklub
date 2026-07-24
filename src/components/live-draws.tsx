@@ -16,6 +16,7 @@ import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 type Entry = {
   id: string;
   draw_number: number;
+  archive_number?: number | null;
   position: number;
   proposed_by: string | null;
   listened_by: string | null;
@@ -38,6 +39,7 @@ type Review = {
   worst_track_youtube_music_url?: string | null;
 };
 type Draw = { draw_number: number; status: "draft" | "published" | "locked"; draw_type?: "standard" | "global" };
+type BonusReview = { entry_id: string | null; member_username: string; member_display_name: string; review_title: string | null; review: string; rating: number; best_track: string | null; worst_track: string | null };
 type Member = { id: string; username: string; displayName: string };
 type StickyHeader = {
   left: number;
@@ -83,6 +85,13 @@ function emptySlot(entry: Entry) {
     !entry.album_artist?.trim() ||
     /^album\s*[-–—]\s*artiste$/i.test(entry.album_title)
   );
+}
+
+function archiveLabel(entry: Entry) {
+  const draw = String(entry.draw_number).padStart(2, "0");
+  return entry.archive_number == null
+    ? `Tirage ${draw}`
+    : `Archive #${entry.archive_number} - Tirage ${draw}`;
 }
 
 function sameAlbum(entry: Entry, album: Album) {
@@ -209,7 +218,9 @@ function LiveDraw({
   draw,
   rows,
   reviews,
+  bonusReviews,
   member,
+  bonusAction,
   onOpenProposal,
   onOpenReview,
   focusEntryId,
@@ -217,7 +228,9 @@ function LiveDraw({
   draw: Draw;
   rows: Entry[];
   reviews: Map<string, Review>;
+  bonusReviews: Map<string, BonusReview[]>;
   member: Member | null;
+  bonusAction?: ReactNode;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   focusEntryId: string | null;
@@ -258,7 +271,7 @@ function LiveDraw({
     window.addEventListener("resize", update);
     scroll?.addEventListener("scroll", update, { passive: true });
     update();
-    return () => {
+  return () => {
       observer.disconnect();
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
@@ -275,6 +288,8 @@ function LiveDraw({
       .getElementById(`draw-entry-${focusEntryId}`)
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [focusEntryId, rows]);
+
+  const editableEntry = member && draw.status === "locked" ? rows.find((entry) => assigned(entry, member, "listener") && Boolean(reviews.get(entry.id))) ?? null : null;
 
   return (
     <section className="draw-section draw-section--live" ref={sectionRef}>
@@ -310,6 +325,10 @@ function LiveDraw({
         <span>
           {rows.length} emplacement{rows.length > 1 ? "s" : ""}
         </span>
+        <div className="draw-heading__actions">
+          {draw.status === "published" && bonusAction}
+          {editableEntry && <button type="button" className="sheet-entry-action" onClick={() => onOpenReview(editableEntry.id)}>Modifier mes notes</button>}
+        </div>
       </div>
       <div className="sheet-scroll" ref={scrollRef}>
         <table className="sheet-table" ref={tableRef}>
@@ -319,6 +338,7 @@ function LiveDraw({
           <tbody>
             {rows.map((entry) => {
               const review = reviews.get(entry.id);
+              const bonus = bonusReviews.get(entry.id) ?? [];
               const canPropose =
                 member &&
                 assigned(entry, member, "proposer") &&
@@ -328,7 +348,7 @@ function LiveDraw({
                 member &&
                 assigned(entry, member, "listener") &&
                 !emptySlot(entry) &&
-                draw.status === "published";
+                (draw.status === "published" || (draw.status === "locked" && Boolean(review)));
               const archivedAlbum = archivedAlbums.find((album) =>
                 sameAlbum(entry, album),
               );
@@ -360,7 +380,7 @@ function LiveDraw({
                             title={entry.album_title}
                             artist={entry.album_artist}
                             cover={previewCover}
-                            label="Tirage en cours"
+                            label={archiveLabel(entry)}
                           />
                         ) : (
                           <AlbumTitlePreview
@@ -368,7 +388,7 @@ function LiveDraw({
                             title={entry.album_title}
                             artist={entry.album_artist}
                             cover={previewCover}
-                            label="Tirage en cours"
+                            label={archiveLabel(entry)}
                           />
                         )}
                         <span>{entry.album_artist}</span>
@@ -378,6 +398,7 @@ function LiveDraw({
                         Album – Artiste
                       </span>
                     )}
+                  {bonus.length > 0 && <details open className="sheet-bonus-reviews" onClick={(event) => event.stopPropagation()}><summary>{"\u00c9coutes bonus"} ({bonus.length}) · {bonus.map((bonusReview) => bonusReview.member_display_name || bonusReview.member_username).join(", ")}</summary>{bonus.map((bonusReview) => <article key={`${bonusReview.entry_id}:${bonusReview.member_username}`}><div><MemberProfileLink name={bonusReview.member_display_name || bonusReview.member_username} /><RatingDisplay rating={bonusReview.rating} /></div><ReviewPreview title={bonusReview.review_title} review={bonusReview.review} /></article>)}</details>}
                   </td>
                   <td><MemberProfileLink name={entry.proposed_by_name} /></td>
                   <td><MemberProfileLink name={entry.listened_by_name} /></td>
@@ -424,21 +445,27 @@ function LiveDraw({
 export function LiveDraws({
   entries,
   reviews,
+  bonusReviews,
   draws,
   member,
+  bonusAction,
   onOpenProposal,
   onOpenReview,
   focusEntryId = null,
 }: {
   entries: Entry[];
   reviews: Review[];
+  bonusReviews: BonusReview[];
   draws: Draw[];
   member: Member | null;
+  bonusAction?: ReactNode;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   focusEntryId?: string | null;
 }) {
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
+  const bonusReviewMap = new Map<string, BonusReview[]>();
+  for (const review of bonusReviews) { if (review.entry_id) bonusReviewMap.set(review.entry_id, [...(bonusReviewMap.get(review.entry_id) ?? []), review]); }
   return (
     <>
       {draws
@@ -449,10 +476,12 @@ export function LiveDraws({
             draw={draw}
             key={draw.draw_number}
             member={member}
+            bonusAction={bonusAction}
             onOpenProposal={onOpenProposal}
             onOpenReview={onOpenReview}
             focusEntryId={focusEntryId}
             reviews={reviewMap}
+            bonusReviews={bonusReviewMap}
             rows={entries
               .filter((entry) => entry.draw_number === draw.draw_number)
               .sort((a, b) => a.position - b.position)}

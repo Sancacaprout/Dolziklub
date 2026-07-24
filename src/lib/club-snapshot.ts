@@ -1,10 +1,12 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
 import { getLatestLiveAlbums, getSynchronizedAlbums } from "@/lib/live-albums";
 import { getSynchronizedMembers } from "@/lib/public-members";
 import { getClubStats } from "@/lib/statistics";
 
-export async function getClubSnapshot() {
+async function loadClubSnapshot() {
   const [albums, currentAlbums, members] = await Promise.all([
     getSynchronizedAlbums(),
     getLatestLiveAlbums(24),
@@ -25,3 +27,9 @@ export async function getClubSnapshot() {
     stats,
   };
 }
+
+export const getClubSnapshot = unstable_cache(
+  loadClubSnapshot,
+  ["club-snapshot-v1"],
+  { revalidate: 20, tags: ["club-data"] },
+);

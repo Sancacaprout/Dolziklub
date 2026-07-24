@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { WheelyThemeArt } from "@/components/wheely-theme-art";
 import {
   defaultProfileTheme,
   isProfileThemeId,
@@ -14,14 +15,26 @@ import {
 
 export function ProfileThemeBoundary({
   username,
+  forcedTheme,
+  previewMode = false,
   children,
 }: {
   username: string | null;
+  forcedTheme?: ProfileThemeId | null;
+  previewMode?: boolean;
   children: ReactNode;
 }) {
-  const [theme, setTheme] = useState<ProfileThemeId | null>(null);
+  const [theme, setTheme] = useState<ProfileThemeId | null>(
+    forcedTheme && forcedTheme !== defaultProfileTheme ? forcedTheme : null,
+  );
 
   useEffect(() => {
+    document.body.classList.toggle("profile-preview-embed", previewMode);
+    return () => document.body.classList.remove("profile-preview-embed");
+  }, [previewMode]);
+
+  useEffect(() => {
+    if (forcedTheme) return;
     if (!username || !isSupabaseConfigured()) return;
 
     const supabase = getSupabaseBrowserClient();
@@ -63,12 +76,19 @@ export function ProfileThemeBoundary({
       window.removeEventListener("focus", refreshTheme);
       void supabase.removeChannel(channel);
     };
-  }, [username]);
+  }, [forcedTheme, username]);
 
-  if (!theme) return <>{children}</>;
+  const effectiveTheme = forcedTheme
+    ? forcedTheme === defaultProfileTheme
+      ? null
+      : forcedTheme
+    : theme;
+
+  if (!effectiveTheme) return <>{children}</>;
 
   return (
-    <div className="profile-theme profile-theme--full-page" data-profile-theme={theme}>
+    <div className="profile-theme profile-theme--full-page" data-profile-theme={effectiveTheme}>
+      {effectiveTheme === "wheely" ? <WheelyThemeArt variant="profile" /> : null}
       {children}
     </div>
   );

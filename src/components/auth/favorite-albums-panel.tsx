@@ -245,9 +245,39 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
                 {cover ? <img key={cover} src={cover} alt={`Jaquette de ${favorite.title || "l’album favori"}`} /> : <div><strong>◉</strong><b>{isEmpty ? "Ajoute ton album" : "Ajoute une jaquette"}</b><small>Ta sélection apparaîtra sur ton profil.</small></div>}
               </div>
               <div className="favorite-album-card__fields">
-                <label>Titre<input value={favorite.title} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’album…" onChange={(event) => { setSelectedMatches((current) => ({ ...current, [favorite.id]: null })); update(index, { title: event.target.value, coverSourceUrl: null }); }} /></label>
-                <AlbumLookup title={favorite.title} artist={favorite.artist} selected={selectedMatches[favorite.id] ?? null} disabled={uploading || saving} onSelect={(candidate) => selectAlbum(index, candidate)} />
-                <label>Artiste<input value={favorite.artist} disabled={uploading || saving} maxLength={180} placeholder="Nom de l’artiste…" onChange={(event) => { setSelectedMatches((current) => ({ ...current, [favorite.id]: null })); update(index, { artist: event.target.value, coverSourceUrl: null }); }} /></label>
+                <label>
+                  Titre
+                  <input
+                    value={favorite.title}
+                    disabled={uploading || saving}
+                    maxLength={180}
+                    placeholder="Nom de l’album…"
+                    onChange={(event) => {
+                      setSelectedMatches((current) => ({ ...current, [favorite.id]: null }));
+                      update(index, { title: event.target.value });
+                    }}
+                  />
+                </label>
+                <label>
+                  Artiste
+                  <input
+                    value={favorite.artist}
+                    disabled={uploading || saving}
+                    maxLength={180}
+                    placeholder="Nom de l’artiste…"
+                    onChange={(event) => {
+                      setSelectedMatches((current) => ({ ...current, [favorite.id]: null }));
+                      update(index, { artist: event.target.value });
+                    }}
+                  />
+                </label>
+                <AlbumLookup
+                  title={favorite.title}
+                  artist={favorite.artist}
+                  selected={selectedMatches[favorite.id] ?? null}
+                  disabled={uploading || saving}
+                  onSelect={(candidate) => selectAlbum(index, candidate)}
+                />
               </div>
               <label className={uploading ? "favorite-album-card__upload is-uploading" : "favorite-album-card__upload"}><span>⇧</span><b>{uploading ? "Import en cours…" : cover ? "Remplacer la jaquette" : "Importer une jaquette"}</b><small>PNG, JPG ou WebP · 5 Mo max.</small><input type="file" disabled={uploading || saving} accept="image/jpeg,image/png,image/webp" onClick={(event) => { event.currentTarget.value = ""; }} onChange={(event) => void upload(index, event.target.files?.[0] ?? null)} /></label>
             </article>
