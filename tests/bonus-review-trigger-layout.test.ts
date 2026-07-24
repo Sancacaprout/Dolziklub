@@ -32,9 +32,10 @@ test("opens the persistent bonus workspace but requests scrolling only from the 
   assert.match(boardSource, />Écouter un album bonus<\/button>/);
   assert.match(
     boardSource,
-    /bonusAction=\{member \? <aside className="bonus-review-callout"/,
+    /<div className="bonus-review-toolbar"><aside className="bonus-review-callout"/,
   );
-  assert.match(drawsSource, /draw\.status === "published" && bonusAction/);
+  assert.doesNotMatch(boardSource, /bonusAction=/);
+  assert.doesNotMatch(drawsSource, /bonusAction/);
 });
 
 test("does not reuse persistent visibility as a scroll request", () => {
@@ -80,6 +81,7 @@ test("keeps the bonus action understandable and responsive", () => {
     /\.bonus-review-callout \{[^}]*border:1px solid var\(--ink\)[^}]*box-shadow:4px 4px 0 var\(--ink\)/,
   );
   assert.match(cssSource, /\.bonus-review-trigger:focus-visible/);
+  assert.match(cssSource, /\.bonus-review-toolbar \{[^}]*justify-content:flex-end/);
   assert.match(
     cssSource,
     /@media \(max-width:960px\)[\s\S]*\.bonus-review-callout \{ width:100%/,

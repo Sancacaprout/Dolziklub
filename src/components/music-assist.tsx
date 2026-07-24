@@ -130,12 +130,14 @@ export function AlbumLookup({
   selected,
   onSelect,
   disabled,
+  automatic = true,
 }: {
   title: string;
   artist: string;
   selected: MusicCandidate | null;
   onSelect: (candidate: MusicCandidate | null) => void;
   disabled?: boolean;
+  automatic?: boolean;
 }) {
   const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
@@ -183,10 +185,10 @@ export function AlbumLookup({
   );
 
   useEffect(() => {
-    if (!canSuggest) return;
+    if (!automatic || !canSuggest) return;
     const timer = window.setTimeout(() => void search(true), 750);
     return () => window.clearTimeout(timer);
-  }, [canSuggest, search]);
+  }, [automatic, canSuggest, search]);
 
   return (
     <section className="music-assist music-assist--autocomplete">
@@ -220,14 +222,22 @@ export function AlbumLookup({
           compact
           candidates={candidates}
           selectedId={selected?.id}
-          onSelect={onSelect}
+          onSelect={(candidate) => {
+            setCandidates([]);
+            setMessage("");
+            onSelect(candidate);
+          }}
         />
       ) : null}
-      {candidates.length || selected ? (
+      {candidates.length ? (
         <button
           type="button"
           className="music-manual"
-          onClick={() => onSelect(null)}
+          onClick={() => {
+            setCandidates([]);
+            setMessage("");
+            onSelect(null);
+          }}
         >
           Aucun de ces résultats · renseigner manuellement
         </button>

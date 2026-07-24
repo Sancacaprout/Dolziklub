@@ -220,7 +220,6 @@ function LiveDraw({
   reviews,
   bonusReviews,
   member,
-  bonusAction,
   onOpenProposal,
   onOpenReview,
   focusEntryId,
@@ -230,7 +229,6 @@ function LiveDraw({
   reviews: Map<string, Review>;
   bonusReviews: Map<string, BonusReview[]>;
   member: Member | null;
-  bonusAction?: ReactNode;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   focusEntryId: string | null;
@@ -326,7 +324,6 @@ function LiveDraw({
           {rows.length} emplacement{rows.length > 1 ? "s" : ""}
         </span>
         <div className="draw-heading__actions">
-          {draw.status === "published" && bonusAction}
           {editableEntry && <button type="button" className="sheet-entry-action" onClick={() => onOpenReview(editableEntry.id)}>Modifier mes notes</button>}
         </div>
       </div>
@@ -448,7 +445,6 @@ export function LiveDraws({
   bonusReviews,
   draws,
   member,
-  bonusAction,
   onOpenProposal,
   onOpenReview,
   focusEntryId = null,
@@ -458,7 +454,6 @@ export function LiveDraws({
   bonusReviews: BonusReview[];
   draws: Draw[];
   member: Member | null;
-  bonusAction?: ReactNode;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   focusEntryId?: string | null;
@@ -476,7 +471,6 @@ export function LiveDraws({
             draw={draw}
             key={draw.draw_number}
             member={member}
-            bonusAction={bonusAction}
             onOpenProposal={onOpenProposal}
             onOpenReview={onOpenReview}
             focusEntryId={focusEntryId}

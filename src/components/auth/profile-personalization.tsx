@@ -168,7 +168,11 @@ export function ProfilePersonalization() {
     profileThemes.find((theme) => theme.id === previewTheme)?.name ?? "";
 
   return (
-    <section ref={sectionRef} className="profile-personalization profile-settings-panel">
+    <section
+      ref={sectionRef}
+      className="profile-personalization profile-settings-panel profile-theme"
+      data-profile-theme={draftTheme}
+    >
       <header>
         <p className="eyebrow">PERSONNALISATION</p>
         <h2>Ma fiche, à mon image.</h2>

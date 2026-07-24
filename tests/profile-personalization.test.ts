@@ -55,6 +55,11 @@ test("theme editor has one save action and a keyboard-safe real profile preview"
   assert.match(themeEditor, /<iframe/);
 });
 
+test("the personalization frame follows the currently selected profile theme", () => {
+  assert.match(themeEditor, /className="profile-personalization profile-settings-panel profile-theme"/);
+  assert.match(themeEditor, /data-profile-theme=\{draftTheme\}/);
+});
+
 test("shared Deezer assistance requires an explicit album or track choice", () => {
   assert.match(musicAssist, /\/api\/music\/search-albums/);
   assert.match(musicAssist, /\/api\/music\/search-favorite-tracks/);
