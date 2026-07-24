@@ -17,6 +17,7 @@ const editor = readFileSync(
   "utf8",
 );
 const game = readFileSync(resolve("src/components/hero-vinyl-game.tsx"), "utf8");
+const memberPage = readFileSync(resolve("src/app/membres/[slug]/page.tsx"), "utf8");
 
 test("Wheely owns an explicit and reusable set of real game assets", () => {
   const wheely = profileThemes.find((theme) => theme.id === "wheely");
@@ -88,12 +89,25 @@ test("Wheely selectors cannot leak from the themed body into sibling previews", 
   );
 });
 
-test("Wheely has a responsive runner stage, arcade HUD and loadout cards", () => {
+test("Wheely keeps its vinyl identity readable without redundant arcade labels", () => {
   assert.match(styles, /wheely-theme-art--profile/);
   assert.match(styles, /wheely-theme-art__hud/);
-  assert.match(styles, /VINYL RUNNER · 3 LANES · ENDLESS MIX/);
-  assert.match(styles, /LOADOUT MUSICAL · 3 SLOTS ÉQUIPÉS/);
-  assert.match(styles, /@media \(max-width:700px\)/);
-  assert.match(styles, /@media \(max-width:430px\)/);
+  assert.ok(styles.includes("radial-gradient(circle,#f4efe4 0 3px,#171715 4px 6px,#c94a32"));
+  assert.ok(styles.includes('.profile-theme--full-page[data-profile-theme="wheely"] .member-profile::after'));
+  assert.ok(styles.includes("animation:wheely-profile-vinyl-spin 28s linear infinite"));
+  assert.ok(styles.includes("@keyframes wheely-profile-vinyl-spin"));
+  assert.ok(styles.includes('.profile-theme--full-page[data-profile-theme="wheely"] .member-archive--listened::after'));
+  assert.ok(styles.includes('.profile-theme--full-page[data-profile-theme="wheely"] .member-archive--proposed::after'));
+  assert.ok(styles.includes('url("/game/character/wheely.png")'));
+  assert.ok(styles.includes('url("/game/obstacles/blocker-a.png")'));
+  assert.ok(styles.includes('url("/game/obstacles/blocker-b.png")'));
+  assert.ok(styles.includes('url("/game/obstacles/low-barrier.png")'));
+  assert.ok(styles.includes('url("/game/obstacles/overhead-barrier.png")'));
+  assert.ok(styles.includes('.random-box .album-card--compact'));
+  assert.ok(styles.includes('content:none;'));
+  assert.doesNotMatch(art, /CHECKPOINT 03/);
+  assert.match(memberPage, /member-archive member-archive--listened/);
+  assert.match(memberPage, /member-archive member-archive--proposed/);
+  assert.ok(styles.includes("@media (max-width:700px)"));
   assert.match(styles, /prefers-reduced-motion:reduce/);
 });

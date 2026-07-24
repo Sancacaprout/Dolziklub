@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { SiteUpdate, UpdateChange, UpdateKind } from "@/data/site-updates";
+import { UpdatesAdminEditor } from "@/components/updates-admin-editor";
 
 type UpdateFilter = "all" | UpdateKind;
 
@@ -48,9 +49,11 @@ function UpdateSection({ kind, changes }: { kind: UpdateKind; changes: readonly 
 export function UpdatesBoard({ updates }: { updates: readonly SiteUpdate[] }) {
   const [filter, setFilter] = useState<UpdateFilter>("all");
   const visibleUpdates = filter === "all" ? updates : updates.filter((update) => update[filter].length > 0);
+  const latestUpdateId = updates[0]?.id;
 
   return (
     <>
+      <UpdatesAdminEditor updates={updates} />
       <nav className="updates-filter" aria-label="Filtrer les mises à jour">
         <span>Afficher</span>
         <div>
@@ -73,10 +76,11 @@ export function UpdatesBoard({ updates }: { updates: readonly SiteUpdate[] }) {
 
       <div className="updates-timeline">
         {visibleUpdates.map((update) => (
-          <article className="update-card" id={update.id} key={update.id}>
+          <article className={`update-card${update.id === latestUpdateId ? " update-card--current" : ""}`} id={update.id} key={update.id} aria-current={update.id === latestUpdateId ? "true" : undefined}>
             <header className="update-card__meta">
               {update.version ? <span>VERSION {update.version}</span> : null}
               <time dateTime={update.date}>{formatDate(update.date)}</time>
+              {update.id === latestUpdateId ? <b className="update-card__current">Version actuelle</b> : null}
             </header>
             <div className="update-card__content">
               <div className="update-card__heading">

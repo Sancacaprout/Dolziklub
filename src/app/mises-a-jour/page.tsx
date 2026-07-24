@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { UpdatesBoard } from "@/components/updates-board";
-import { siteUpdates } from "@/data/site-updates";
+import { getSiteUpdates } from "@/lib/site-updates";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Mises à jour — DOL ZIKLUB",
   description: "Les nouvelles fonctionnalités, corrections et améliorations de DOL ZIKLUB.",
 };
 
-export default function UpdatesPage() {
+export default async function UpdatesPage() {
+  const siteUpdates = await getSiteUpdates();
+
   return (
     <main className="page updates-page">
       <header className="updates-page__masthead">

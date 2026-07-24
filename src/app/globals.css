@@ -1671,9 +1671,15 @@ body.profile-preview-embed .member-profile-page>.back { display:none; }
 .updates-result-count { margin:1rem 0 0; color:var(--blue); }
 .updates-timeline { display:grid; gap:2rem; margin-top:2rem; }
 .update-card { display:grid; grid-template-columns:minmax(155px,.28fr) minmax(0,1.72fr); scroll-margin-top:1rem; border:var(--line); background:#fff8; box-shadow:8px 8px 0 var(--ink); }
-.update-card__meta { display:grid; align-content:start; gap:.7rem; padding:1.35rem; background:var(--ink); color:var(--paper); }
+.update-card__meta { position:relative; isolation:isolate; display:grid; align-content:start; gap:.7rem; overflow:hidden; padding:1.35rem; background:var(--ink); color:var(--paper); }
 .update-card__meta span { color:var(--acid); font:700 .72rem var(--font-mono),monospace; letter-spacing:.08em; }
 .update-card__meta time { font:600 1rem/1.3 var(--font-display),sans-serif; text-transform:uppercase; }
+.update-card__meta>* { position:relative; z-index:2; }
+.update-card--current .update-card__meta { box-shadow:inset 6px 0 0 var(--acid); }
+.update-card--current .update-card__meta::after { content:""; position:absolute; z-index:1; top:-20%; bottom:-20%; left:0; width:62%; background:linear-gradient(110deg,transparent 8%,#ffffff14 30%,var(--acid) 46%,#fff 50%,var(--red) 55%,transparent 83%); opacity:.5; transform:translateX(-190%) skewX(-12deg); animation:update-current-shimmer 3.4s ease-in-out infinite; }
+.update-card__current { width:fit-content; margin-top:.2rem; padding:.3rem .45rem; border:1px solid var(--acid); background:#111; color:var(--acid); font:700 .58rem var(--font-mono),monospace; letter-spacing:.07em; text-transform:uppercase; }
+@keyframes update-current-shimmer { 0%,28% { transform:translateX(-190%) skewX(-12deg); } 72%,100% { transform:translateX(270%) skewX(-12deg); } }
+@media (prefers-reduced-motion:reduce) { .update-card--current .update-card__meta::after { width:100%; opacity:.18; transform:none; animation:none; } }
 .update-card__content { min-width:0; padding:clamp(1.25rem,3vw,2.25rem); }
 .update-card__heading { display:flex; align-items:start; justify-content:space-between; gap:1rem; padding-bottom:1.25rem; border-bottom:1px solid var(--ink); }
 .update-card__heading h2 { max-width:900px; margin:.75rem 0 .65rem; font-size:clamp(2.2rem,5vw,4.2rem); }
@@ -1697,4 +1703,340 @@ body.profile-preview-embed .member-profile-page>.back { display:none; }
 .update-card__links a { min-height:44px; display:inline-flex; align-items:center; gap:.5rem; padding:.65rem .8rem; border:1px solid var(--ink); background:var(--acid); font:700 .64rem var(--font-mono),monospace; text-transform:uppercase; }
 .update-card__links a:hover { background:var(--blue); color:#fff; }
 @media (max-width:980px) { .update-card__changes { grid-template-columns:1fr; }.updates-page__masthead { min-height:390px; }.updates-page__masthead aside { position:static; width:fit-content; margin-top:1.5rem; } }
-@media (max-width:700px) { .updates-page { width:min(100% - 2rem,1380px); }.updates-page__masthead { min-height:0; padding:1.5rem; box-shadow:6px 6px 0 var(--ink); }.updates-page__vinyl { right:-95px; bottom:-70px; opacity:.68; }.updates-page__masthead h1 { font-size:clamp(3.25rem,18vw,5.6rem); }.updates-filter { align-items:stretch; flex-direction:column; }.updates-filter>div { display:grid; grid-template-columns:1fr 1fr; }.updates-filter button { width:100%; }.update-card { grid-template-columns:1fr; box-shadow:5px 5px 0 var(--ink); }.update-card__meta { grid-template-columns:auto 1fr; align-items:center; }.update-card__meta time { justify-self:end; text-align:right; }.update-card__content { padding:1rem; }.update-card__heading h2 { font-size:2.35rem; }.update-card__heading>a { width:44px; height:44px; }.update-card__links { display:grid; }.update-card__links a { justify-content:space-between; } }
+@media (max-width:700px) { .updates-page { width:min(100% - 2rem,1380px); }.updates-page__masthead { min-height:0; padding:1.5rem; box-shadow:6px 6px 0 var(--ink); }.updates-page__vinyl { right:-95px; bottom:-70px; opacity:.68; }.updates-page__masthead h1 { font-size:clamp(3.25rem,18vw,5.6rem); }.updates-filter { align-items:stretch; flex-direction:column; }.updates-filter>div { display:grid; grid-template-columns:1fr 1fr; }.updates-filter button { width:100%; }.update-card { grid-template-columns:1fr; box-shadow:5px 5px 0 var(--ink); }.update-card__meta { grid-template-columns:auto 1fr; align-items:center; }.update-card__meta time { justify-self:end; text-align:right; }.update-card__current { grid-column:1/-1; }.update-card__content { padding:1rem; }.update-card__heading h2 { font-size:2.35rem; }.update-card__heading>a { width:44px; height:44px; }.update-card__links { display:grid; }.update-card__links a { justify-content:space-between; } }
+/* Wheely profile polish: recognizable vinyls, scoped game scenery and readable random pick. */
+.profile-theme--full-page[data-profile-theme="wheely"] {
+  background-color:var(--wheely-bg);
+  background-image:
+    linear-gradient(115deg,#ffffff4f,transparent 38%,#17171508 72%,transparent),
+    url("/game/textures/vinyl-runner-surface.png");
+  background-position:center,center top;
+  background-repeat:no-repeat,repeat;
+  background-size:cover,680px auto;
+}
+.profile-theme--full-page[data-profile-theme="wheely"]::before {
+  inset:auto;
+  top:clamp(290px,30vw,410px);
+  left:50%;
+  width:min(980px,82vw);
+  aspect-ratio:1;
+  border:2px solid #17171524;
+  border-radius:50%;
+  background:
+    radial-gradient(circle,#f4efe4 0 5px,#171715 6px 8px,#c94a32 9px 7%,#f4efe4 7.4% 8.4%,transparent 8.8%),
+    linear-gradient(115deg,transparent 24%,#ffffff70 42%,transparent 56%),
+    repeating-radial-gradient(circle,#171715 0 4px,#363732 5px 6px,#111210 7px 12px);
+  box-shadow:0 24px 80px #1717151c,inset 0 0 0 8px #090a091f;
+  opacity:.12;
+  transform:translateX(-50%);
+}
+
+/* Decorative game art remains behind the copy and only exists inside the Wheely theme. */
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive {
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  background:linear-gradient(120deg,#fff8edf2 0 66%,#eee1c9ee 100%);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive > * {
+  position:relative;
+  z-index:2;
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  right:clamp(-190px,-9vw,-95px);
+  top:50%;
+  width:clamp(280px,32vw,470px);
+  aspect-ratio:1;
+  border:5px solid #10110f;
+  border-radius:50%;
+  background:
+    radial-gradient(circle,#f4efe4 0 4px,#c94a32 5px 15%,#e2b44d 15.5% 17%,transparent 17.5%),
+    linear-gradient(125deg,transparent 29%,#ffffff54 44%,transparent 56%),
+    repeating-radial-gradient(circle,#0c0d0c 0 4px,#30322e 5px 6px,#10110f 7px 12px);
+  box-shadow:0 18px 45px #17171533,inset 0 0 0 7px #050605;
+  opacity:.22;
+  transform:translateY(-50%) rotate(-8deg);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive::after {
+  content:"";
+  position:absolute;
+  z-index:1;
+  inset:0;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  opacity:.17;
+  -webkit-mask-image:linear-gradient(90deg,transparent 38%,#000 68%);
+  mask-image:linear-gradient(90deg,transparent 38%,#000 68%);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive--listened::after {
+  background-image:
+    url("/game/obstacles/blocker-a.png"),
+    url("/game/obstacles/low-barrier.png");
+  background-position:78% 82%,96% 16%;
+  background-size:clamp(82px,10vw,145px) auto,clamp(105px,13vw,175px) auto;
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive--proposed::after {
+  background-image:
+    url("/game/obstacles/blocker-b.png"),
+    url("/game/obstacles/overhead-barrier.png");
+  background-position:80% 18%,97% 84%;
+  background-size:clamp(82px,10vw,145px) auto,clamp(105px,13vw,175px) auto;
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive .album-card {
+  padding:.72rem;
+  border:1px solid #17171555;
+  background:#fff8ede8;
+  color:var(--wheely-text);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive .album-card__copy,
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive .album-card__copy p {
+  color:var(--wheely-text);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive .cover-frame {
+  background:#e8dcc3;
+}
+
+/* Wheely and one obstacle turn the listening portrait into a runner scene. */
+.profile-theme--full-page[data-profile-theme="wheely"] .member-kouize::after {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:0;
+  pointer-events:none;
+  background:
+    url("/game/character/wheely.png") 96% 112% / clamp(115px,16vw,220px) auto no-repeat,
+    url("/game/obstacles/overhead-barrier.png") 77% 16% / clamp(60px,8vw,108px) auto no-repeat,
+    radial-gradient(circle at 91% 62%,transparent 0 3px,#c94a32 4px 8%,#e2b44d 8.5% 9.5%,transparent 10%),
+    repeating-radial-gradient(circle at 91% 62%,transparent 0 8px,#f4efe419 9px 10px,transparent 11px 18px);
+  opacity:.2;
+  -webkit-mask-image:linear-gradient(90deg,transparent 42%,#000 70%);
+  mask-image:linear-gradient(90deg,transparent 42%,#000 70%);
+}
+.profile-theme--full-page[data-profile-theme="wheely"] .member-kouize > * {
+  position:relative;
+  z-index:1;
+}
+
+/* Remove arcade labels that duplicated the actual profile information. */
+.profile-theme--full-page[data-profile-theme="wheely"] .member-profile::before,
+.profile-theme--full-page[data-profile-theme="wheely"] .profile-favorites .member-archive__heading::after,
+.profile-theme--full-page[data-profile-theme="wheely"] .profile-favorite-card::before,
+.profile-theme--full-page[data-profile-theme="wheely"] .member-archive .album-card::before {
+  content:none;
+  display:none;
+}
+
+/* The profile header record now has a label, spindle hole, highlights and grooves. */
+.profile-theme--full-page[data-profile-theme="wheely"] .member-profile::after {
+  right:clamp(1rem,3vw,2.5rem);
+  bottom:clamp(-5rem,-4vw,-3.3rem);
+  width:clamp(110px,12vw,170px);
+  border:6px solid #090a09;
+  background:
+    radial-gradient(circle,#f4efe4 0 3px,#171715 4px 6px,#c94a32 7px 18%,#e2b44d 18.5% 20%,transparent 20.5%),
+    linear-gradient(118deg,transparent 28%,#ffffff52 44%,transparent 57%),
+    repeating-radial-gradient(circle,#090a09 0 4px,#343631 5px 6px,#10110f 7px 12px);
+  box-shadow:0 12px 24px #1717154a,inset 0 0 0 5px #050605;
+  opacity:.96;
+  animation:wheely-profile-vinyl-spin 28s linear infinite;
+  will-change:transform;
+}
+@keyframes wheely-profile-vinyl-spin {
+  to { transform:rotate(360deg); }
+}
+
+/* The random album remains readable even when its artwork is mostly black. */
+.random-box .album-card--compact {
+  border:2px solid #171715;
+  background:#fff8ed!important;
+  color:#171715!important;
+  box-shadow:5px 5px 0 #c94a32;
+}
+.random-box .album-card--compact .album-card__copy,
+.random-box .album-card--compact .album-card__copy p,
+.random-box .album-card--compact .album-card__copy b {
+  color:#171715!important;
+}
+.random-box .album-card--compact .cover-frame {
+  background:#e8dcc3;
+  border-color:#171715;
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .profile-theme--full-page[data-profile-theme="wheely"] .member-profile::after {
+    animation:none;
+    will-change:auto;
+  }
+}
+
+@media (max-width:700px) {
+  .profile-theme--full-page[data-profile-theme="wheely"] {
+    background-size:cover,420px auto;
+  }
+  .profile-theme--full-page[data-profile-theme="wheely"]::before {
+    top:275px;
+    width:760px;
+  }
+  .profile-theme--full-page[data-profile-theme="wheely"] .member-archive::before {
+    right:-165px;
+    opacity:.14;
+  }
+  .profile-theme--full-page[data-profile-theme="wheely"] .member-archive::after {
+    opacity:.11;
+  }
+  .profile-theme--full-page[data-profile-theme="wheely"] .member-kouize::after {
+    opacity:.13;
+  }
+}
+/* Admin editor for the public changelog. */
+.updates-admin-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  margin:clamp(2rem,5vw,4rem) 0 1rem;
+  padding:1rem;
+  border:2px solid var(--ink);
+  background:var(--acid);
+  box-shadow:6px 6px 0 var(--ink);
+}
+.updates-admin-toolbar>div { display:grid; gap:.25rem; }
+.updates-admin-toolbar span {
+  color:var(--blue);
+  font:700 .62rem var(--font-mono),monospace;
+  letter-spacing:.08em;
+}
+.updates-admin-toolbar b { font:600 1.15rem var(--font-display),sans-serif; }
+.updates-admin-toolbar .button { flex:none; }
+.updates-admin-message {
+  margin:1rem 0;
+  padding:.8rem 1rem;
+  border-left:5px solid var(--blue);
+  background:#e8efff;
+  font:.8rem/1.45 Arial,sans-serif;
+}
+.updates-editor {
+  margin:2rem 0 4rem;
+  padding:clamp(1rem,3vw,2rem);
+  border:3px solid var(--ink);
+  background:#f2ede3;
+  box-shadow:10px 10px 0 var(--blue);
+}
+.updates-editor>header {
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:2rem;
+  padding-bottom:1.25rem;
+  border-bottom:2px solid var(--ink);
+}
+.updates-editor>header h2 { margin:.25rem 0; }
+.updates-editor>header p:last-child { max-width:760px; margin:.4rem 0 0; }
+.updates-editor__list { display:grid; gap:1.5rem; margin-top:1.5rem; }
+.updates-editor__card {
+  position:relative;
+  min-width:0;
+  margin:0;
+  padding:clamp(1rem,2.5vw,1.5rem);
+  border:2px solid var(--ink);
+  background:#fffaf0;
+  box-shadow:5px 5px 0 #cfc5b2;
+}
+.updates-editor__card legend {
+  padding:.35rem .55rem;
+  border:1px solid var(--ink);
+  background:var(--blue);
+  color:#fff;
+  font:700 .64rem var(--font-mono),monospace;
+  letter-spacing:.08em;
+}
+.updates-editor__remove {
+  position:absolute;
+  top:.75rem;
+  right:.75rem;
+  padding:.45rem .6rem;
+  border:1px solid var(--ink);
+  background:var(--red);
+  color:#fff;
+  font:700 .58rem var(--font-mono),monospace;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.updates-editor label,
+.updates-editor__categories>span {
+  display:grid;
+  gap:.38rem;
+  font:700 .61rem var(--font-mono),monospace;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.updates-editor input,
+.updates-editor textarea {
+  width:100%;
+  box-sizing:border-box;
+  border:1px solid var(--ink);
+  border-radius:0;
+  padding:.7rem;
+  background:#fff;
+  color:var(--ink);
+  font:400 .9rem/1.4 Arial,sans-serif;
+  letter-spacing:0;
+  text-transform:none;
+}
+.updates-editor textarea { resize:vertical; }
+.updates-editor__main-fields {
+  display:grid;
+  grid-template-columns:minmax(120px,.28fr) minmax(160px,.35fr) minmax(0,1fr);
+  gap:.9rem;
+}
+.updates-editor__wide { grid-column:3; }
+.updates-editor__categories { margin:1.25rem 0; }
+.updates-editor__categories>div {
+  display:flex;
+  flex-wrap:wrap;
+  gap:.45rem;
+  margin-top:.55rem;
+}
+.updates-editor__categories label {
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  padding:.4rem .55rem;
+  border:1px solid #777;
+  background:#f2ede3;
+  cursor:pointer;
+}
+.updates-editor__categories input { width:auto; margin:0; accent-color:var(--blue); }
+.updates-editor__changes {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.8rem;
+}
+.updates-editor__links { margin-top:1rem; }
+.updates-editor__actions {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:1rem;
+  margin-top:1.5rem;
+  padding-top:1.25rem;
+  border-top:2px solid var(--ink);
+}
+.updates-editor__actions .text-link {
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+@media (max-width:800px) {
+  .updates-admin-toolbar,
+  .updates-editor>header { align-items:stretch; flex-direction:column; }
+  .updates-admin-toolbar .button,
+  .updates-editor>header .button { align-self:start; }
+  .updates-editor__main-fields,
+  .updates-editor__changes { grid-template-columns:1fr; }
+  .updates-editor__wide { grid-column:auto; }
+  .updates-editor__remove { position:static; margin:0 0 1rem auto; display:block; }
+}

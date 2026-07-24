@@ -32,7 +32,7 @@ export function WheelyThemeArt({ variant }: { variant: WheelyThemeArtVariant }) 
         sizes={variant === "profile" ? "240px" : "100px"}
         priority={variant === "profile"}
       />
-      <span className="wheely-theme-art__finish">CHECKPOINT 03</span>
+
     </span>
   );
 }

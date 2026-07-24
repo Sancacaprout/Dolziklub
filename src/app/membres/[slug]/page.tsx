@@ -67,7 +67,7 @@ export default async function MemberPage({
             receivedAverage: stats.receivedAverage,
           }}
         />
-        <section className="member-archive">
+        <section className="member-archive member-archive--listened">
           <div className="member-archive__heading">
             <p className="eyebrow">VERDICTS RENDUS</p>
             <h2>Ce que {member.displayName} a écouté.</h2>
@@ -84,7 +84,7 @@ export default async function MemberPage({
             </p>
           )}
         </section>
-        <section className="member-archive">
+        <section className="member-archive member-archive--proposed">
           <div className="member-archive__heading">
             <p className="eyebrow">ALBUMS ENVOYÉS DANS LE BAC</p>
             <h2>Ce que {member.displayName} a proposé.</h2>

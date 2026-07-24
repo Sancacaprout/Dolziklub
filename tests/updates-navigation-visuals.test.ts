@@ -24,3 +24,14 @@ test("the masthead vinyl has grooves, a red label and a spindle hole", () => {
   assert.match(css, /\.updates-page__vinyl::before \{[^}]*background:var\(--red\)/);
   assert.match(css, /\.updates-page__vinyl::after \{[^}]*background:var\(--paper\)/);
 });
+
+test("only the newest update automatically receives the current-version shimmer", () => {
+  assert.match(board, /const latestUpdateId = updates\[0\]\?\.id/);
+  assert.match(board, /update\.id === latestUpdateId \? " update-card--current"/);
+  assert.match(board, /aria-current=\{update\.id === latestUpdateId/);
+  assert.match(board, />Version actuelle</);
+  assert.match(css, /\.update-card--current \.update-card__meta::after/);
+  assert.match(css, /animation:update-current-shimmer 3\.4s ease-in-out infinite/);
+  assert.match(css, /@keyframes update-current-shimmer/);
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)[^}]*\.update-card--current/);
+});
