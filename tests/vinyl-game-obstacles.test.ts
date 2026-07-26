@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import test from "node:test";
 import {
   actionProgress,
+  canCancelSlide,
   createObstacle,
   createRunnerWave,
   GAME,
@@ -103,6 +104,12 @@ test("supports progressive crouching and an accelerated fall", () => {
   assert.ok(Math.abs(slideBlend("sliding", 1)) < 0.0001);
   assert.ok(GAME.fastFallDuration < GAME.jumpDuration);
   assert.ok(GAME.fastFallCooldown > GAME.fastFallDuration);
+  assert.equal(GAME.slideCancelInputDelay, 100);
+  assert.equal(canCancelSlide(99, 0), false);
+  assert.equal(canCancelSlide(100, 0), true);
+  assert.match(game, /kind === "jump" && runtime\.playerState === "sliding"/);
+  assert.match(game, /!canCancelSlide\(now, runtime\.stateStarted\)/);
+  assert.match(game, /runtime\.playerState = "jumping"/);
 });
 
 test("finishes the run when the music ends and keeps results readable", () => {

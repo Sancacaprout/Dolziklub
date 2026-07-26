@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   actionProgress,
+  canCancelSlide,
   createObstacle,
   createRunnerWave,
   GAME,
@@ -396,6 +397,15 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       return;
     }
 
+    if (kind === "jump" && runtime.playerState === "sliding") {
+      if (!canCancelSlide(now, runtime.stateStarted)) return;
+      runtime.playerState = "jumping";
+      runtime.stateStarted = now;
+      runtime.stateUntil = now + GAME.jumpDuration;
+      runtime.fastFallStartLift = 0;
+      runtime.fastFallCooldownUntil = now + GAME.fastFallInputDelay;
+      return;
+    }
     if (runtime.playerState !== "running") return;
     runtime.playerState = kind === "jump" ? "jumping" : "sliding";
     runtime.stateStarted = now;

@@ -26,6 +26,7 @@ export const GAME = {
   acceleration: 0.008,
   jumpDuration: 620,
   slideDuration: 620,
+  slideCancelInputDelay: 100,
   fastFallInputDelay: 90,
   fastFallDuration: 230,
   fastFallCooldown: 360,
@@ -45,6 +46,10 @@ export function clamp(value: number, min: number, max: number) {
 
 export function actionProgress(now: number, startedAt: number, endsAt: number) {
   return clamp((now - startedAt) / Math.max(1, endsAt - startedAt), 0, 1);
+}
+
+export function canCancelSlide(now: number, startedAt: number) {
+  return now - startedAt >= GAME.slideCancelInputDelay;
 }
 
 export function playerLift(state: PlayerState, progress: number, fastFallStartLift = 0) {
