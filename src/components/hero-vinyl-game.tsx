@@ -20,8 +20,10 @@ import {
   type PlayerState,
   type RunnerObstacle,
 } from "@/lib/vinyl-game/engine";
+import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type GamePhase = "entering" | "playing" | "paused" | "resuming" | "game-over" | "victory";
+type WheelyUnlockState = "idle" | "running" | "guest" | "saving" | "unlocked" | "error";
 type Runtime = {
   lane: Lane;
   lanePosition: number;
@@ -342,6 +344,8 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const [resumeCountdown, setResumeCountdown] = useState(3);
   const [muted, setMuted] = useState(false);
   const [soundNeedsGesture, setSoundNeedsGesture] = useState(false);
+  const [unlockState, setUnlockState] = useState<WheelyUnlockState>("idle");
+  const [unlockMessage, setUnlockMessage] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const characterRef = useRef<HTMLImageElement | null>(null);
@@ -352,6 +356,8 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const frameRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
+  const runTokenRef = useRef<string | null>(null);
+  const themeUnlockedRef = useRef(false);
 
   const updatePhase = useCallback((next: GamePhase) => { phaseRef.current = next; setPhase(next); }, []);
   const clearTimer = useCallback(() => { if (timerRef.current !== null) { window.clearInterval(timerRef.current); timerRef.current = null; } }, []);
@@ -398,8 +404,79 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     if (kind === "jump") runtime.fastFallCooldownUntil = now + GAME.fastFallInputDelay;
   }, []);
 
+  const startUnlockRun = useCallback(async () => {
+    runTokenRef.current = null;
+    setUnlockMessage("");
+    if (!isSupabaseConfigured()) {
+      setUnlockState("guest");
+      return;
+    }
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        setUnlockState("guest");
+        return;
+      }
+      const response = await fetch("/api/wheely/unlock", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start" }),
+      });
+      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; runToken?: string; error?: string };
+      if (!response.ok) throw new Error(result.error || "unlock_start_failed");
+      themeUnlockedRef.current = result.unlocked === true;
+      runTokenRef.current = typeof result.runToken === "string" ? result.runToken : null;
+      setUnlockState(result.unlocked ? "unlocked" : "running");
+    } catch {
+      setUnlockState("error");
+      setUnlockMessage("Le suivi du déblocage est indisponible pour cette partie.");
+    }
+  }, []);
+
+  const completeThemeUnlock = useCallback(async (score: number, distance: number) => {
+    if (themeUnlockedRef.current) {
+      setUnlockState("unlocked");
+      setUnlockMessage("THÈME WHEELY DÉBLOQUÉ");
+      return;
+    }
+    const runToken = runTokenRef.current;
+    if (!runToken || !isSupabaseConfigured()) return;
+
+    setUnlockState("saving");
+    setUnlockMessage("Déblocage du thème en cours…");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const accessToken = data.session?.access_token;
+      if (!accessToken) {
+        setUnlockState("guest");
+        setUnlockMessage("Connecte-toi pour conserver le thème Wheely.");
+        return;
+      }
+      const response = await fetch("/api/wheely/unlock", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "complete", runToken, score, distance }),
+      });
+      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; message?: string; error?: string };
+      if (!response.ok || !result.unlocked) throw new Error(result.error || "unlock_complete_failed");
+      themeUnlockedRef.current = true;
+      runTokenRef.current = null;
+      setUnlockState("unlocked");
+      setUnlockMessage(result.message || "THÈME WHEELY DÉBLOQUÉ");
+      window.dispatchEvent(new CustomEvent("wheely-theme-unlocked"));
+    } catch {
+      setUnlockState("error");
+      setUnlockMessage("Le thème n’a pas pu être débloqué. Rejoue la face complète.");
+    }
+  }, []);
+
   const startCountdown = useCallback(() => {
     clearTimer();
+    void startUnlockRun();
     runtimeRef.current = emptyRuntime();
     setHud((current) => ({ score: 0, distance: 0, best: current.best, speed: 1 }));
     const audio = audioRef.current;
@@ -407,7 +484,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     void playAudio();
     runtimeRef.current.lastFrame = performance.now();
     updatePhase("playing");
-  }, [clearTimer, playAudio, updatePhase]);
+  }, [clearTimer, playAudio, startUnlockRun, updatePhase]);
 
   const finishRun = useCallback((outcome: "game-over" | "victory") => {
     if (phaseRef.current !== "playing") return;
@@ -418,8 +495,9 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     const best = persistBestScore(score);
     audioRef.current?.pause();
     setHud((current) => ({ ...current, score, distance, best }));
+    if (outcome === "victory") void completeThemeUnlock(score, distance);
     updatePhase(outcome);
-  }, [updatePhase]);
+  }, [completeThemeUnlock, updatePhase]);
 
   const crash = useCallback(() => finishRun("game-over"), [finishRun]);
   const win = useCallback(() => finishRun("victory"), [finishRun]);
@@ -431,6 +509,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     setOpen(false);
     setLaunching(false);
     runtimeRef.current = emptyRuntime();
+    runTokenRef.current = null;
   }, [clearTimer, stopAudio]);
 
   const pause = useCallback(() => {
@@ -636,11 +715,12 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       <canvas ref={canvasRef} className="vinyl-runner__canvas" onPointerDown={onPointerDown} onPointerUp={onPointerUp} />
       <header className="vinyl-runner__hud" aria-live="polite"><span>SCORE <b>{hud.score}</b></span><span>DISTANCE <b>{hud.distance} M</b></span><span>VITESSE <b>{hud.speed}X</b></span><span>BEST <b>{hud.best}</b></span></header>
       <div className="vinyl-runner__actions">{soundNeedsGesture ? <button className="vinyl-runner__sound-unlock" type="button" onClick={() => void playAudio()}>LANCER LE SON</button> : null}<button type="button" onClick={toggleMuted} aria-label={muted ? "Activer le son" : "Couper le son"}>{muted ? "SON OFF" : "SON ON"}</button><button type="button" onClick={pause} aria-label="Mettre le jeu en pause">PAUSE</button><button type="button" onClick={close} aria-label="Quitter le mini-jeu">SORTIR ×</button></div>
+      {phase === "playing" || phase === "paused" || phase === "resuming" ? <p className="vinyl-runner__unlock-goal">OBJECTIF · TERMINER LE MORCEAU POUR DÉBLOQUER LE THÈME WHEELY</p> : null}
       {phase === "entering" ? <div className="vinyl-runner__entry" aria-hidden="true" /> : null}
       {phase === "resuming" ? <div className="vinyl-runner__countdown" aria-live="assertive">{resumeCountdown}</div> : null}
       {phase === "paused" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">SILLON EN PAUSE</p><h2>On reprend<br /><em>quand tu veux.</em></h2><button type="button" className="vinyl-runner__primary" onClick={resume}>Reprendre →</button></div> : null}
       {phase === "game-over" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">FIN DE PISTE</p><h2>Le disque t’a rayé.</h2><div className="vinyl-runner__summary" aria-label={`Score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
-      {phase === "victory" ? <div className="vinyl-runner__panel vinyl-runner__panel--small vinyl-runner__panel--victory"><p className="eyebrow">DISQUE TERMINÉ</p><h2>Tu as bouclé<br /><em>la face entière.</em></h2><div className="vinyl-runner__summary" aria-label={`Victoire, score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE FINAL</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
+      {phase === "victory" ? <div className="vinyl-runner__panel vinyl-runner__panel--small vinyl-runner__panel--victory"><p className="eyebrow">DISQUE TERMINÉ</p><h2>Tu as bouclé<br /><em>la face entière.</em></h2><div className="vinyl-runner__summary" aria-label={`Victoire, score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE FINAL</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><p className={`vinyl-runner__unlock-status vinyl-runner__unlock-status--${unlockState}`} role="status">{unlockMessage || (unlockState === "guest" ? "CONNECTE-TOI POUR DÉBLOQUER LE THÈME WHEELY" : "VALIDATION DE LA FACE…")}</p><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
     </section> : null}
   </>;
 }

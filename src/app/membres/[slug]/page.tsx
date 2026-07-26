@@ -22,7 +22,7 @@ export default async function MemberPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ previewTheme?: string; profilePreview?: string }>;
+  searchParams: Promise<{ previewTheme?: string; profilePreview?: string; themeLocked?: string }>;
 }) {
   const requestedSlug = (await params).slug.trim().toLocaleLowerCase();
   const query = await searchParams;
@@ -43,6 +43,7 @@ export default async function MemberPage({
       username={member.username}
       forcedTheme={forcedTheme}
       previewMode={previewMode}
+      lockedPreview={query.themeLocked === "1"}
     >
       <main className="page member-profile-page">
         <LiveClubRefresh />

@@ -17,11 +17,13 @@ export function ProfileThemeBoundary({
   username,
   forcedTheme,
   previewMode = false,
+  lockedPreview = false,
   children,
 }: {
   username: string | null;
   forcedTheme?: ProfileThemeId | null;
   previewMode?: boolean;
+  lockedPreview?: boolean;
   children: ReactNode;
 }) {
   const [theme, setTheme] = useState<ProfileThemeId | null>(
@@ -89,6 +91,9 @@ export function ProfileThemeBoundary({
   return (
     <div className="profile-theme profile-theme--full-page" data-profile-theme={effectiveTheme}>
       {effectiveTheme === "wheely" ? <WheelyThemeArt variant="profile" /> : null}
+      {effectiveTheme === "wheely" && previewMode && lockedPreview ? (
+        <p className="profile-theme-locked-preview" role="status">APERÇU — THÈME VERROUILLÉ</p>
+      ) : null}
       {children}
     </div>
   );

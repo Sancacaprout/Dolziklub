@@ -27,6 +27,8 @@ export function ProfilePersonalization() {
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [previewTheme, setPreviewTheme] = useState<ProfileThemeId | null>(null);
+  const [wheelyUnlocked, setWheelyUnlocked] = useState(false);
+  const [unlockReady, setUnlockReady] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -43,6 +45,13 @@ export function ProfilePersonalization() {
         .from("member_public_profiles")
         .select("profile_theme,username")
         .eq("id", auth.user.id)
+        .maybeSingle();
+
+      const { data: achievement } = await supabase
+        .from("participant_achievements")
+        .select("achievement_key")
+        .eq("participant_id", auth.user.id)
+        .eq("achievement_key", "wheely-theme")
         .maybeSingle();
 
       const requestedTheme = profile?.profile_theme as ProfileThemeId | undefined;
@@ -62,6 +71,8 @@ export function ProfilePersonalization() {
           ? auth.user.app_metadata.display_name
           : username;
 
+      setWheelyUnlocked(theme === "wheely" || Boolean(achievement));
+      setUnlockReady(true);
       setSavedTheme(theme);
       setDraftTheme(theme);
       setAccount({ id: auth.user.id, username, displayName });
@@ -69,6 +80,16 @@ export function ProfilePersonalization() {
 
     void load();
   }, [configured]);
+
+  useEffect(() => {
+    const handleUnlock = () => {
+      setWheelyUnlocked(true);
+      setUnlockReady(true);
+      setMessage("THÈME WHEELY DÉBLOQUÉ — tu peux maintenant le sélectionner.");
+    };
+    window.addEventListener("wheely-theme-unlocked", handleUnlock);
+    return () => window.removeEventListener("wheely-theme-unlocked", handleUnlock);
+  }, []);
 
   useEffect(() => {
     document.body.classList.toggle(
@@ -138,21 +159,24 @@ export function ProfilePersonalization() {
 
   const saveTheme = async () => {
     if (!account || saving || draftTheme === savedTheme) return;
+    if (draftTheme === "wheely" && !wheelyUnlocked) {
+      setMessage("Termine le mini-jeu Wheely avant d’équiper ce thème.");
+      return;
+    }
     setSaving(true);
     setMessage("");
 
-    const { data, error } = await getSupabaseBrowserClient()
-      .from("member_public_profiles")
-      .update({
-        profile_theme: draftTheme,
-        profile_theme_selected_at: new Date().toISOString(),
-      })
-      .eq("id", account.id)
-      .select("id")
-      .maybeSingle();
+    const { data, error } = await getSupabaseBrowserClient().rpc(
+      "save_my_profile_theme",
+      { p_theme: draftTheme },
+    );
 
     if (error || !data) {
-      setMessage("Le thème n’a pas pu être enregistré. Réessaie dans un instant.");
+      setMessage(
+        error?.message?.includes("Wheely")
+          ? "Termine le mini-jeu Wheely avant d’équiper ce thème."
+          : "Le thème n’a pas pu être enregistré. Réessaie dans un instant.",
+      );
       setSaving(false);
       return;
     }
@@ -164,6 +188,7 @@ export function ProfilePersonalization() {
 
   if (!configured || !account) return null;
 
+  const wheelyLocked = !unlockReady || !wheelyUnlocked;
   const previewName =
     profileThemes.find((theme) => theme.id === previewTheme)?.name ?? "";
 
@@ -189,11 +214,10 @@ export function ProfilePersonalization() {
             {profileThemes.map((theme) => (
               <article
                 key={theme.id}
-                className={
-                  draftTheme === theme.id
-                    ? "theme-card profile-theme is-selected"
-                    : "theme-card profile-theme"
-                }
+                className={`theme-card profile-theme${
+                  draftTheme === theme.id ? " is-selected" : ""
+                }${theme.id === "wheely" && wheelyLocked ? " is-locked" : ""}`}
+                data-theme-locked={theme.id === "wheely" && wheelyLocked ? "true" : undefined}
                 data-profile-theme={theme.id}
                 data-preview-motif={theme.previewMotif ?? "classic"}
               >
@@ -201,10 +225,12 @@ export function ProfilePersonalization() {
                   type="button"
                   className="theme-card__choice"
                   onClick={() => {
+                    if (theme.id === "wheely" && wheelyLocked) return;
                     setDraftTheme(theme.id);
                     setMessage("");
                   }}
                   aria-pressed={draftTheme === theme.id}
+                  disabled={theme.id === "wheely" && wheelyLocked}
                 >
                   <span className="theme-card__mini" aria-hidden="true">
                     {theme.id === "wheely" && theme.previewVariant === "wheely" ? (
@@ -226,6 +252,14 @@ export function ProfilePersonalization() {
                   </span>
                   <b>{theme.name}</b>
                   <small>{theme.description}</small>
+                  {theme.id === "wheely" ? (
+                    <span className={`theme-card__unlock theme-card__unlock--${wheelyLocked ? "locked" : "ready"}`}>
+                      {wheelyLocked ? "🔒 VERROUILLÉ" : "✓ DÉBLOQUÉ"}
+                    </span>
+                  ) : null}
+                  {theme.id === "wheely" && wheelyLocked ? (
+                    <small className="theme-card__unlock-help">Termine le mini-jeu Wheely pour débloquer ce thème.</small>
+                  ) : null}
                 </button>
                 <button
                   type="button"
@@ -243,7 +277,7 @@ export function ProfilePersonalization() {
               type="button"
               className="button"
               onClick={() => void saveTheme()}
-              disabled={saving || draftTheme === savedTheme}
+              disabled={saving || draftTheme === savedTheme || (draftTheme === "wheely" && wheelyLocked)}
             >
               {saving ? "Enregistrement…" : "Enregistrer mon thème"}
             </button>
@@ -269,7 +303,7 @@ export function ProfilePersonalization() {
           <div className="theme-preview-dialog__panel">
             <div className="theme-preview-dialog__header">
               <div>
-                <p className="eyebrow">APERÇU DU THÈME</p>
+                <p className="eyebrow">{previewTheme === "wheely" && wheelyLocked ? "APERÇU — THÈME VERROUILLÉ" : "APERÇU DU THÈME"}</p>
                 <h3 id="theme-preview-title">{previewName}</h3>
               </div>
               <button
@@ -284,7 +318,7 @@ export function ProfilePersonalization() {
             <iframe
               className="theme-preview-dialog__frame"
               title={`Profil public avec le thème ${previewName}`}
-              src={`/membres/${encodeURIComponent(account.username)}?previewTheme=${previewTheme}&profilePreview=1`}
+              src={`/membres/${encodeURIComponent(account.username)}?previewTheme=${previewTheme}&profilePreview=1${previewTheme === "wheely" && wheelyLocked ? "&themeLocked=1" : ""}`}
             />
           </div>
         </div>

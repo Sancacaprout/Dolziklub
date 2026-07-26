@@ -141,3 +141,96 @@
   box-shadow:3px 3px 0 #10110f;
  }
 }
+/* Wheely unlock: one lightweight, non-tiled record across the whole long profile. */
+.profile-theme--full-page[data-profile-theme="wheely"] {
+ --wheely-page-record-size:max(1280px,142vw);
+ background-color:#0d0f0c;
+ background-image:
+  linear-gradient(180deg,#0d0f0cf0 0,#171811c4 38%,#0c0d0bf2 76%,#080908 100%),
+  radial-gradient(circle,#f4efe4 0 .35%,#c94a32 .42% 3.1%,#e2b44d 3.18% 3.55%,#0e0f0d 3.65% 8%,transparent 8.1%),
+  repeating-radial-gradient(circle,#0a0b09 0 12px,#28281f 13px 15px,#0b0c0a 16px 27px,#6a543226 28px 29px);
+ background-repeat:no-repeat,no-repeat,no-repeat;
+ background-position:center top,center clamp(250px,25vw,470px),center clamp(250px,25vw,470px);
+ background-size:100% 100%,var(--wheely-page-record-size) var(--wheely-page-record-size),var(--wheely-page-record-size) var(--wheely-page-record-size);
+ background-attachment:scroll;
+}
+.profile-theme--full-page[data-profile-theme="wheely"]::before { content:none!important; }
+
+/* Locked theme stays visible and previewable, but its choice cannot be equipped. */
+.theme-card[data-profile-theme="wheely"].is-locked {
+ border-style:dashed;
+ outline:0;
+ box-shadow:4px 4px 0 #c94a32;
+}
+.theme-card[data-profile-theme="wheely"].is-locked .theme-card__choice:disabled {
+ cursor:not-allowed;
+ filter:saturate(.72) contrast(.94);
+ opacity:.9;
+}
+.theme-card__unlock {
+ display:inline-flex;
+ width:max-content;
+ align-items:center;
+ margin-top:.25rem;
+ padding:.28rem .42rem;
+ border:1px solid currentColor;
+ font:700 .58rem var(--font-mono),monospace;
+ letter-spacing:.07em;
+ text-transform:uppercase;
+}
+.theme-card__unlock--locked { background:#10110f; color:#f4efe4; }
+.theme-card__unlock--ready { background:#b5f50d; color:#10110f; }
+.theme-card__unlock-help { color:#c94a32!important; font-weight:700; }
+.profile-theme-locked-preview {
+ position:absolute;
+ z-index:12;
+ top:clamp(.75rem,2vw,1.35rem);
+ right:clamp(.75rem,2vw,1.35rem);
+ margin:0;
+ padding:.42rem .58rem;
+ border:2px solid #f4efe4;
+ background:#10110fe8;
+ color:#b5f50d;
+ box-shadow:4px 4px 0 #c94a32;
+ font:700 clamp(.54rem,1.2vw,.68rem) var(--font-mono),monospace;
+ letter-spacing:.08em;
+}
+
+.vinyl-runner__unlock-goal {
+ position:absolute;
+ z-index:12;
+ left:50%;
+ bottom:max(1rem,env(safe-area-inset-bottom));
+ width:max-content;
+ max-width:calc(100vw - 2rem);
+ margin:0;
+ transform:translateX(-50%);
+ padding:.5rem .7rem;
+ border:1px solid #f4efe4;
+ background:#10110fe8;
+ color:#b5f50d;
+ box-shadow:4px 4px 0 #c94a32;
+ font:700 clamp(.5rem,1.4vw,.68rem) var(--font-mono),monospace;
+ letter-spacing:.08em;
+ text-align:center;
+}
+.vinyl-runner__unlock-status {
+ margin:1rem 0;
+ padding:.65rem .8rem;
+ border:2px solid #171715;
+ background:#10110f;
+ color:#f4efe4;
+ font:700 .7rem var(--font-mono),monospace;
+ letter-spacing:.08em;
+ text-align:center;
+}
+.vinyl-runner__unlock-status--unlocked { border-color:#b5f50d; color:#b5f50d; }
+.vinyl-runner__unlock-status--error { border-color:#c94a32; color:#ff8c78; }
+@media (max-width:700px){
+ .profile-theme--full-page[data-profile-theme="wheely"] {
+  --wheely-page-record-size:max(940px,235vw);
+  background-position:center top,center 190px,center 190px;
+ }
+ .profile-theme-locked-preview { position:relative; top:auto; right:auto; width:max-content; max-width:calc(100% - 2rem); margin:1rem auto 0; }
+ .vinyl-runner__unlock-goal { bottom:max(.65rem,env(safe-area-inset-bottom)); white-space:normal; }
+}
