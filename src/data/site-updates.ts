@@ -40,6 +40,28 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "wheely-real-finale-unlock-fix",
+    version: "2.3",
+    date: "2026-07-26",
+    title: "Wheely gagne une vraie ligne d’arrivée",
+    summary: "La fin du morceau devient une séquence à part entière et le déblocage du thème est fiabilisé de bout en bout.",
+    categories: ["Correction", "Amélioration"],
+    added: [
+      { text: "À la dernière note, un vinyle animé ralentit et referme la face avant l’affichage du score final." },
+    ],
+    fixed: [
+      { text: "La configuration serveur du déblocage Wheely est maintenant exigée au déploiement afin que chaque victoire connectée puisse enregistrer l’achievement." },
+      { text: "Les appels de début et de fin de partie sont retentés automatiquement en cas de panne réseau temporaire, puis l’écriture est relue dans la base avant d’annoncer le thème comme débloqué." },
+    ],
+    improved: [
+      { text: "Dès la fin de la musique, aucun obstacle ni mur d’album supplémentaire n’apparaît ; les éléments en piste sortent sans provoquer de collision." },
+    ],
+    links: [
+      { label: "Jouer à Wheely", href: "/" },
+      { label: "Choisir le thème", href: "/compte" },
+    ],
+  },
+  {
     id: "wheely-slide-jump-cancel",
     version: "2.2",
     date: "2026-07-26",

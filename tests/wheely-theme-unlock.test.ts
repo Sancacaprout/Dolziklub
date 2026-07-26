@@ -10,6 +10,7 @@ const memberPage = readFileSync(resolve("src/app/membres/[slug]/page.tsx"), "utf
 const route = readFileSync(resolve("src/app/api/wheely/unlock/route.ts"), "utf8");
 const resetMigration = readFileSync(resolve("supabase/migrations/20260726081303_reset_wheely_unlock_and_log_theme_fixes.sql"), "utf8");
 const styles = readFileSync(resolve("src/app/profile-themes-v2.css"), "utf8");
+const finishStyles = readFileSync(resolve("src/components/hero-vinyl-game.module.css"), "utf8");
 const migration = readFileSync(resolve("supabase/migrations/20260726073026_wheely_theme_unlock.sql"), "utf8");
 
 test("Wheely uses one non-tiled long-page vinyl background", () => {
@@ -31,6 +32,14 @@ test("locked Wheely remains previewable but cannot be selected or saved", () => 
 
 test("the existing audio ending remains the victory and requests a signed server unlock", () => {
   assert.match(game, /onEnded=\{win\}/);
+  assert.match(game, /updatePhase\("finishing"\)/);
+  assert.match(game, /isPlaying && runtime\.distance >= runtime\.nextSpawnDistance/);
+  assert.match(game, /FINISH_TRANSITION_MS = 2_600/);
+  assert.match(game, /finishRun\("victory"\)/);
+  assert.match(game, /postWheelyUnlock/);
+  assert.match(game, /UNLOCK_REQUEST_ATTEMPTS = 3/);
+  assert.match(finishStyles, /@keyframes finish-disc/);
+  assert.match(finishStyles, /vinyl-runner--finishing/);
   assert.match(game, /action: "start"/);
   assert.match(game, /action: "complete", runToken, score, distance/);
   assert.match(game, /THÈME WHEELY DÉBLOQUÉ/);
@@ -38,6 +47,7 @@ test("the existing audio ending remains the victory and requests a signed server
   assert.match(route, /createHmac\("sha256"/);
   assert.match(route, /timingSafeEqual/);
   assert.match(route, /claim\.sub !== user\.id/);
+  assert.match(route, /wheely_unlock_not_persisted/);
   assert.doesNotMatch(route, /body\?\.unlocked/);
 });
 

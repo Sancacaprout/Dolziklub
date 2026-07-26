@@ -97,7 +97,13 @@ export async function POST(request: Request) {
 
   try {
     if (body?.action === "start") {
-      if (await hasUnlockedTheme(user.id)) return noStore({ unlocked: true });
+      let unlocked = false;
+      try {
+        unlocked = await hasUnlockedTheme(user.id);
+      } catch {
+        // A read outage must not invalidate an otherwise legitimate full run.
+      }
+      if (unlocked) return noStore({ unlocked: true });
       return noStore({
         unlocked: false,
         runToken: createRunToken(user.id),
@@ -138,6 +144,7 @@ export async function POST(request: Request) {
         { onConflict: "participant_id,achievement_key", ignoreDuplicates: true },
       );
     if (insertError) throw insertError;
+    if (!(await hasUnlockedTheme(user.id))) throw new Error("wheely_unlock_not_persisted");
 
     return noStore({ unlocked: true, message: "THÈME WHEELY DÉBLOQUÉ" });
   } catch {

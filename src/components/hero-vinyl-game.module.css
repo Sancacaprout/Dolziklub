@@ -1,0 +1,97 @@
+.finish {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 48%, rgb(225 63 42 / 18%), rgb(0 0 0 / 58%) 48%, rgb(0 0 0 / 90%));
+  animation: finish-backdrop 2.6s ease-out both;
+}
+
+.disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(68vmin, 590px);
+  aspect-ratio: 1;
+  border: 2px solid #5e5e5e;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #090909 0 2.4%, #f4efe4 2.7% 12%, #e13f2a 12.3% 21%, transparent 21.3%),
+    repeating-radial-gradient(circle, #101010 0 5px, #303030 6px 7px, #0b0b0b 8px 12px);
+  box-shadow: 0 0 0 2px #080808, 0 28px 70px rgb(0 0 0 / 68%);
+  animation: finish-disc 2.6s cubic-bezier(.12,.72,.16,1) both;
+}
+
+.disc::after {
+  content: "";
+  width: 2.4%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #080808;
+  box-shadow: 0 0 0 4px #f4efe4;
+}
+
+.caption {
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: .65rem .8rem;
+  border: 2px solid #f4efe4;
+  background: #111;
+  color: #f4efe4;
+  font: 700 clamp(.62rem, 2vw, .85rem)/1.2 var(--font-mono), monospace;
+  letter-spacing: .12em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: finish-caption 2.6s ease-out both;
+}
+
+.captionAccent {
+  color: #b5f50d;
+}
+
+:global(.vinyl-runner--finishing .vinyl-runner__canvas) {
+  animation: finish-camera 2.6s ease-out both;
+}
+
+@keyframes finish-disc {
+  0% { transform: translateY(28vh) scale(.44) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  68% { transform: translateY(-2vh) scale(1.08) rotate(610deg); }
+  84% { transform: translateY(0) scale(.98) rotate(684deg); }
+  100% { transform: translateY(0) scale(1) rotate(720deg); }
+}
+
+@keyframes finish-backdrop {
+  0% { opacity: 0; }
+  18%, 84% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes finish-caption {
+  0%, 28% { opacity: 0; transform: translate(-50%, 12px); }
+  42%, 82% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+
+@keyframes finish-camera {
+  0% { filter: brightness(1); transform: scale(1); }
+  72% { filter: brightness(.55) saturate(.75); transform: scale(1.04); }
+  100% { filter: brightness(.18) saturate(.45); transform: scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finish,
+  .disc,
+  .caption,
+  :global(.vinyl-runner--finishing .vinyl-runner__canvas) {
+    animation-duration: .01ms;
+  }
+}

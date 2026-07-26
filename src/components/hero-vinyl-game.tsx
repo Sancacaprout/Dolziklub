@@ -23,7 +23,9 @@ import {
 } from "@/lib/vinyl-game/engine";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-type GamePhase = "entering" | "playing" | "paused" | "resuming" | "game-over" | "victory";
+import finishStyles from "./hero-vinyl-game.module.css";
+
+type GamePhase = "entering" | "playing" | "paused" | "resuming" | "finishing" | "game-over" | "victory";
 type WheelyUnlockState = "idle" | "running" | "guest" | "saving" | "unlocked" | "error";
 type Runtime = {
   lane: Lane;
@@ -33,6 +35,7 @@ type Runtime = {
   stateUntil: number;
   fastFallStartLift: number;
   fastFallCooldownUntil: number;
+  finishStartedAt: number;
   speed: number;
   distance: number;
   avoided: number;
@@ -56,6 +59,9 @@ const WHEELY_CROSSING_MS = 6_000;
 const VINYL_EXPANSION_MS = 1_200;
 const LAUNCH_LOADING_MS = WHEELY_CROSSING_MS + VINYL_EXPANSION_MS;
 const ENTRY_TRANSITION_MS = 450;
+const FINISH_TRANSITION_MS = 2_600;
+const UNLOCK_REQUEST_ATTEMPTS = 3;
+const UNLOCK_RETRY_MS = 450;
 
 function readBestScore() {
   try {
@@ -74,6 +80,29 @@ function persistBestScore(score: number) {
   }
   return best;
 }
+
+async function postWheelyUnlock(accessToken: string, payload: Record<string, unknown>) {
+  let lastError = "unlock_request_failed";
+  for (let attempt = 0; attempt < UNLOCK_REQUEST_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch("/api/wheely/unlock", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+      });
+      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; runToken?: string; message?: string; error?: string };
+      if (response.ok || response.status < 500) return { response, result };
+      lastError = result.error || `unlock_http_${response.status}`;
+    } catch (requestError) {
+      lastError = requestError instanceof Error ? requestError.message : "unlock_network_failed";
+    }
+    if (attempt + 1 < UNLOCK_REQUEST_ATTEMPTS) {
+      await new Promise((resolve) => window.setTimeout(resolve, UNLOCK_RETRY_MS * (attempt + 1)));
+    }
+  }
+  throw new Error(lastError);
+}
 const OBSTACLE_ASSET_PATHS: Record<ObstacleVariant, string> = {
   "blocker-a": "/game/obstacles/blocker-a.png",
   "blocker-b": "/game/obstacles/blocker-b.png",
@@ -90,6 +119,7 @@ function emptyRuntime(): Runtime {
     stateUntil: 0,
     fastFallStartLift: 0,
     fastFallCooldownUntil: 0,
+    finishStartedAt: 0,
     speed: GAME.startSpeed,
     distance: 0,
     avoided: 0,
@@ -430,12 +460,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
         setUnlockState("guest");
         return;
       }
-      const response = await fetch("/api/wheely/unlock", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "start" }),
-      });
-      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; runToken?: string; error?: string };
+      const { response, result } = await postWheelyUnlock(accessToken, { action: "start" });
       if (!response.ok) throw new Error(result.error || "unlock_start_failed");
       themeUnlockedRef.current = result.unlocked === true;
       runTokenRef.current = typeof result.runToken === "string" ? result.runToken : null;
@@ -466,12 +491,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
         setUnlockMessage("Connecte-toi pour conserver le thème Wheely.");
         return;
       }
-      const response = await fetch("/api/wheely/unlock", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "complete", runToken, score, distance }),
-      });
-      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; message?: string; error?: string };
+      const { response, result } = await postWheelyUnlock(accessToken, { action: "complete", runToken, score, distance });
       if (!response.ok || !result.unlocked) throw new Error(result.error || "unlock_complete_failed");
       themeUnlockedRef.current = true;
       runTokenRef.current = null;
@@ -497,7 +517,8 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   }, [clearTimer, playAudio, startUnlockRun, updatePhase]);
 
   const finishRun = useCallback((outcome: "game-over" | "victory") => {
-    if (phaseRef.current !== "playing") return;
+    const expectedPhase = outcome === "victory" ? "finishing" : "playing";
+    if (phaseRef.current !== expectedPhase) return;
     const runtime = runtimeRef.current;
     if (outcome === "game-over") runtime.playerState = "hit";
     const distance = Math.floor(runtime.distance * 10);
@@ -510,7 +531,16 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   }, [completeThemeUnlock, updatePhase]);
 
   const crash = useCallback(() => finishRun("game-over"), [finishRun]);
-  const win = useCallback(() => finishRun("victory"), [finishRun]);
+  const win = useCallback(() => {
+    if (phaseRef.current !== "playing") return;
+    const runtime = runtimeRef.current;
+    runtime.finishStartedAt = performance.now();
+    runtime.lane = 0;
+    runtime.playerState = "running";
+    runtime.stateStarted = 0;
+    runtime.stateUntil = 0;
+    updatePhase("finishing");
+  }, [updatePhase]);
 
   const close = useCallback(() => {
     clearTimer();
@@ -628,7 +658,9 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     const observer = new ResizeObserver(resize); observer.observe(canvas); resize();
     const frame = (now: number) => {
       const runtime = runtimeRef.current;
-      const isAnimating = phaseRef.current === "playing";
+      const isPlaying = phaseRef.current === "playing";
+      const isFinishing = phaseRef.current === "finishing";
+      const isAnimating = isPlaying || isFinishing;
       if (isAnimating && lastPaint > 0 && now - lastPaint < TARGET_FRAME_MS - FRAME_TOLERANCE_MS) {
         frameRef.current = requestAnimationFrame(frame);
         return;
@@ -636,18 +668,22 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       if (isAnimating) {
         const dt = Math.min(0.05, Math.max(0, (now - runtime.lastFrame) / 1000));
         runtime.lastFrame = now;
-        runtime.speed = Math.min(GAME.maxSpeed, runtime.speed + GAME.acceleration * dt);
-        runtime.distance += runtime.speed * dt * 10;
+        if (isPlaying) {
+          runtime.speed = Math.min(GAME.maxSpeed, runtime.speed + GAME.acceleration * dt);
+          runtime.distance += runtime.speed * dt * 10;
+        } else {
+          runtime.speed = Math.max(GAME.startSpeed * 0.18, runtime.speed - dt * 0.32);
+        }
         runtime.lanePosition += (runtime.lane - runtime.lanePosition) * Math.min(1, dt * 12);
         if (runtime.playerState !== "running" && runtime.playerState !== "hit" && now >= runtime.stateUntil) runtime.playerState = "running";
-        if (runtime.distance >= runtime.nextSpawnDistance) {
+        if (isPlaying && runtime.distance >= runtime.nextSpawnDistance) {
           spawnRandomWave(runtime, wallAlbums.length);
         }
         for (const wall of runtime.walls) {
           const visualVelocity = 0.17 + runtime.speed * 0.35;
           const perspectiveCompensation = 1 / Math.max(0.9, 1.55 * Math.pow(Math.max(wall.depth, 0.16), 0.55));
           wall.depth += dt * visualVelocity * perspectiveCompensation * (wall.passed ? GAME.passedDepthMultiplier : 1);
-          if (!wall.passed && wall.depth >= GAME.collisionDepth - 0.055) {
+          if (isPlaying && !wall.passed && wall.depth >= GAME.collisionDepth - 0.055) {
             wall.passed = true;
             if (Math.abs(runtime.lanePosition - wall.lane) < 0.24) { crash(); break; }
             runtime.avoided += 1;
@@ -658,7 +694,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
           const visualVelocity = 0.18 + runtime.speed * 0.36;
           const perspectiveCompensation = 1 / Math.max(0.9, 1.55 * Math.pow(Math.max(obstacle.depth, 0.16), 0.55));
           obstacle.depth += dt * visualVelocity * perspectiveCompensation * (obstacle.cleared ? GAME.passedDepthMultiplier : 1);
-          if (!obstacle.cleared && obstacle.depth >= GAME.collisionDepth - 0.035) {
+          if (isPlaying && !obstacle.cleared && obstacle.depth >= GAME.collisionDepth - 0.035) {
             obstacle.cleared = true;
             const sameLane = Math.abs(runtime.lanePosition - obstacle.lane) < 0.24;
             if (!playerClearsObstacle(obstacle, sameLane, runtime.playerState)) { crash(); break; }
@@ -666,12 +702,13 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
           }
         }
         retainBeforeDepth(runtime.obstacles, GAME.obstacleDespawnDepth);
-        if (now - runtime.lastHud > 130) {
+        if (isPlaying && now - runtime.lastHud > 130) {
           runtime.lastHud = now;
           const distance = Math.floor(runtime.distance * 10);
           const score = distance + runtime.avoided * GAME.avoidedObstacleBonus;
           setHud((current) => ({ score, distance, best: Math.max(current.best, readBestScore()), speed: Number((runtime.speed / GAME.startSpeed).toFixed(1)) }));
         }
+        if (isFinishing && now - runtime.finishStartedAt >= FINISH_TRANSITION_MS) finishRun("victory");
       }
       const shouldPaint = isAnimating || !idlePainted;
       if (shouldPaint) {
@@ -688,7 +725,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     };
     frameRef.current = requestAnimationFrame(frame);
     return () => { observer.disconnect(); if (frameRef.current !== null) cancelAnimationFrame(frameRef.current); frameRef.current = null; };
-  }, [crash, open, wallAlbums]);
+  }, [crash, finishRun, open, wallAlbums]);
 
   useEffect(() => () => { clearTimer(); stopAudio(); }, [clearTimer, stopAudio]);
 
@@ -727,6 +764,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       <div className="vinyl-runner__actions">{soundNeedsGesture ? <button className="vinyl-runner__sound-unlock" type="button" onClick={() => void playAudio()}>LANCER LE SON</button> : null}<button type="button" onClick={toggleMuted} aria-label={muted ? "Activer le son" : "Couper le son"}>{muted ? "SON OFF" : "SON ON"}</button><button type="button" onClick={pause} aria-label="Mettre le jeu en pause">PAUSE</button><button type="button" onClick={close} aria-label="Quitter le mini-jeu">SORTIR ×</button></div>
       {phase === "playing" || phase === "paused" || phase === "resuming" ? <p className="vinyl-runner__unlock-goal">OBJECTIF · TERMINER LE MORCEAU POUR DÉBLOQUER LE THÈME WHEELY</p> : null}
       {phase === "entering" ? <div className="vinyl-runner__entry" aria-hidden="true" /> : null}
+      {phase === "finishing" ? <div className={finishStyles.finish} role="status" aria-live="assertive"><span className={finishStyles.disc} aria-hidden="true" /><p className={finishStyles.caption}>DERNIER SILLON <span className={finishStyles.captionAccent}>FACE TERMINÉE</span></p></div> : null}
       {phase === "resuming" ? <div className="vinyl-runner__countdown" aria-live="assertive">{resumeCountdown}</div> : null}
       {phase === "paused" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">SILLON EN PAUSE</p><h2>On reprend<br /><em>quand tu veux.</em></h2><button type="button" className="vinyl-runner__primary" onClick={resume}>Reprendre →</button></div> : null}
       {phase === "game-over" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">FIN DE PISTE</p><h2>Le disque t’a rayé.</h2><div className="vinyl-runner__summary" aria-label={`Score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
