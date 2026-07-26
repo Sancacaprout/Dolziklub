@@ -17,7 +17,9 @@ test("publishes an accessible updates route with the requested metadata", () => 
 });
 
 test("keeps deployed updates in strict reverse chronological order", () => {
-  assert.ok(siteUpdates.length >= 3);
+  assert.ok(siteUpdates.length >= 4);
+  assert.equal(siteUpdates[0].id, "wheely-reset-theme-refinements");
+  assert.equal(siteUpdates[0].date, "2026-07-26");
   for (let index = 1; index < siteUpdates.length; index += 1) {
     assert.ok(Date.parse(siteUpdates[index - 1].date) >= Date.parse(siteUpdates[index].date));
   }

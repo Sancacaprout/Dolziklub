@@ -56,6 +56,7 @@ export function ProfilePersonalization() {
 
       const requestedTheme = profile?.profile_theme as ProfileThemeId | undefined;
       const theme = profileThemes.some((item) => item.id === requestedTheme)
+        && requestedTheme !== "wheely"
         ? requestedTheme!
         : defaultProfileTheme;
       const username =
@@ -71,7 +72,7 @@ export function ProfilePersonalization() {
           ? auth.user.app_metadata.display_name
           : username;
 
-      setWheelyUnlocked(theme === "wheely" || Boolean(achievement));
+      setWheelyUnlocked(Boolean(achievement));
       setUnlockReady(true);
       setSavedTheme(theme);
       setDraftTheme(theme);

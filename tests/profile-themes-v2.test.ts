@@ -27,7 +27,7 @@ test("all redesigned and new themes define complete semantic palettes and compon
   for (const id of [...redesignedThemeIds, ...newThemeIds]) {
     const start = styles.indexOf(`[data-profile-theme="${id}"]{`);
     assert.notEqual(start, -1, `${id} has a scoped token block`);
-    const tokenBlock = styles.slice(start, styles.indexOf("}\n", start) + 1);
+    const tokenBlock = styles.slice(start, styles.indexOf("}", start) + 1);
     for (const token of ["--profile-background", "--profile-surface", "--profile-text", "--profile-muted", "--profile-accent", "--profile-border", "--profile-card-radius", "--profile-card-shadow", "--profile-button-radius", "--profile-image-border", "--profile-section-divider"]) {
       assert.match(tokenBlock, new RegExp(token), `${id} defines ${token}`);
     }
@@ -65,4 +65,15 @@ test("the Supabase migration extends only the check constraint and never disable
   assert.match(migration, /member_public_profiles_profile_theme_check/);
   assert.doesNotMatch(migration, /disable row level security/i);
   assert.doesNotMatch(migration, /drop policy|create policy|delete from|update public\./i);
+});
+
+test("the requested theme refinements preserve image colours and close Museum White frames", () => {
+  assert.match(styles, /noir-cinema"\] img[^}]*filter:none!important/);
+  assert.match(styles, /manga-panel"\] \.member-profile__initial\{filter:none\}/);
+  assert.match(styles, /cassette-sunset"\]\{background-image:[^}]*radial-gradient/);
+  assert.match(styles, /museum-white"\] \.member-profile\{border:1px solid #292929/);
+  assert.match(styles, /museum-white"\] \.stat-cards>div[^}]*border:1px solid #292929/);
+  assert.match(styles, /punk-poster"\] \.theme-card__preview[^}]*min-height:34px/);
+  assert.match(styles, /jazz-lounge"\] \.theme-card__preview[^}]*min-height:34px/);
+  assert.match(styles, /acid-rave"\] \.theme-card__preview[^}]*min-height:34px/);
 });

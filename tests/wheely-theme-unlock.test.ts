@@ -8,6 +8,7 @@ const selector = readFileSync(resolve("src/components/auth/profile-personalizati
 const boundary = readFileSync(resolve("src/components/profile-theme-boundary.tsx"), "utf8");
 const memberPage = readFileSync(resolve("src/app/membres/[slug]/page.tsx"), "utf8");
 const route = readFileSync(resolve("src/app/api/wheely/unlock/route.ts"), "utf8");
+const resetMigration = readFileSync(resolve("supabase/migrations/20260726081303_reset_wheely_unlock_and_log_theme_fixes.sql"), "utf8");
 const styles = readFileSync(resolve("src/app/profile-themes-v2.css"), "utf8");
 const migration = readFileSync(resolve("supabase/migrations/20260726073026_wheely_theme_unlock.sql"), "utf8");
 
@@ -52,4 +53,12 @@ test("Supabase owns the achievement and rejects direct locked theme updates", ()
   assert.match(migration, /security invoker/);
   assert.match(migration, /save_my_profile_theme/);
   assert.doesNotMatch(migration, /disable row level security/i);
+
+});
+test("the Wheely launch reset removes every legacy unlock and equipped profile", () => {
+  assert.match(resetMigration, /delete from public\.participant_achievements[\s\S]*achievement_key = 'wheely-theme'/);
+  assert.match(resetMigration, /update public\.member_public_profiles[\s\S]*profile_theme = 'dol-ziklub'[\s\S]*profile_theme = 'wheely'/);
+  assert.match(resetMigration, /and not exists \([\s\S]*achievement\.achievement_key = 'wheely-theme'/);
+  assert.doesNotMatch(resetMigration, /is_member_admin\(\)/);
+  assert.doesNotMatch(resetMigration, /disable row level security/i);
 });

@@ -234,3 +234,13 @@
  .profile-theme-locked-preview { position:relative; top:auto; right:auto; width:max-content; max-width:calc(100% - 2rem); margin:1rem auto 0; }
  .vinyl-runner__unlock-goal { bottom:max(.65rem,env(safe-area-inset-bottom)); white-space:normal; }
 }
+/* Theme corrections - 26 July 2026. */
+.theme-card[data-profile-theme="punk-poster"] .theme-card__preview,.theme-card[data-profile-theme="jazz-lounge"] .theme-card__preview,.theme-card[data-profile-theme="acid-rave"] .theme-card__preview{min-height:34px;padding:.42rem .7rem;line-height:1.1}
+[data-profile-theme="noir-cinema"] img,[data-profile-theme="noir-cinema"] .member-profile__initial,[data-profile-theme="noir-cinema"] .profile-favorite-card__cover,[data-profile-theme="noir-cinema"] .favorite-artist-card__portrait{filter:none!important}
+[data-profile-theme="manga-panel"] .member-profile__initial{filter:none}
+.profile-theme--full-page[data-profile-theme="cassette-sunset"]{background-image:repeating-linear-gradient(0deg,transparent 0 15px,#ffd09a12 16px 17px),radial-gradient(ellipse at 50% -8%,#ffd58a 0 13%,#ff9b70 27%,transparent 54%),linear-gradient(180deg,#211538 0,#3d2157 31%,#88405f 52%,#de6d63 69%,#f5b778 83%,#241538 100%);background-size:auto,100% 540px,100% 100%;background-position:center,center top,center;background-repeat:repeat,no-repeat,no-repeat}
+[data-profile-theme="museum-white"] .member-profile{border:1px solid #292929;border-inline:1px solid #292929}
+[data-profile-theme="museum-white"] .member-kouize{border:1px solid #292929}
+[data-profile-theme="museum-white"] .stat-cards{gap:.7rem;border:0;background:transparent}
+[data-profile-theme="museum-white"] .stat-cards>div,[data-profile-theme="museum-white"] .stat-cards>div:last-child{border:1px solid #292929;min-height:170px;background:#fdfcf8!important}
+@media (max-width:700px){[data-profile-theme="museum-white"] .stat-cards>div,[data-profile-theme="museum-white"] .stat-cards>div:last-child{border:1px solid #292929;min-height:120px}}
