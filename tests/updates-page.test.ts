@@ -17,8 +17,8 @@ test("publishes an accessible updates route with the requested metadata", () => 
 });
 
 test("keeps deployed updates in strict reverse chronological order", () => {
-  assert.ok(siteUpdates.length >= 5);
-  assert.equal(siteUpdates[0].id, "bonus-catalog-manual-deezer");
+  assert.ok(siteUpdates.length >= 6);
+  assert.equal(siteUpdates[0].id, "draw-deadline-timer-reminders");
   assert.equal(siteUpdates[0].date, "2026-07-26");
   for (let index = 1; index < siteUpdates.length; index += 1) {
     assert.ok(Date.parse(siteUpdates[index - 1].date) >= Date.parse(siteUpdates[index].date));

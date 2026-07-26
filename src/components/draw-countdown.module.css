@@ -1,0 +1,59 @@
+.timer {
+  display: grid;
+  min-width: min(100%, 295px);
+  padding: 0.65rem 0.8rem;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: 4px 4px 0 var(--red);
+  font-family: var(--font-mono), monospace;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.label {
+  color: var(--acid);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.value {
+  margin-top: 0.22rem;
+  font-size: clamp(0.94rem, 2vw, 1.18rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  white-space: pre;
+}
+
+.deadline,
+.finished {
+  margin-top: 0.3rem;
+  color: #d8d4ca;
+  font-size: 0.56rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.timer[data-finished] {
+  background: var(--red);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.timer[data-finished] .label,
+.timer[data-finished] .deadline,
+.timer[data-finished] .finished {
+  color: #fff;
+}
+
+@media (max-width: 960px) {
+  .timer {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timer {
+    scroll-behavior: auto;
+  }
+}

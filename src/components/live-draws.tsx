@@ -12,6 +12,7 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/c
 import { MusicTrackChoiceButton } from "@/components/music-player";
 import type { Album } from "@/types/album";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import { DrawCountdown } from "@/components/draw-countdown";
 
 type Entry = {
   id: string;
@@ -38,7 +39,7 @@ type Review = {
   best_track_youtube_music_url?: string | null;
   worst_track_youtube_music_url?: string | null;
 };
-type Draw = { draw_number: number; status: "draft" | "published" | "locked"; draw_type?: "standard" | "global" };
+type Draw = { draw_number: number; status: "draft" | "published" | "locked"; draw_type?: "standard" | "global"; created_at: string };
 type BonusReview = { entry_id: string | null; member_username: string; member_display_name: string; review_title: string | null; review: string; rating: number; best_track: string | null; worst_track: string | null };
 type Member = { id: string; username: string; displayName: string };
 type StickyHeader = {
@@ -323,6 +324,7 @@ function LiveDraw({
         <span>
           {rows.length} emplacement{rows.length > 1 ? "s" : ""}
         </span>
+        {draw.status === "published" ? <DrawCountdown createdAt={draw.created_at} /> : null}
         <div className="draw-heading__actions">
           {editableEntry && <button type="button" className="sheet-entry-action" onClick={() => onOpenReview(editableEntry.id)}>Modifier mes notes</button>}
         </div>

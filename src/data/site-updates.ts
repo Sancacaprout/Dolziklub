@@ -40,6 +40,27 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "draw-deadline-timer-reminders",
+    version: "2.1",
+    date: "2026-07-26",
+    title: "Un chrono de sept jours pour chaque tirage",
+    summary: "Le tirage en cours affiche maintenant son temps restant en heure de Paris et rappelle automatiquement les actions encore manquantes.",
+    categories: ["Nouvelle fonctionnalit\u00e9", "Am\u00e9lioration", "Tirages"],
+    added: [
+      { text: "Un compte \u00e0 rebours en temps r\u00e9el d\u00e9marre \u00e0 la cr\u00e9ation du tirage et mesure exactement sept jours." },
+      { text: "\u00c0 mi-parcours, chaque proposeur sans album re\u00e7oit un rappel dans la cloche du site." },
+      { text: "Lorsqu\u2019il reste moins de 24 heures, chaque auditeur sans avis re\u00e7oit un dernier rappel." },
+    ],
+    fixed: [],
+    improved: [
+      { text: "L\u2019\u00e9ch\u00e9ance est affich\u00e9e en heure de Paris sur ordinateur, tablette et mobile." },
+      { text: "\u00c0 la fin des sept jours, le compteur reste \u00e0 z\u00e9ro sans bloquer le site ; le prochain tirage publi\u00e9 affiche automatiquement son propre chrono." },
+    ],
+    links: [
+      { label: "Voir le tirage en cours", href: "/tableur" },
+    ],
+  },
+  {
     id: "bonus-catalog-manual-deezer",
     version: "2.0",
     date: "2026-07-26",
