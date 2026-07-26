@@ -50,7 +50,7 @@ export const siteUpdates = [
       { text: "À la dernière note, un vinyle animé ralentit et referme la face avant l’affichage du score final." },
     ],
     fixed: [
-      { text: "La configuration serveur du déblocage Wheely est maintenant exigée au déploiement afin que chaque victoire connectée puisse enregistrer l’achievement." },
+      { text: "Le d\u00e9blocage utilise maintenant une partie horodat\u00e9e par Supabase et la session authentifi\u00e9e du joueur, sans aucune cl\u00e9 administrateur dans Vercel." },
       { text: "Les appels de début et de fin de partie sont retentés automatiquement en cas de panne réseau temporaire, puis l’écriture est relue dans la base avant d’annoncer le thème comme débloqué." },
     ],
     improved: [

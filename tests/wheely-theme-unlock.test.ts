@@ -12,6 +12,7 @@ const resetMigration = readFileSync(resolve("supabase/migrations/20260726081303_
 const styles = readFileSync(resolve("src/app/profile-themes-v2.css"), "utf8");
 const finishStyles = readFileSync(resolve("src/components/hero-vinyl-game.module.css"), "utf8");
 const migration = readFileSync(resolve("supabase/migrations/20260726073026_wheely_theme_unlock.sql"), "utf8");
+const runMigration = readFileSync(resolve("supabase/migrations/20260726114726_wheely_user_scoped_unlock_runs.sql"), "utf8");
 
 test("Wheely uses one non-tiled long-page vinyl background", () => {
   assert.match(styles, /--wheely-page-record-size/);
@@ -30,7 +31,7 @@ test("locked Wheely remains previewable but cannot be selected or saved", () => 
   assert.match(memberPage, /lockedPreview=\{query\.themeLocked === "1"\}/);
 });
 
-test("the existing audio ending remains the victory and requests a signed server unlock", () => {
+test("the existing audio ending remains the victory and requests an authenticated server unlock", () => {
   assert.match(game, /onEnded=\{win\}/);
   assert.match(game, /updatePhase\("finishing"\)/);
   assert.match(game, /isPlaying && runtime\.distance >= runtime\.nextSpawnDistance/);
@@ -44,11 +45,24 @@ test("the existing audio ending remains the victory and requests a signed server
   assert.match(game, /action: "complete", runToken, score, distance/);
   assert.match(game, /THÈME WHEELY DÉBLOQUÉ/);
   assert.match(route, /MINIMUM_RUN_MS = 72_000/);
-  assert.match(route, /createHmac\("sha256"/);
-  assert.match(route, /timingSafeEqual/);
-  assert.match(route, /claim\.sub !== user\.id/);
+  assert.match(route, /userScopedClient/);
+  assert.match(route, /Authorization: authorization/);
+  assert.match(route, /from\("wheely_unlock_runs"\)/);
+  assert.match(route, /run_id: body\.runToken/);
+  assert.doesNotMatch(route, /getSupabaseAdmin|SUPABASE_SERVICE_ROLE_KEY|createHmac|timingSafeEqual/);
   assert.match(route, /wheely_unlock_not_persisted/);
   assert.doesNotMatch(route, /body\?\.unlocked/);
+});
+
+test("authenticated Wheely runs unlock only after the database-owned duration", () => {
+  assert.match(runMigration, /create table if not exists public\.wheely_unlock_runs/);
+  assert.match(runMigration, /enable row level security/);
+  assert.match(runMigration, /participant_id = \(select auth\.uid\(\)\)/);
+  assert.match(runMigration, /interval '72 seconds'/);
+  assert.match(runMigration, /achievement_key = 'wheely-theme'/);
+  assert.match(runMigration, /run\.run_id::text = detail ->> 'run_id'/);
+  assert.match(runMigration, /grant insert on table public\.participant_achievements to authenticated/);
+  assert.doesNotMatch(runMigration, /disable row level security|security definer/i);
 });
 
 test("Supabase owns the achievement and rejects direct locked theme updates", () => {

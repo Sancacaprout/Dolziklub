@@ -1,62 +1,32 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { authenticatedUser, error } from "@/lib/music-server";
-import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 const ACHIEVEMENT_KEY = "wheely-theme";
 const MINIMUM_RUN_MS = 72_000;
 const RUN_TOKEN_TTL_MS = 30 * 60_000;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type RunClaim = {
-  sub: string;
-  iat: number;
-  nonce: string;
-};
-
-function signingSecret() {
-  const secret =
-    process.env.WHEELY_UNLOCK_SECRET?.trim() ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!secret) throw new Error("wheely_unlock_secret_unavailable");
-  return secret;
-}
-
-function signature(value: string) {
-  return createHmac("sha256", signingSecret()).update(value).digest("base64url");
-}
-
-function createRunToken(userId: string) {
-  const claim: RunClaim = { sub: userId, iat: Date.now(), nonce: randomUUID() };
-  const payload = Buffer.from(JSON.stringify(claim), "utf8").toString("base64url");
-  return `${payload}.${signature(payload)}`;
-}
-
-function parseRunToken(value: unknown): RunClaim | null {
-  if (typeof value !== "string") return null;
-  const [payload, providedSignature, extra] = value.split(".");
-  if (!payload || !providedSignature || extra) return null;
-  const expectedSignature = signature(payload);
-  const provided = Buffer.from(providedSignature, "utf8");
-  const expected = Buffer.from(expectedSignature, "utf8");
-  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) return null;
-
-  try {
-    const claim = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as Partial<RunClaim>;
-    if (typeof claim.sub !== "string" || typeof claim.iat !== "number" || typeof claim.nonce !== "string") return null;
-    return claim as RunClaim;
-  } catch {
-    return null;
+function userScopedClient(request: Request) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const authorization = request.headers.get("authorization");
+  if (!url || !key || !authorization?.startsWith("Bearer ")) {
+    throw new Error("wheely_user_client_unavailable");
   }
+  return createClient(url, key, {
+    global: { headers: { Authorization: authorization } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 }
 
-async function hasUnlockedTheme(userId: string) {
-  // Generated database types are refreshed separately after the remote migration.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: queryError } = await (getSupabaseAdmin() as any)
+async function hasUnlockedTheme(client: ReturnType<typeof userScopedClient>, userId: string) {
+  const { data, error: queryError } = await client
     .from("participant_achievements")
     .select("achievement_key")
     .eq("participant_id", userId)
@@ -78,9 +48,9 @@ export async function GET(request: Request) {
   if (!user) return error("Connexion requise.", 401);
 
   try {
-    return noStore({ unlocked: await hasUnlockedTheme(user.id) });
+    return noStore({ unlocked: await hasUnlockedTheme(userScopedClient(request), user.id) });
   } catch {
-    return error("Le statut du thème Wheely est indisponible.", 503);
+    return error("Le statut du th\u00e8me Wheely est indisponible.", 503);
   }
 }
 
@@ -96,58 +66,66 @@ export async function POST(request: Request) {
   } | null;
 
   try {
+    const client = userScopedClient(request);
     if (body?.action === "start") {
-      let unlocked = false;
-      try {
-        unlocked = await hasUnlockedTheme(user.id);
-      } catch {
-        // A read outage must not invalidate an otherwise legitimate full run.
-      }
-      if (unlocked) return noStore({ unlocked: true });
+      if (await hasUnlockedTheme(client, user.id)) return noStore({ unlocked: true });
+      const runToken = randomUUID();
+      const { error: runError } = await client
+        .from("wheely_unlock_runs")
+        .upsert(
+          { participant_id: user.id, run_id: runToken, started_at: new Date().toISOString() },
+          { onConflict: "participant_id" },
+        );
+      if (runError) throw runError;
       return noStore({
         unlocked: false,
-        runToken: createRunToken(user.id),
+        runToken,
         objective: "Terminer le morceau Wheely en restant sur la piste.",
       });
     }
 
     if (body?.action !== "complete") return error("Action Wheely invalide.", 400);
-    if (await hasUnlockedTheme(user.id)) return noStore({ unlocked: true });
+    if (await hasUnlockedTheme(client, user.id)) return noStore({ unlocked: true });
+    if (typeof body.runToken !== "string" || !UUID_PATTERN.test(body.runToken)) {
+      return error("Cette partie Wheely n\u2019est plus valide. Relance le jeu.", 403);
+    }
 
-    const claim = parseRunToken(body.runToken);
-    const elapsed = claim ? Date.now() - claim.iat : -1;
-    if (!claim || claim.sub !== user.id || elapsed < 0 || elapsed > RUN_TOKEN_TTL_MS) {
-      return error("Cette partie Wheely n’est plus valide. Relance le jeu.", 403);
+    const { data: run, error: runError } = await client
+      .from("wheely_unlock_runs")
+      .select("run_id, started_at")
+      .eq("participant_id", user.id)
+      .eq("run_id", body.runToken)
+      .maybeSingle();
+    if (runError) throw runError;
+    const elapsed = run ? Date.now() - Date.parse(run.started_at) : -1;
+    if (!run || elapsed < 0 || elapsed > RUN_TOKEN_TTL_MS) {
+      return error("Cette partie Wheely n\u2019est plus valide. Relance le jeu.", 403);
     }
     if (elapsed < MINIMUM_RUN_MS) {
-      return error("La face n’est pas encore terminée.", 409);
+      return error("La face n\u2019est pas encore termin\u00e9e.", 409);
     }
 
     const score = Number.isFinite(Number(body.score)) ? Math.max(0, Math.floor(Number(body.score))) : 0;
     const distance = Number.isFinite(Number(body.distance)) ? Math.max(0, Math.floor(Number(body.distance))) : 0;
-    // Generated database types are refreshed separately after the remote migration.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertError } = await (getSupabaseAdmin() as any)
+    const { error: insertError } = await client
       .from("participant_achievements")
-      .upsert(
-        {
-          participant_id: user.id,
-          achievement_key: ACHIEVEMENT_KEY,
-          unlocked_at: new Date().toISOString(),
-          detail: {
-            source: "wheely-audio-ended",
-            score,
-            distance,
-            verified_elapsed_ms: elapsed,
-          },
+      .insert({
+        participant_id: user.id,
+        achievement_key: ACHIEVEMENT_KEY,
+        unlocked_at: new Date().toISOString(),
+        detail: {
+          source: "wheely-audio-ended",
+          run_id: body.runToken,
+          score,
+          distance,
+          verified_elapsed_ms: elapsed,
         },
-        { onConflict: "participant_id,achievement_key", ignoreDuplicates: true },
-      );
-    if (insertError) throw insertError;
-    if (!(await hasUnlockedTheme(user.id))) throw new Error("wheely_unlock_not_persisted");
+      });
+    if (insertError && insertError.code !== "23505") throw insertError;
+    if (!(await hasUnlockedTheme(client, user.id))) throw new Error("wheely_unlock_not_persisted");
 
-    return noStore({ unlocked: true, message: "THÈME WHEELY DÉBLOQUÉ" });
+    return noStore({ unlocked: true, message: "TH\u00c8ME WHEELY D\u00c9BLOQU\u00c9" });
   } catch {
-    return error("Le déblocage Wheely n’a pas pu être enregistré.", 503);
+    return error("Le d\u00e9blocage Wheely n\u2019a pas pu \u00eatre enregistr\u00e9.", 503);
   }
 }
