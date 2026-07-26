@@ -7,13 +7,17 @@ const migration = readFileSync(new URL("../supabase/migrations/20260714150000_pr
 const themeEditor = readFileSync(new URL("../src/components/auth/profile-personalization.tsx", import.meta.url), "utf8");
 const musicAssist = readFileSync(new URL("../src/components/music-assist.tsx", import.meta.url), "utf8");
 
-test("the profile theme catalogue contains the club default and eleven visual themes", () => {
-  assert.equal(profileThemes.length, 12);
-  assert.equal(new Set(profileThemeIds).size, 12);
+test("the profile theme catalogue contains the club default and fifteen visual themes", () => {
+  assert.equal(profileThemes.length, 16);
+  assert.equal(new Set(profileThemeIds).size, 16);
   assert.equal(defaultProfileTheme, "dol-ziklub");
   assert.equal(isProfileThemeId("dol-ziklub"), true);
   assert.equal(isProfileThemeId("dark-vinyl"), true);
   assert.equal(isProfileThemeId("wheely"), true);
+  assert.equal(isProfileThemeId("noir-cinema"), true);
+  assert.equal(isProfileThemeId("manga-panel"), true);
+  assert.equal(isProfileThemeId("cassette-sunset"), true);
+  assert.equal(isProfileThemeId("museum-white"), true);
   assert.equal(isProfileThemeId("unknown-theme"), false);
 });
 

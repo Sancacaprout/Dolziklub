@@ -195,6 +195,7 @@ export function ProfilePersonalization() {
                     : "theme-card profile-theme"
                 }
                 data-profile-theme={theme.id}
+                data-preview-motif={theme.previewMotif ?? "classic"}
               >
                 <button
                   type="button"
