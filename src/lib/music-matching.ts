@@ -16,6 +16,9 @@ export type MusicCandidate = {
   confidence: MatchConfidence;
   score: number;
   source: "youtube_search" | "deezer_search";
+  externalUrl?: string | null;
+  releaseYear?: number | null;
+  resultType?: "album";
 };
 
 const noiseWords = new Set(["official", "audio", "video", "full", "album", "playlist", "music", "topic"]);
@@ -51,6 +54,26 @@ function includesExact(left: string, right: string) {
   return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
 }
 
+function textSimilarity(left: string, right: string) {
+  const a = normalizeMusicText(left);
+  const b = normalizeMusicText(right);
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+  for (let leftIndex = 1; leftIndex <= a.length; leftIndex += 1) {
+    const current = [leftIndex];
+    for (let rightIndex = 1; rightIndex <= b.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + (a[leftIndex - 1] === b[rightIndex - 1] ? 0 : 1),
+      );
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+  return 1 - previous[b.length] / Math.max(a.length, b.length);
+}
+
 export function classifyConfidence(score: number): MatchConfidence {
   if (score >= 78) return "high";
   if (score >= 48) return "medium";
@@ -61,6 +84,8 @@ export function scoreMusicCandidate(input: { title: string; artist: string; reso
   const searchable = `${input.candidateTitle} ${input.candidateArtist ?? ""} ${input.channelTitle ?? ""}`;
   let score = overlap(input.title, input.candidateTitle) * 45;
   score += overlap(input.artist, searchable) * 30;
+  score += textSimilarity(input.title, input.candidateTitle) * 15;
+  score += textSimilarity(input.artist, input.candidateArtist ?? input.channelTitle ?? "") * 10;
   if (includesExact(input.title, input.candidateTitle)) score += 12;
   if (includesExact(input.artist, searchable)) score += 8;
   if (input.resourceType === "playlist") score += 2;
@@ -112,19 +137,24 @@ export function isLikelyCatalogAlbumResult(input: {
   const candidateTitle = normalizeMusicText(input.candidateTitle);
   const expectedArtist = normalizeMusicText(input.artist);
   const candidateArtist = normalizeMusicText(input.candidateArtist);
-  if (!expectedTitle || !candidateTitle) return false;
+  if ((!expectedTitle && !expectedArtist) || !candidateTitle) return false;
 
   // Catalogues may add edition details after the canonical album title, but a
-  // partial substring match would let unrelated releases into the chooser.
+  // close spelling match is also useful when a member makes a small typo.
   const titleMatches =
+    !expectedTitle ||
     candidateTitle === expectedTitle ||
     candidateTitle.startsWith(`${expectedTitle} `) ||
-    expectedTitle.startsWith(`${candidateTitle} `);
+    expectedTitle.startsWith(`${candidateTitle} `) ||
+    overlap(input.title, input.candidateTitle) >= 0.7 ||
+    textSimilarity(input.title, input.candidateTitle) >= 0.72;
   const artistMatches =
     !expectedArtist ||
     candidateArtist === expectedArtist ||
     candidateArtist.includes(expectedArtist) ||
-    expectedArtist.includes(candidateArtist);
+    expectedArtist.includes(candidateArtist) ||
+    overlap(input.artist, input.candidateArtist) >= 0.7 ||
+    textSimilarity(input.artist, input.candidateArtist) >= 0.72;
   return titleMatches && artistMatches;
 }
 

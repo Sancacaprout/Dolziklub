@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const title = cleanText(body?.title, 200);
   const artist = cleanText(body?.artist, 150);
-  if (!title) return error("Écris au moins le titre de l’album.", 400);
+  if (!title && !artist) return error("Renseigne un titre ou un artiste avant de rechercher.", 400);
   try {
     if (!await consumeSearchQuota(user.id, "album")) return error("Trop de recherches : réessaie dans quelques minutes.", 429);
     return NextResponse.json(await searchDeezerAlbums(title, artist));

@@ -101,7 +101,7 @@ function CandidateList({
             <div className="music-candidate__actions">
               <a
                 className="sheet-entry-action"
-                href={candidate.youtubeMusicUrl}
+                href={candidate.externalUrl ?? candidate.youtubeMusicUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -114,7 +114,7 @@ function CandidateList({
                 className="sheet-entry-action"
                 onClick={() => onSelect(candidate)}
               >
-                {selectedId === candidate.id ? "Choisi" : "Choisir"}
+                {selectedId === candidate.id ? "Choisi" : candidate.source === "deezer_search" ? "CHOISIR CET ALBUM" : "Choisir"}
               </button>
             </div>
           </div>
@@ -130,83 +130,66 @@ export function AlbumLookup({
   selected,
   onSelect,
   disabled,
-  automatic = true,
 }: {
   title: string;
   artist: string;
   selected: MusicCandidate | null;
   onSelect: (candidate: MusicCandidate | null) => void;
   disabled?: boolean;
-  automatic?: boolean;
 }) {
   const [candidates, setCandidates] = useState<MusicCandidate[]>([]);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [message, setMessage] = useState("");
   const requestId = useRef(0);
-  const canSuggest = title.trim().length >= 3;
+  const canSearch = Boolean(title.trim() || artist.trim());
 
-  const search = useCallback(
-    async (automatic = false) => {
-      if (!canSuggest) {
-        if (!automatic) {
-          setState("error");
-          setMessage("Écris au moins trois lettres du titre.");
-        }
-        return;
-      }
+  const search = useCallback(async () => {
+    if (!canSearch) {
+      setState("error");
+      setCandidates([]);
+      setMessage("Renseigne un titre ou un artiste avant de rechercher.");
+      return;
+    }
 
-      const currentRequest = ++requestId.current;
-      setState("loading");
-      setMessage("");
-      try {
-        const result = await musicRequest<{ candidates?: MusicCandidate[] }>(
-          "/api/music/search-albums",
-          { title, artist },
-        );
-        if (currentRequest !== requestId.current) return;
-        const nextCandidates = result.candidates ?? [];
-        setCandidates(nextCandidates);
-        setState("idle");
-        setMessage(
-          nextCandidates.length
-            ? "Choisis explicitement l’album Deezer correspondant."
-            : "Aucun album Deezer trouvé. Tu peux continuer manuellement.",
-        );
-      } catch (error) {
-        if (currentRequest !== requestId.current) return;
-        setState("error");
-        setCandidates([]);
-        setMessage(
-          error instanceof Error ? error.message : "La recherche est indisponible.",
-        );
-      }
-    },
-    [artist, canSuggest, title],
-  );
-
-  useEffect(() => {
-    if (!automatic || !canSuggest) return;
-    const timer = window.setTimeout(() => void search(true), 750);
-    return () => window.clearTimeout(timer);
-  }, [automatic, canSuggest, search]);
+    const currentRequest = ++requestId.current;
+    setState("loading");
+    setMessage("");
+    try {
+      const result = await musicRequest<{ candidates?: MusicCandidate[] }>(
+        "/api/music/search-albums",
+        { title, artist },
+      );
+      if (currentRequest !== requestId.current) return;
+      const nextCandidates = (result.candidates ?? []).slice(0, 5);
+      setCandidates(nextCandidates);
+      setState("idle");
+      setMessage(
+        nextCandidates.length
+          ? "Choisis explicitement l\u2019album Deezer correspondant."
+          : "Aucun album pertinent trouv\u00e9.",
+      );
+    } catch {
+      if (currentRequest !== requestId.current) return;
+      setState("error");
+      setCandidates([]);
+      setMessage("La recherche Deezer est temporairement indisponible.");
+    }
+  }, [artist, canSearch, title]);
 
   return (
     <section className="music-assist music-assist--autocomplete">
       <div className="music-assist__details-head">
         <div>
-          <span className="eyebrow">ASSISTANCE DEEZER · ALBUMS</span>
-          <p>
-            Vérifie la bonne édition avant de confirmer. Rien n’est sélectionné
-            automatiquement.
-          </p>
+          <span className="eyebrow">ASSISTANCE DEEZER {"\u00b7"} ALBUMS</span>
+          <p>{"V\u00e9rifie la bonne \u00e9dition avant de confirmer. Rien n\u2019est s\u00e9lectionn\u00e9 automatiquement."}</p>
         </div>
         <button
           type="button"
           className="sheet-entry-action"
-          disabled={disabled || state === "loading" || !canSuggest}
+          disabled={disabled || state === "loading"}
           onClick={() => void search()}
         >
-          {state === "loading" ? "Recherche…" : "Rechercher sur Deezer"}
+          {state === "loading" ? "Recherche\u2026" : "RECHERCHER SUR DEEZER"}
         </button>
       </div>
       {message ? (
@@ -239,7 +222,7 @@ export function AlbumLookup({
             onSelect(null);
           }}
         >
-          Aucun de ces résultats · renseigner manuellement
+          {"Aucun de ces r\u00e9sultats \u00b7 renseigner manuellement"}
         </button>
       ) : null}
     </section>
@@ -312,7 +295,7 @@ export function DeezerTrackLookup({
         disabled={disabled || state === "loading" || !canSearch}
         onClick={() => void search()}
       >
-        {state === "loading" ? "Recherche Deezer…" : "Rechercher sur Deezer"}
+        {state === "loading" ? "Recherche\u2026" : "RECHERCHER SUR DEEZER"}
       </button>
       {message ? (
         <small

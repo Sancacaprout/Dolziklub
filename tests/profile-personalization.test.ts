@@ -67,8 +67,8 @@ test("the personalization frame follows the currently selected profile theme", (
 test("shared Deezer assistance requires an explicit album or track choice", () => {
   assert.match(musicAssist, /\/api\/music\/search-albums/);
   assert.match(musicAssist, /\/api\/music\/search-favorite-tracks/);
-  assert.match(musicAssist, /Rechercher sur Deezer/);
-  assert.match(musicAssist, /Rien n’est sélectionné/);
+  assert.match(musicAssist, /RECHERCHER SUR DEEZER/i);
+  assert.match(musicAssist, /Rien n.+est s.+lectionn.+ automatiquement/);
   assert.match(musicAssist, /onSelect\(candidate\)/);
 });
 

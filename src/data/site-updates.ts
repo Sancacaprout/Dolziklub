@@ -40,6 +40,28 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "bonus-catalog-manual-deezer",
+    version: "2.0",
+    date: "2026-07-26",
+    title: "Toutes les \u00e9coutes bonus, Deezer uniquement sur demande",
+    summary: "Chaque album renseign\u00e9 dans un tirage devient imm\u00e9diatement disponible en \u00e9coute bonus et la recherche Deezer attend maintenant un clic explicite.",
+    categories: ["Correction", "Am\u00e9lioration", "Albums", "Tirages", "\u00c9coutes bonus"],
+    added: [],
+    fixed: [
+      { text: "Les albums sans note, sans avis ou encore en attente apparaissent d\u00e9sormais dans les \u00e9coutes bonus d\u00e8s qu\u2019ils sont renseign\u00e9s dans un tirage." },
+      { text: "Les anciens tirages, le tirage en cours et les prochains tirages utilisent la m\u00eame source dynamique, sans cr\u00e9er de faux avis." },
+      { text: "La recherche Deezer d\u2019albums ne se lance plus pendant la saisie et part une seule fois apr\u00e8s un clic sur \u00ab RECHERCHER SUR DEEZER \u00bb." },
+    ],
+    improved: [
+      { text: "Deezer affiche jusqu\u2019\u00e0 cinq albums probables, class\u00e9s selon le titre, l\u2019artiste, la proximit\u00e9 textuelle, la popularit\u00e9 et l\u2019ordre du catalogue." },
+      { text: "Chaque r\u00e9sultat conserve sa pochette, son lien Deezer et son identifiant catalogue jusqu\u2019\u00e0 la confirmation manuelle." },
+    ],
+    links: [
+      { label: "Ouvrir les \u00e9coutes bonus", href: "/tableur" },
+      { label: "Modifier mes albums favoris", href: "/compte" },
+    ],
+  },
+  {
     id: "wheely-reset-theme-refinements",
     version: "1.9",
     date: "2026-07-26",

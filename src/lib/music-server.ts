@@ -90,10 +90,14 @@ type AlbumSearchIntent = { title: string; artist: string };
 type DeezerAlbumItem = {
   id?: number;
   title?: string;
+  link?: string;
   cover_xl?: string;
   cover_big?: string;
   nb_tracks?: number;
+  fans?: number;
+  release_date?: string;
   record_type?: string;
+  type?: string;
   artist?: { name?: string };
 };
 
@@ -334,14 +338,14 @@ export async function searchYouTubeMusic(
 // artist, high-resolution cover and track count in one request.
 export async function searchDeezerAlbums(title: string, artist: string) {
   const intent = albumIntent(title, artist);
-  const query = cacheKey("album", "deezer-v1", intent.title, intent.artist);
+  const query = cacheKey("album", "deezer-v2", intent.title, intent.artist);
   const cached = await fromCache("album", query);
   if (cached) return { candidates: cached, cached: true };
 
   const quote = (value: string) => value.replace(/"/g, " ").trim();
   const searchQuery = [
     intent.artist && `artist:"${quote(intent.artist)}"`,
-    `album:"${quote(intent.title)}"`,
+    intent.title && `album:"${quote(intent.title)}"`,
   ].filter(Boolean).join(" ");
   const url = new URL("https://api.deezer.com/search/album");
   url.search = new URLSearchParams({
@@ -361,10 +365,11 @@ export async function searchDeezerAlbums(title: string, artist: string) {
   const body = (await response.json()) as { data?: DeezerAlbumItem[] };
   const requestQuery = [intent.artist, intent.title].filter(Boolean).join(" ");
   const candidates = (body.data ?? [])
-    .flatMap((item): MusicCandidate[] => {
+    .flatMap((item, index): MusicCandidate[] => {
       const candidateTitle = item.title?.trim() ?? "";
       const candidateArtist = item.artist?.name?.trim() ?? "";
       if (!item.id || !candidateTitle || !candidateArtist) return [];
+      if (item.type && item.type !== "album") return [];
       if (!isLikelyCatalogAlbumResult({
         title: intent.title,
         artist: intent.artist,
@@ -380,8 +385,15 @@ export async function searchDeezerAlbums(title: string, artist: string) {
         channelTitle: "Deezer",
         resourceType: "search",
         thumbnailUrl,
+        itemCount: item.nb_tracks,
       });
-      if (score < (intent.artist ? 85 : 55)) return [];
+      const popularityBoost = Math.min(8, Math.max(0, Math.log10((item.fans ?? 0) + 1) * 2));
+      const rankedScore = Math.min(100, Math.round(score + popularityBoost + Math.max(0, 5 - index)));
+      const minimumScore = intent.title && intent.artist ? 72 : intent.title ? 45 : 30;
+      if (rankedScore < minimumScore) return [];
+      const releaseYear = /^\d{4}/.test(item.release_date ?? "")
+        ? Number(item.release_date?.slice(0, 4))
+        : null;
       return [{
         id: `deezer:${item.id}`,
         title: candidateTitle,
@@ -389,12 +401,15 @@ export async function searchDeezerAlbums(title: string, artist: string) {
         channelTitle: "Deezer",
         thumbnailUrl,
         resourceType: "search",
-        resourceId: null,
+        resourceId: String(item.id),
         ...musicUrls("search", null, requestQuery),
         itemCount: item.nb_tracks ?? null,
-        score,
-        confidence: classifyConfidence(score),
+        score: rankedScore,
+        confidence: classifyConfidence(rankedScore),
         source: "deezer_search",
+        externalUrl: item.link ?? `https://www.deezer.com/album/${item.id}`,
+        releaseYear,
+        resultType: "album",
       }];
     })
     .sort((left, right) => right.score - left.score)

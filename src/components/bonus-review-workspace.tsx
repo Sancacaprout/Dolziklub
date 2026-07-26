@@ -19,6 +19,9 @@ type Entry = {
   cover_path?: string | null;
   cover_source_url?: string | null;
   youtube_music_url?: string | null;
+  archive_number?: number | null;
+  proposed_by_name?: string | null;
+  listened_by_name?: string | null;
 };
 type PublicReview = { album_id: string; rating: number | null };
 type BonusReview = {
@@ -39,6 +42,9 @@ type Candidate = {
   artist: string;
   coverUrl: string | null;
   albumUrl: string | null;
+  proposedBy?: string | null;
+  listenedBy?: string | null;
+  officialStatus?: string;
 };
 type ReviewPayload = {
   reviewTitle: string;
@@ -69,19 +75,18 @@ function archivedDraw(number: number) {
             : 6;
 }
 
-function sameMember(
-  first: string | null | undefined,
-  second: string | null | undefined,
-) {
-  return Boolean(
-    first &&
-      second &&
-      first.trim().toLocaleLowerCase() === second.trim().toLocaleLowerCase(),
-  );
-}
-
 function candidateKey(candidate: Pick<Candidate, "target" | "id">) {
   return `${candidate.target}:${candidate.id}`;
+}
+
+function candidateOptionLabel(candidate: Candidate) {
+  const draw = String(candidate.drawNumber).padStart(2, "0");
+  const proposer = candidate.proposedBy?.trim() || "inconnu";
+  const listener = candidate.listenedBy?.trim() || "en attente d\u2019attribution";
+  const status = candidate.officialStatus ?? "\u00e9coute officielle en attente";
+  return "Tirage " + draw + " \u2014 " + candidate.title + " \u2014 " +
+    candidate.artist + " \u2014 propos\u00e9 par " + proposer + " \u2014 " +
+    status + " (" + listener + ")";
 }
 
 function BonusReviewCard({
@@ -297,19 +302,22 @@ export function BonusReviewWorkspace({
         .filter((review) => Number.isFinite(review.rating))
         .map((review) => review.album_id),
     );
+    const liveArchiveNumbers = new Set(
+      entries.flatMap((entry) =>
+        entry.archive_number == null ? [] : [entry.archive_number],
+      ),
+    );
     const live = entries
       .filter(
         (entry) =>
           entry.album_title?.trim() &&
-          entry.album_artist?.trim() &&
-          entry.listened_by !== member.id &&
-          reviewed.has(entry.id),
+          entry.album_artist?.trim(),
       )
       .map((entry) => ({
         target: "entry" as const,
         id: entry.id,
         drawNumber: entry.draw_number,
-        archiveNumber: null,
+        archiveNumber: entry.archive_number ?? null,
         title: entry.album_title!,
         artist: entry.album_artist!,
         coverUrl:
@@ -319,18 +327,17 @@ export function BonusReviewWorkspace({
                 .getPublicUrl(entry.cover_path).data.publicUrl
             : (entry.cover_source_url ?? null),
         albumUrl: entry.youtube_music_url ?? null,
+        proposedBy: entry.proposed_by_name ?? null,
+        listenedBy: entry.listened_by_name ?? null,
+        officialStatus: reviewed.has(entry.id)
+          ? "\u00e9coute officielle termin\u00e9e"
+          : "\u00e9coute officielle en attente",
       }));
 
     const historic = albums
       .filter((album) => {
         const number = archiveNumber(album);
-        return (
-          number != null &&
-          number <= 45 &&
-          album.rating != null &&
-          !sameMember(album.listenedBy, member.username) &&
-          !sameMember(album.listenedBy, member.displayName)
-        );
+        return number != null && !liveArchiveNumbers.has(number);
       })
       .map((album) => ({
         target: "archive" as const,
@@ -341,6 +348,12 @@ export function BonusReviewWorkspace({
         artist: album.artist,
         coverUrl: album.cover,
         albumUrl: album.albumUrl,
+        proposedBy: album.proposedBy,
+        listenedBy: album.listenedBy,
+        officialStatus:
+          album.rating == null
+            ? "\u00e9coute officielle en attente"
+            : "\u00e9coute officielle termin\u00e9e",
       }));
 
     const unique = new Map<string, Candidate>();
@@ -352,20 +365,12 @@ export function BonusReviewWorkspace({
     return [...unique.values()].sort(
       (first, second) =>
         second.drawNumber - first.drawNumber ||
-        `${first.artist} ${first.title}`.localeCompare(
-          `${second.artist} ${second.title}`,
+        (first.artist + " " + first.title).localeCompare(
+          second.artist + " " + second.title,
           "fr",
         ),
     );
-  }, [
-    albums,
-    configured,
-    entries,
-    member.displayName,
-    member.id,
-    member.username,
-    publicReviews,
-  ]);
+  }, [albums, configured, entries, publicReviews]);
 
   const candidateMap = useMemo(
     () => new Map(candidates.map((candidate) => [candidateKey(candidate), candidate])),
@@ -542,7 +547,7 @@ export function BonusReviewWorkspace({
           <h2>
             Un album que je veux <em>écouter en plus.</em>
           </h2>
-          <p>Choisis le tirage puis un album déjà noté par un autre membre.</p>
+          <p>{"Choisis un album pr\u00e9sent dans n\u2019importe quel tirage, avec ou sans avis officiel."}</p>
         </div>
       </div>
 
@@ -607,7 +612,7 @@ export function BonusReviewWorkspace({
                     key={candidateKey(candidate)}
                     value={candidateKey(candidate)}
                   >
-                    {candidate.title} - {candidate.artist}
+                    {candidateOptionLabel(candidate)}
                   </option>
                 ))}
               </select>
@@ -628,7 +633,7 @@ export function BonusReviewWorkspace({
         </>
       ) : (
         <div className="review-workspace__empty">
-          <p>Aucun album noté par un autre membre n’est disponible.</p>
+          <p>{"Aucun album n\u2019est encore renseign\u00e9 dans les tirages."}</p>
         </div>
       )}
     </section>

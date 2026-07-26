@@ -13,6 +13,7 @@ type Favorite = {
   artist: string;
   coverPath: string | null;
   coverSourceUrl: string | null;
+  sourceCatalogKey: string | null;
 };
 type FavoriteRow = {
   id: string;
@@ -20,6 +21,7 @@ type FavoriteRow = {
   artist_name: string;
   cover_path: string | null;
   cover_source_url: string | null;
+  source_catalog_key: string | null;
 };
 
 const makeFavorite = (): Favorite => ({
@@ -28,6 +30,7 @@ const makeFavorite = (): Favorite => ({
   artist: "",
   coverPath: null,
   coverSourceUrl: null,
+  sourceCatalogKey: null,
 });
 function coverUrl(favorite: Favorite) {
   return favorite.coverPath
@@ -59,7 +62,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
       setMemberId(auth.user.id);
       const { data, error } = await supabase
         .from("profile_favorite_albums")
-        .select("id,title,artist_name,cover_path,cover_source_url")
+        .select("id,title,artist_name,cover_path,cover_source_url,source_catalog_key")
         .eq("participant_id", auth.user.id)
         .order("display_order");
       if (error) {
@@ -72,6 +75,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
         artist: item.artist_name,
         coverPath: item.cover_path,
         coverSourceUrl: item.cover_source_url,
+        sourceCatalogKey: item.source_catalog_key,
       }));
       setFavorites(
         [...saved, ...Array.from({ length: Math.max(0, 3 - saved.length) }, makeFavorite)].slice(0, 3),
@@ -104,7 +108,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
     const favorite = favorites[index];
     setSelectedMatches((current) => ({ ...current, [favorite.id]: candidate }));
     if (!candidate) {
-      update(index, { coverSourceUrl: null });
+      update(index, { coverSourceUrl: null, sourceCatalogKey: null });
       return;
     }
     queueOldCoverForCleanup(favorite.coverPath);
@@ -113,6 +117,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
       artist: candidate.artist,
       coverPath: null,
       coverSourceUrl: candidate.thumbnailUrl ?? null,
+      sourceCatalogKey: candidate.id,
     });
   };
 
@@ -158,7 +163,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
             artist_name: item.artist.trim(),
             cover_path: item.coverPath,
             cover_source_url: item.coverSourceUrl,
-            source_catalog_key: null,
+            source_catalog_key: item.sourceCatalogKey,
             display_order: index + 1,
           })),
           { onConflict: "id" },
@@ -217,7 +222,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
                     placeholder="Nom de l’album…"
                     onChange={(event) => {
                       setSelectedMatches((current) => ({ ...current, [favorite.id]: null }));
-                      update(index, { title: event.target.value });
+                      update(index, { title: event.target.value, sourceCatalogKey: null });
                     }}
                   />
                 </label>
@@ -230,7 +235,7 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
                     placeholder="Nom de l’artiste…"
                     onChange={(event) => {
                       setSelectedMatches((current) => ({ ...current, [favorite.id]: null }));
-                      update(index, { artist: event.target.value });
+                      update(index, { artist: event.target.value, sourceCatalogKey: null });
                     }}
                   />
                 </label>
@@ -239,7 +244,6 @@ export function FavoriteAlbumsPanel({ theme }: { theme: ProfileThemeId }) {
                   artist={favorite.artist}
                   selected={selectedMatches[favorite.id] ?? null}
                   disabled={saving}
-                  automatic={false}
                   onSelect={(candidate) => selectAlbum(index, candidate)}
                 />
               </div>
