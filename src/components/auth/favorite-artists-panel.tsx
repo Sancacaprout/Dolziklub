@@ -2,6 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
+import { ImageUploadField } from "@/components/image-upload-field";
 import type { ProfileThemeId } from "@/lib/profile-themes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -77,6 +78,7 @@ export function FavoriteArtistsPanel({ theme }: { theme: ProfileThemeId }) {
   const [results, setResults] = useState<Record<number, ArtistCandidate[]>>({});
   const [searchingRank, setSearchingRank] = useState<Rank | null>(null);
   const [saving, setSaving] = useState(false);
+  const [portraitFiles, setPortraitFiles] = useState<Partial<Record<Rank, File | null>>>({});
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -122,6 +124,7 @@ export function FavoriteArtistsPanel({ theme }: { theme: ProfileThemeId }) {
   const remove = (rank: Rank) => {
     update(rank, emptyArtist(rank));
     setResults((current) => ({ ...current, [rank]: [] }));
+    setPortraitFiles((current) => ({ ...current, [rank]: null }));
     setMessage("Artiste retiré : enregistre pour publier la modification.");
   };
 
@@ -169,15 +172,14 @@ export function FavoriteArtistsPanel({ theme }: { theme: ProfileThemeId }) {
       imageUrl: candidate.imageUrl,
     });
     setResults((current) => ({ ...current, [rank]: [] }));
+    setPortraitFiles((current) => ({ ...current, [rank]: null }));
   };
 
-  const uploadPortrait = async (rank: Rank, file: File | null) => {
-    if (!memberId || !file) return;
+  const uploadPortrait = async (artist: ArtistDraft, file: File) => {
+    if (!memberId) return artist;
     if (!imageTypes.has(file.type) || file.size > 3 * 1024 * 1024) {
-      setMessage("Choisis une image JPG, PNG ou WebP de 3 Mo maximum.");
-      return;
+      throw new Error("Choisis une image JPG, PNG ou WebP de 3 Mo maximum.");
     }
-    const artist = artistAt(rank);
     const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
     const path = memberId + "/" + artist.id + "/artist." + extension;
     const { error } = await getSupabaseBrowserClient()
@@ -187,71 +189,74 @@ export function FavoriteArtistsPanel({ theme }: { theme: ProfileThemeId }) {
         contentType: file.type,
         cacheControl: "31536000",
       });
-    if (error) {
-      setMessage("La photo de l’artiste n’a pas pu être importée.");
-      return;
-    }
-    update(rank, { imagePath: path, imageUrl: null });
-    setMessage("Photo remplacée : enregistre pour la publier.");
+    if (error) throw new Error("La photo de l’artiste n’a pas pu être importée.");
+    return { ...artist, imagePath: path, imageUrl: null };
   };
 
   const save = async () => {
     if (!memberId || saving) return;
-    const complete = artists.filter((artist) => artist.name.trim());
-    const deezerIds = complete
+    const initialComplete = artists.filter((artist) => artist.name.trim());
+    const deezerIds = initialComplete
       .map((artist) => artist.deezerArtistId)
       .filter((id): id is number => id !== null);
-    const names = complete.map((artist) => normalizedArtistName(artist.name));
+    const names = initialComplete.map((artist) => normalizedArtistName(artist.name));
     if (new Set(deezerIds).size !== deezerIds.length || new Set(names).size !== names.length) {
       setMessage("Cet artiste est déjà présent dans ton podium.");
       return;
     }
-    if (complete.some((artist) => artist.imageUrl && !artist.imageUrl.startsWith("https://"))) {
+    if (initialComplete.some((artist) => artist.imageUrl && !artist.imageUrl.startsWith("https://"))) {
       setMessage("La photo externe de l’artiste doit utiliser HTTPS.");
       return;
     }
 
     setSaving(true);
     setMessage("");
-    const supabase = getSupabaseBrowserClient();
-    if (complete.length) {
-      const { error } = await supabase.from("profile_favorite_artists").upsert(
-        complete.map((artist) => ({
-          id: artist.id,
-          participant_id: memberId,
-          rank: artist.rank,
-          artist_name: artist.name.trim(),
-          deezer_artist_id: artist.deezerArtistId,
-          deezer_url: artist.deezerUrl,
-          image_path: artist.imagePath,
-          image_url: artist.imageUrl,
-        })),
-        { onConflict: "id" },
-      );
-      if (error) {
-        setSaving(false);
-        setMessage(error.code === "23505"
+    try {
+      let prepared = artists;
+      for (const rank of ([1, 2, 3] as Rank[])) {
+        const file = portraitFiles[rank];
+        if (!file) continue;
+        const uploaded = await uploadPortrait(prepared.find((artist) => artist.rank === rank)!, file);
+        prepared = prepared.map((artist) => artist.rank === rank ? uploaded : artist);
+      }
+      const complete = prepared.filter((artist) => artist.name.trim());
+      const supabase = getSupabaseBrowserClient();
+      if (complete.length) {
+        const { error } = await supabase.from("profile_favorite_artists").upsert(
+          complete.map((artist) => ({
+            id: artist.id,
+            participant_id: memberId,
+            rank: artist.rank,
+            artist_name: artist.name.trim(),
+            deezer_artist_id: artist.deezerArtistId,
+            deezer_url: artist.deezerUrl,
+            image_path: artist.imagePath,
+            image_url: artist.imageUrl,
+          })),
+          { onConflict: "id" },
+        );
+        if (error) throw new Error(error.code === "23505"
           ? "Cet artiste est déjà présent dans ton podium."
           : "La sauvegarde a échoué : tes artistes actuels restent intacts.");
-        return;
       }
-    }
-    const completeIds = new Set(complete.map((artist) => artist.id));
-    const staleIds = publishedIds.filter((id) => !completeIds.has(id));
-    if (staleIds.length) {
-      const { error } = await supabase
-        .from("profile_favorite_artists")
-        .delete()
-        .in("id", staleIds);
-      if (error) {
-        setSaving(false);
-        setMessage("Les anciens artistes n’ont pas pu être retirés.");
-        return;
+      const completeIds = new Set(complete.map((artist) => artist.id));
+      const staleIds = publishedIds.filter((id) => !completeIds.has(id));
+      if (staleIds.length) {
+        const { error } = await supabase
+          .from("profile_favorite_artists")
+          .delete()
+          .in("id", staleIds);
+        if (error) throw new Error("Les anciens artistes n’ont pas pu être retirés.");
       }
+      setArtists(prepared);
+      setPortraitFiles({});
+      setPublishedIds(complete.map((artist) => artist.id));
+      setMessage("Podium d’artistes enregistré.");
+    } catch (reason) {
+      setMessage(reason instanceof Error ? reason.message : "La sauvegarde a échoué : tes artistes actuels restent intacts.");
+    } finally {
+      setSaving(false);
     }
-    setPublishedIds(complete.map((artist) => artist.id));
-    setSaving(false);
-    setMessage("Podium d’artistes enregistré.");
   };
 
   return (
@@ -311,15 +316,21 @@ export function FavoriteArtistsPanel({ theme }: { theme: ProfileThemeId }) {
                   </button>
                 ))}
               </div>
-              <label className="favorite-artist-editor-card__upload text-link">
-                Remplacer la photo
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={saving}
-                  onChange={(event) => void uploadPortrait(rank, event.target.files?.[0] ?? null)}
-                />
-              </label>
+              <ImageUploadField
+                id={`favorite-artist-photo-${rank}`}
+                label="Remplacer la photo"
+                buttonLabel="Choisir une photo"
+                accept="image/jpeg,image/png,image/webp"
+                allowedTypes={["image/jpeg", "image/png", "image/webp"]}
+                maxSizeBytes={3 * 1024 * 1024}
+                helpText="JPG, PNG ou WebP · 3 Mo maximum. L’envoi attend l’enregistrement du podium."
+                validationMessage="Choisis une image JPG, PNG ou WebP de 3 Mo maximum."
+                file={portraitFiles[rank] ?? null}
+                onFileChange={(file) => setPortraitFiles((current) => ({ ...current, [rank]: file }))}
+                previewAlt={`Aperçu du portrait de ${artist.name || `l’artiste du top ${rank}`}`}
+                disabled={saving}
+                loading={saving}
+              />
             </article>
           );
         })}

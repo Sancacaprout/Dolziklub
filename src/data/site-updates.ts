@@ -40,6 +40,50 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "unified-image-upload-fields",
+    version: "2.5",
+    date: "2026-07-28",
+    title: "Les imports d’images parlent enfin le même langage",
+    summary: "Tous les sélecteurs d’images partagent maintenant une interface accessible avec nom de fichier, contraintes réelles et aperçu local.",
+    categories: ["Correction", "Amélioration", "Profil", "Albums", "Mèmes", "Administration"],
+    added: [
+      { text: "Un composant d’import commun affiche un bouton explicite, le fichier sélectionné, les formats acceptés, la taille maximale et un aperçu carré." },
+    ],
+    fixed: [
+      { text: "Les libellés natifs « Choisir un fichier / Aucun fichier choisi » ont disparu des six formulaires d’image du site." },
+      { text: "La photo d’un artiste favori n’est plus envoyée dès sa sélection : elle attend maintenant le bouton d’enregistrement du podium." },
+      { text: "Les actions « Voir le profil » sont plus compactes sur ordinateur, alignées en bas et restent confortables sur mobile." },
+    ],
+    improved: [
+      { text: "Le clavier, le focus visible, l’annonce du nom de fichier, les erreurs de format et les états d’attente utilisent désormais le même comportement partout." },
+    ],
+    links: [
+      { label: "Personnaliser mon profil", href: "/compte" },
+      { label: "Voir les mèmes", href: "/memes" },
+      { label: "Ouvrir le tableur", href: "/tableur" },
+    ],
+  },
+  {
+    id: "uniform-theme-profile-buttons",
+    version: "2.4",
+    date: "2026-07-28",
+    title: "Les aper\u00e7us de profils s\u2019alignent",
+    summary: "Tous les th\u00e8mes affichent maintenant une action \u00ab Voir le profil \u00bb de m\u00eame taille, bien align\u00e9e au bas de chaque carte.",
+    categories: ["Correction", "Am\u00e9lioration", "Profil"],
+    added: [],
+    fixed: [
+      { text: "Les boutons de Punk Poster, Jazz Lounge et Acid Rave ne s\u2019agrandissent plus par rapport aux autres th\u00e8mes." },
+      { text: "Le bouton du th\u00e8me Wheely conserve d\u00e9sormais exactement la m\u00eame hauteur et le m\u00eame alignement que ses voisins." },
+    ],
+    improved: [
+      { text: "Une rang\u00e9e d\u2019action commune de 44 pixels garde toutes les cartes r\u00e9guli\u00e8res et tactiles, quelle que soit la longueur de leur contenu." },
+    ],
+    links: [
+      { label: "Choisir un th\u00e8me", href: "/compte" },
+      { label: "Voir les membres", href: "/membres" },
+    ],
+  },
+  {
     id: "wheely-real-finale-unlock-fix",
     version: "2.3",
     date: "2026-07-26",

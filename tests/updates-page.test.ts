@@ -17,9 +17,9 @@ test("publishes an accessible updates route with the requested metadata", () => 
 });
 
 test("keeps deployed updates in strict reverse chronological order", () => {
-  assert.ok(siteUpdates.length >= 8);
-  assert.equal(siteUpdates[0].id, "wheely-real-finale-unlock-fix");
-  assert.equal(siteUpdates[0].date, "2026-07-26");
+  assert.ok(siteUpdates.length >= 10);
+  assert.equal(siteUpdates[0].id, "unified-image-upload-fields");
+  assert.equal(siteUpdates[0].date, "2026-07-28");
   for (let index = 1; index < siteUpdates.length; index += 1) {
     assert.ok(Date.parse(siteUpdates[index - 1].date) >= Date.parse(siteUpdates[index].date));
   }

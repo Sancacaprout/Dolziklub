@@ -2,6 +2,7 @@
 
 import { type FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Album } from "@/types/album";
@@ -225,10 +226,21 @@ export function AlbumEditorialEditor({ album, drawEntryId, archiveAlbumId = null
       {editing && (
         <>
           <div className="album-editorial-admin__form">
-            <label>
-              Modifier la pochette
-              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)} />
-            </label>
+            <ImageUploadField
+              id={`album-editorial-cover-${drawEntryId ?? archiveAlbumId ?? "album"}`}
+              label="Modifier la pochette"
+              buttonLabel="Choisir une pochette"
+              accept="image/jpeg,image/png,image/webp"
+              allowedTypes={["image/jpeg", "image/png", "image/webp"]}
+              maxSizeBytes={5 * 1024 * 1024}
+              helpText="JPG, PNG ou WebP · 5 Mo maximum."
+              validationMessage="Choisis une image JPG, PNG ou WebP de 5 Mo maximum."
+              file={coverFile}
+              onFileChange={setCoverFile}
+              previewAlt="Aperçu de la nouvelle pochette"
+              disabled={coverSaving}
+              loading={coverSaving}
+            />
             <div className="album-editorial-admin__actions">
               <button className="button" type="button" disabled={!coverFile || coverSaving} onClick={() => void saveCover()}>
                 {coverSaving ? "Import..." : "Enregistrer la pochette"}

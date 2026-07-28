@@ -5,6 +5,7 @@ import { defaultProfileTheme, isProfileThemeId, profileThemeIds, profileThemes }
 
 const migration = readFileSync(new URL("../supabase/migrations/20260714150000_profile_themes_and_favorite_albums.sql", import.meta.url), "utf8");const accountPanel = readFileSync(new URL("../src/components/auth/account-panel.tsx", import.meta.url), "utf8");
 const themeEditor = readFileSync(new URL("../src/components/auth/profile-personalization.tsx", import.meta.url), "utf8");
+const uploadField = readFileSync(new URL("../src/components/image-upload-field.tsx", import.meta.url), "utf8");
 const musicAssist = readFileSync(new URL("../src/components/music-assist.tsx", import.meta.url), "utf8");
 
 test("the profile theme catalogue contains the club default and fifteen visual themes", () => {
@@ -40,8 +41,9 @@ test("the migration keeps profile themes, favorites and cover uploads behind RLS
 });
 test("avatar picker stays accessible without changing the Supabase upload contract", () => {
   assert.match(accountPanel, /Choisir une nouvelle photo/);
-  assert.match(accountPanel, /className="visually-hidden"/);
-  assert.match(accountPanel, /avatarFile\.name/);
+  assert.match(accountPanel, /<ImageUploadField/);
+  assert.match(uploadField, /className="image-upload-field__input"/);
+  assert.match(uploadField, /file \? file\.name/);
   assert.match(accountPanel, /3 \* 1024 \* 1024/);
   assert.match(accountPanel, /storage\.from\("member-avatars"\)/);
   assert.match(accountPanel, /upsert: false/);

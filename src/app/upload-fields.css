@@ -1,0 +1,93 @@
+.image-upload-field {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:.55rem 1rem;
+  width:100%;
+  min-width:0;
+  color:inherit;
+}
+.image-upload-field__label {
+  grid-column:1/-1;
+  font:600 .68rem var(--font-mono),monospace;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.image-upload-field__control { display:flex; min-width:0; flex-wrap:wrap; align-items:center; gap:.55rem .8rem; }
+.image-upload-field .image-upload-field__input {
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  margin:-1px!important;
+  padding:0!important;
+  overflow:hidden!important;
+  clip:rect(0 0 0 0)!important;
+  clip-path:inset(50%)!important;
+  border:0!important;
+  white-space:nowrap!important;
+}
+.image-upload-field__button {
+  display:inline-flex;
+  min-height:44px;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding:.62rem .8rem;
+  border:1px solid currentColor;
+  background:var(--profile-button-background,var(--ink));
+  color:var(--profile-button-text,var(--paper));
+  box-shadow:3px 3px 0 var(--profile-shadow,var(--red));
+  font:600 .64rem/1.1 var(--font-mono),monospace;
+  letter-spacing:.05em;
+  text-align:center;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
+}
+.image-upload-field__button:hover { filter:brightness(1.08); transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--profile-shadow,var(--red)); }
+.image-upload-field__input:focus-visible + .image-upload-field__button { outline:3px solid var(--profile-accent,var(--blue)); outline-offset:3px; }
+.image-upload-field__button[aria-disabled="true"] { cursor:wait; opacity:.65; pointer-events:none; }
+.image-upload-field__icon { width:1rem; height:1rem; flex:none; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.image-upload-field__filename {
+  min-width:0;
+  max-width:min(100%,280px);
+  overflow:hidden;
+  color:inherit;
+  font:.68rem/1.35 var(--font-mono),monospace;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.image-upload-field__preview {
+  display:grid;
+  grid-column:2;
+  grid-row:2/5;
+  width:96px;
+  aspect-ratio:1;
+  place-items:center;
+  overflow:hidden;
+  border:1px solid currentColor;
+  background:var(--profile-surface,var(--paper));
+}
+.image-upload-field__preview img { display:block; width:100%; height:100%; object-fit:cover; }
+.image-upload-field__help,.image-upload-field__error { grid-column:1; margin:0; font:.64rem/1.4 var(--font-mono),monospace; letter-spacing:0; text-transform:none; }
+.image-upload-field__help { opacity:.72; }
+.image-upload-field__error { color:#b5251b; font-weight:600; }
+.image-upload-field--compact { display:block; }
+.image-upload-field--compact .image-upload-field__label { display:block; margin-bottom:.45rem; }
+.image-upload-field--compact .image-upload-field__help,.image-upload-field--compact .image-upload-field__error { display:block; margin-top:.45rem; }
+.favorite-artist-editor-card .image-upload-field { grid-template-columns:1fr; margin-top:.85rem; }
+.favorite-artist-editor-card .image-upload-field__preview { grid-column:1; grid-row:auto; width:100%; }
+.favorite-artist-editor-card .image-upload-field__button { width:100%; }
+.meme-upload .image-upload-field { color:#fff; }
+.meme-upload .image-upload-field__preview { background:#111; }
+.album-editorial-admin .image-upload-field__preview,.review-form .image-upload-field__preview { background:var(--paper); color:var(--ink); }
+@media (max-width:700px) {
+  .image-upload-field { grid-template-columns:1fr; }
+  .image-upload-field__control { align-items:stretch; flex-direction:column; }
+  .image-upload-field__button { width:100%; }
+  .image-upload-field__filename { max-width:100%; }
+  .image-upload-field__preview { grid-column:1; grid-row:auto; width:min(132px,100%); }
+  .image-upload-field__help,.image-upload-field__error { grid-column:1; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .image-upload-field__button { transition:none; }
+}

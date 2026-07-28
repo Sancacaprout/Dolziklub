@@ -73,7 +73,12 @@ test("the requested theme refinements preserve image colours and close Museum Wh
   assert.match(styles, /cassette-sunset"\]\{background-image:[^}]*radial-gradient/);
   assert.match(styles, /museum-white"\] \.member-profile\{border:1px solid #292929/);
   assert.match(styles, /museum-white"\] \.stat-cards>div[^}]*border:1px solid #292929/);
-  assert.match(styles, /punk-poster"\] \.theme-card__preview[^}]*min-height:34px/);
-  assert.match(styles, /jazz-lounge"\] \.theme-card__preview[^}]*min-height:34px/);
-  assert.match(styles, /acid-rave"\] \.theme-card__preview[^}]*min-height:34px/);
+});
+
+test("every theme card uses the same compact and aligned profile preview action", () => {
+  assert.match(styles, /\.theme-picker__grid \.theme-card\{[^}]*grid-template-rows:minmax\(0,1fr\) auto/);
+  assert.match(styles, /\.theme-picker__grid \.theme-card__preview\{[^}]*width:max-content[^}]*min-width:148px[^}]*height:40px[^}]*align-self:end[^}]*justify-self:start/);
+  assert.match(styles, /\.theme-card__preview:focus-visible\{outline:3px solid/);
+  assert.match(styles, /@media \(max-width:700px\)\{\.theme-picker__grid \.theme-card__preview\{[^}]*height:44px/);
+  assert.doesNotMatch(styles, /theme-card\[data-profile-theme="(?:punk-poster|jazz-lounge|acid-rave)"\] \.theme-card__preview[^}]*min-height/);
 });

@@ -235,7 +235,11 @@
  .vinyl-runner__unlock-goal { bottom:max(.65rem,env(safe-area-inset-bottom)); white-space:normal; }
 }
 /* Theme corrections - 26 July 2026. */
-.theme-card[data-profile-theme="punk-poster"] .theme-card__preview,.theme-card[data-profile-theme="jazz-lounge"] .theme-card__preview,.theme-card[data-profile-theme="acid-rave"] .theme-card__preview{min-height:34px;padding:.42rem .7rem;line-height:1.1}
+.theme-picker__grid .theme-card{display:grid;grid-template-rows:minmax(0,1fr) auto;align-content:stretch}
+.theme-picker__grid .theme-card__choice{min-height:178px;align-content:start}
+.theme-picker__grid .theme-card__preview{display:inline-flex;width:max-content;min-width:148px;max-width:calc(100% - 1.5rem);height:40px;min-height:40px;align-items:center;align-self:end;justify-content:center;justify-self:start;margin:0 .75rem .75rem;padding:.45rem .8rem;line-height:1}
+.theme-picker__grid .theme-card__preview:focus-visible{outline:3px solid var(--profile-accent);outline-offset:3px}
+@media (max-width:700px){.theme-picker__grid .theme-card__preview{width:calc(100% - 1.5rem);height:44px;min-height:44px}}
 [data-profile-theme="noir-cinema"] img,[data-profile-theme="noir-cinema"] .member-profile__initial,[data-profile-theme="noir-cinema"] .profile-favorite-card__cover,[data-profile-theme="noir-cinema"] .favorite-artist-card__portrait{filter:none!important}
 [data-profile-theme="manga-panel"] .member-profile__initial{filter:none}
 .profile-theme--full-page[data-profile-theme="cassette-sunset"]{background-image:repeating-linear-gradient(0deg,transparent 0 15px,#ffd09a12 16px 17px),radial-gradient(ellipse at 50% -8%,#ffd58a 0 13%,#ff9b70 27%,transparent 54%),linear-gradient(180deg,#211538 0,#3d2157 31%,#88405f 52%,#de6d63 69%,#f5b778 83%,#241538 100%);background-size:auto,100% 540px,100% 100%;background-position:center,center top,center;background-repeat:repeat,no-repeat,no-repeat}

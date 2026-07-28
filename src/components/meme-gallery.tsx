@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { Meme } from "@/types/meme";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type MemePost = { id: string; image_path: string; caption: string | null; created_by: string; created_at: string };
@@ -61,6 +62,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [memeFile, setMemeFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [commentText, setCommentText] = useState("");
@@ -206,7 +208,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
       if (storageError) throw storageError;
       const { error: postError } = await supabase.from("meme_posts").insert({ image_path: path, caption, created_by: memberId });
       if (postError) { await supabase.storage.from("meme-uploads").remove([path]); throw postError; }
-      form.reset(); setIsUploadOpen(false); setMessage("Mème ajouté au musée."); await loadUploadedMemes();
+      form.reset(); setMemeFile(null); setIsUploadOpen(false); setMessage("Mème ajouté au musée."); await loadUploadedMemes();
     } catch { setMessage("L'ajout du mème n'a pas abouti. Réessaie dans un instant."); }
     finally { setUploading(false); }
   };
@@ -220,7 +222,23 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
       {memberId ? <button className="button meme-add-button" onClick={() => setIsUploadOpen((open) => !open)}>{isUploadOpen ? "Fermer l'ajout" : "Ajouter un mème ↗"}</button> : <Link className="button meme-add-button" href="/connexion">Connexion pour ajouter ↗</Link>}
     </div>
     {isUploadOpen && <form className="meme-upload" onSubmit={uploadMeme}>
-      <label>Image du mème<input name="meme" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required /></label>
+      <ImageUploadField
+        id="meme-upload-file"
+        name="meme"
+        label="Image du mème"
+        buttonLabel="Choisir un mème"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        allowedTypes={["image/jpeg", "image/png", "image/webp", "image/gif"]}
+        maxSizeBytes={maxUploadSize}
+        helpText="JPG, PNG, WebP ou GIF · 5 Mo maximum."
+        validationMessage="Choisis une image JPG, PNG, WebP ou GIF de 5 Mo maximum."
+        file={memeFile}
+        onFileChange={setMemeFile}
+        previewAlt="Aperçu du mème à publier"
+        required
+        disabled={uploading}
+        loading={uploading}
+      />
       <label>Texte facultatif<textarea name="caption" maxLength={280} placeholder="Une légende pour le musée…" /></label>
       <button className="button" type="submit" disabled={uploading}>{uploading ? "Ajout en cours…" : "Publier le mème"}</button>
     </form>}

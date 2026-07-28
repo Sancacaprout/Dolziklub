@@ -8,6 +8,7 @@ import { FavoriteAlbumsPanel } from "@/components/auth/favorite-albums-panel";
 import { FavoriteTracksPanel } from "@/components/auth/favorite-tracks-panel";
 import { FavoriteArtistsPanel } from "@/components/auth/favorite-artists-panel";
 import { FavoriteClipPanel } from "@/components/auth/favorite-clip-panel";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { defaultProfileTheme, isProfileThemeId, type ProfileThemeId } from "@/lib/profile-themes";
 import {
   getSupabaseBrowserClient,
@@ -391,22 +392,24 @@ export function AccountPanel() {
           )}
         </div>
         <div className="avatar-picker__controls">
-          <label className="button avatar-picker__choose" htmlFor="account-avatar-file">
-            Choisir une nouvelle photo
-          </label>
-          <input
+          <ImageUploadField
             id="account-avatar-file"
-            className="visually-hidden"
             name="avatar"
-            type="file"
+            label="Photo de profil"
+            buttonLabel="Choisir une nouvelle photo"
             accept="image/jpeg,image/png,image/webp,image/gif"
+            allowedTypes={["image/jpeg", "image/png", "image/webp", "image/gif"]}
+            maxSizeBytes={3 * 1024 * 1024}
+            helpText="JPG, PNG, WebP ou GIF · 3 Mo maximum."
+            validationMessage="Choisis une image JPG, PNG, WebP ou GIF de 3 Mo maximum."
+            file={avatarFile}
+            onFileChange={handleAvatarFile}
+            previewAlt="Aperçu de la nouvelle photo"
+            showPreview={false}
             required
-            onChange={(event) => handleAvatarFile(event.target.files?.[0] ?? null)}
+            disabled={uploading}
+            loading={uploading}
           />
-          <p className="avatar-picker__filename">
-            {avatarFile ? avatarFile.name : "Aucun nouveau fichier sélectionné"}
-          </p>
-          <small>JPG, PNG, WebP ou GIF · 3 Mo maximum.</small>
         </div>
         <button className="button avatar-picker__submit" type="submit" disabled={uploading || !avatarFile}>
           {uploading ? "Envoi…" : "Mettre à jour la photo"}

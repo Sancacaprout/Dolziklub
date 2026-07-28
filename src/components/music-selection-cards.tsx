@@ -3,6 +3,7 @@
 
 import { type FormEvent, useState } from "react";
 import { AlbumLookup } from "@/components/music-assist";
+import { ImageUploadField } from "@/components/image-upload-field";
 import { type MusicCandidate } from "@/lib/music-matching";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 
@@ -135,14 +136,22 @@ export function ProposalAssistantCard({
             placeholder="Nom de l’artiste"
           />
         </label>
-        <label className="proposal-cover-field">
-          <span>Pochette manuelle (facultative)</span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-        </label>
+        <ImageUploadField
+          id={`proposal-cover-${entry.id}`}
+          className="proposal-cover-field"
+          label="Pochette manuelle (facultative)"
+          buttonLabel="Choisir une pochette"
+          accept="image/jpeg,image/png,image/webp"
+          allowedTypes={["image/jpeg", "image/png", "image/webp"]}
+          maxSizeBytes={5 * 1024 * 1024}
+          helpText="JPG, PNG ou WebP · 5 Mo maximum."
+          validationMessage="Choisis une image JPG, PNG ou WebP de 5 Mo maximum."
+          file={file}
+          onFileChange={setFile}
+          previewAlt="Aperçu de la pochette manuelle"
+          disabled={saving}
+          loading={saving}
+        />
         {match?.id && (
           <p className="music-confirmation">
             Résultat choisi : <b>{match.title}</b> — {match.artist}.
