@@ -13,6 +13,8 @@ import { MusicTrackChoiceButton } from "@/components/music-player";
 import type { Album } from "@/types/album";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import { DrawCountdown } from "@/components/draw-countdown";
+import { ExtraListeningTable } from "@/components/extra-listenings";
+import type { ExtraListeningRequest } from "@/lib/extra-listenings";
 
 type Entry = {
   id: string;
@@ -223,6 +225,8 @@ function LiveDraw({
   member,
   onOpenProposal,
   onOpenReview,
+  extraRequests,
+  onOpenExtra,
   focusEntryId,
 }: {
   draw: Draw;
@@ -232,6 +236,8 @@ function LiveDraw({
   member: Member | null;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
+  extraRequests: ExtraListeningRequest[];
+  onOpenExtra: (requestId: string, mode: "propose" | "listen" | "view") => void;
   focusEntryId: string | null;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -437,6 +443,12 @@ function LiveDraw({
           </tbody>
         </table>
       </div>
+      <ExtraListeningTable
+        drawNumber={draw.draw_number}
+        requests={extraRequests}
+        member={member}
+        onOpen={onOpenExtra}
+      />
     </section>
   );
 }
@@ -445,19 +457,23 @@ export function LiveDraws({
   entries,
   reviews,
   bonusReviews,
+  extraRequests,
   draws,
   member,
   onOpenProposal,
   onOpenReview,
+  onOpenExtra,
   focusEntryId = null,
 }: {
   entries: Entry[];
   reviews: Review[];
   bonusReviews: BonusReview[];
+  extraRequests: ExtraListeningRequest[];
   draws: Draw[];
   member: Member | null;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
+  onOpenExtra: (requestId: string, mode: "propose" | "listen" | "view") => void;
   focusEntryId?: string | null;
 }) {
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
@@ -475,6 +491,8 @@ export function LiveDraws({
             member={member}
             onOpenProposal={onOpenProposal}
             onOpenReview={onOpenReview}
+            extraRequests={extraRequests}
+            onOpenExtra={onOpenExtra}
             focusEntryId={focusEntryId}
             reviews={reviewMap}
             bonusReviews={bonusReviewMap}

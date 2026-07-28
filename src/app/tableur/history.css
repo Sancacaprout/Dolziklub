@@ -122,3 +122,52 @@
   .admin-history__filter { width: 100%; }
   .admin-history__actor { justify-self: start; }
 }
+.extra-listening-toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-content: stretch;
+  gap: 1rem;
+}
+
+.extra-listening-toolbar .bonus-review-callout {
+  width: 100%;
+  max-width: none;
+  justify-content: space-between;
+}
+
+.extra-listening-callout {
+  border-color: #31105f;
+  box-shadow: 4px 4px 0 #31105f;
+}
+
+.extra-listening-callout .bonus-review-callout__copy b {
+  color: #6c2bd9;
+}
+
+.extra-listening-callout .bonus-review-trigger {
+  max-width: 250px;
+  border-color: #31105f;
+  background: #6c2bd9;
+  color: #fff;
+  box-shadow: 3px 3px 0 #31105f;
+  white-space: normal;
+}
+
+.extra-listening-callout .bonus-review-trigger:hover {
+  background: #31105f;
+  box-shadow: 5px 5px 0 var(--ink);
+}
+
+.extra-listening-callout .bonus-review-trigger:focus-visible {
+  outline-color: #6c2bd9;
+}
+
+@media (max-width: 900px) {
+  .extra-listening-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .extra-listening-callout .bonus-review-trigger {
+    max-width: none;
+  }
+}

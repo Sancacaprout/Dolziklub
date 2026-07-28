@@ -19,6 +19,8 @@ import { LiveDraws, StickyDrawShell } from "@/components/live-draws";
 import { AdminDrawHistory } from "@/components/admin-draw-history";
 import { GlobalDrawWheel } from "@/components/global-draw-wheel";
 import { BonusReviewWorkspace } from "@/components/bonus-review-workspace";
+import { ExtraListeningWorkspace } from "@/components/extra-listenings";
+import { EXTRA_LISTENING_PUBLIC_COLUMNS, type ExtraListeningRequest } from "@/lib/extra-listenings";
 import type { Album } from "@/types/album";
 
 type Tab = "archive" | "selection" | "kouize" | "admin" | "history";
@@ -51,6 +53,7 @@ const quizQuestions = [
   { key: "first_hook", label: "DÉCLIC", question: "Ce qui te capte dès les premières secondes", prompt: "L’élément qui te fait tendre l’oreille en premier." },
 ];
 
+function formatDraw(drawNumber: number) { return String(drawNumber).padStart(2, "0"); }
 function memberName(name: string | null) { if (!name) return "—"; return normalizedMember(name) === "thomas" ? "Toma" : `${name.slice(0, 1).toLocaleUpperCase()}${name.slice(1)}`; }
 function value(input: string | null) { const text = input?.trim(); return !text || /^avis à compléter$/i.test(text) ? "—" : text; }
 function memberProfileHref(name: string | null) { const key = normalizedMember(name); const clubMember = members.find((candidate) => [candidate.slug, candidate.username, candidate.displayName].some((value) => normalizedMember(value) === key)); return clubMember ? `/membres/${clubMember.slug}` : null; }
@@ -376,15 +379,16 @@ function Kouize({ profiles, member, isAdmin }: { profiles: PublicKouizeProfile[]
 }
 
 export function TableurBoard({ albums }: { albums: Album[] }) {
-  const configured = isSupabaseConfigured(); const [activeTab, setActiveTab] = useState<Tab>("archive"); const [member, setMember] = useState<SignedMember | null>(null); const [isAdmin, setIsAdmin] = useState(false); const [entries, setEntries] = useState<DrawEntry[]>([]); const [draws, setDraws] = useState<DrawMeta[]>([]); const [reviews, setReviews] = useState<ReviewRecord[]>([]); const [publicReviews, setPublicReviews] = useState<ReviewRecord[]>([]); const [publicBonusReviews, setPublicBonusReviews] = useState<BonusReviewRecord[]>([]); const [kouizeProfiles, setKouizeProfiles] = useState<PublicKouizeProfile[]>([]); const [savingId, setSavingId] = useState<string | null>(null); const [message, setMessage] = useState(""); const [focusedProposal, setFocusedProposal] = useState<string | null>(null); const [focusedReview, setFocusedReview] = useState<string | null>(null); const [archiveFocusId, setArchiveFocusId] = useState<string | null>(null); const [pendingGlobalDraw, setPendingGlobalDraw] = useState<{ participants: string[]; drawType: "standard" | "global"; globalProposer: string | null } | null>(null); const [revealedGlobalDraw, setRevealedGlobalDraw] = useState<DrawMeta | null>(null); const [bonusOpen, setBonusOpen] = useState(false); const [bonusScrollRequest, setBonusScrollRequest] = useState(0); const consumedBonusScrollRequest = useRef(0);
+  const configured = isSupabaseConfigured(); const [activeTab, setActiveTab] = useState<Tab>("archive"); const [member, setMember] = useState<SignedMember | null>(null); const [isAdmin, setIsAdmin] = useState(false); const [entries, setEntries] = useState<DrawEntry[]>([]); const [draws, setDraws] = useState<DrawMeta[]>([]); const [reviews, setReviews] = useState<ReviewRecord[]>([]); const [publicReviews, setPublicReviews] = useState<ReviewRecord[]>([]); const [publicBonusReviews, setPublicBonusReviews] = useState<BonusReviewRecord[]>([]); const [extraRequests, setExtraRequests] = useState<ExtraListeningRequest[]>([]); const [kouizeProfiles, setKouizeProfiles] = useState<PublicKouizeProfile[]>([]); const [savingId, setSavingId] = useState<string | null>(null); const [message, setMessage] = useState(""); const [focusedProposal, setFocusedProposal] = useState<string | null>(null); const [focusedReview, setFocusedReview] = useState<string | null>(null); const [archiveFocusId, setArchiveFocusId] = useState<string | null>(null); const [pendingGlobalDraw, setPendingGlobalDraw] = useState<{ participants: string[]; drawType: "standard" | "global"; globalProposer: string | null } | null>(null); const [revealedGlobalDraw, setRevealedGlobalDraw] = useState<DrawMeta | null>(null); const [bonusOpen, setBonusOpen] = useState(false); const [bonusScrollRequest, setBonusScrollRequest] = useState(0); const consumedBonusScrollRequest = useRef(0); const [extraDrawNumber, setExtraDrawNumber] = useState<number | null>(null); const [extraFocusId, setExtraFocusId] = useState<string | null>(null); const [extraScrollRequest, setExtraScrollRequest] = useState(0); const consumedExtraScrollRequest = useRef(0); const consumedExtraNavigation = useRef(false);
   const visibleTabs = isAdmin ? [...tabs, adminTab, historyTab] : tabs; const active = visibleTabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const loadEntries = useCallback(async () => { if (!configured) return; const columns = member ? "id, draw_number, position, proposed_by, listened_by, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url, archive_number" : "id, draw_number, position, proposed_by_name, listened_by_name, album_title, album_artist, cover_path, cover_source_url, youtube_music_url, archive_number"; const { data, error } = await getSupabaseBrowserClient().from("club_draw_entries").select(columns).order("draw_number", { ascending: true }).order("position", { ascending: true }); if (!error) setEntries((data ?? []) as DrawEntry[]); }, [configured, member]);
   const loadDraws = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().from("club_draws").select("draw_number, participant_usernames, status, avoid_repeated_pairs, draw_type, global_proposer_username, created_at").order("draw_number", { ascending: true }); if (!error) setDraws((data ?? []) as DrawMeta[]); }, [configured]);
   const loadReviews = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().from("member_album_reviews").select("album_id, review_title, review, rating, best_track, worst_track"); if (!error) setReviews((data ?? []) as ReviewRecord[]); }, [configured]);
   const loadPublicReviews = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().rpc("get_public_draw_reviews"); if (!error) setPublicReviews((data ?? []) as ReviewRecord[]); }, [configured]);
   const loadPublicBonusReviews = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().rpc("get_public_bonus_draw_reviews"); if (!error) setPublicBonusReviews((data ?? []) as BonusReviewRecord[]); }, [configured]);
+  const loadExtraRequests = useCallback(async () => { if (!configured) return; const { data, error } = await getSupabaseBrowserClient().from("extra_listening_requests").select(EXTRA_LISTENING_PUBLIC_COLUMNS).order("requested_at", { ascending: false }); if (!error) setExtraRequests((data ?? []) as ExtraListeningRequest[]); }, [configured]);
   const syncAccess = useCallback(async () => { if (!configured) return; const supabase = getSupabaseBrowserClient(); const { data } = await supabase.auth.getUser(); const user = data.user; if (!user) { setMember(null); setIsAdmin(false); setReviews([]); return; } const { data: profile } = await supabase.from("member_profiles").select("role, username, display_name").eq("id", user.id).maybeSingle(); const metadataUsername = typeof user.app_metadata.username === "string" ? user.app_metadata.username : user.email?.split("@")[0] ?? "membre"; const username = profile?.username ?? metadataUsername; const displayName = profile?.display_name ?? roster.find((entry) => entry.username === username)?.displayName ?? username; setMember((current) => current && current.id === user.id && current.username === username && current.displayName === displayName ? current : { id: user.id, username, displayName }); setIsAdmin(profile?.role === "admin"); await loadReviews(); }, [configured, loadReviews]);
-  useEffect(() => { const timer = setTimeout(() => { void loadEntries(); void loadDraws(); void loadPublicReviews(); void loadPublicBonusReviews(); void syncAccess(); if (configured) void getSupabaseBrowserClient().from("member_public_profiles").select("username, kouize").then((result: { data: unknown }) => setKouizeProfiles((result.data ?? []) as PublicKouizeProfile[])); }, 0); return () => clearTimeout(timer); }, [configured, loadDraws, loadEntries, loadPublicBonusReviews, loadPublicReviews, syncAccess]);
+  useEffect(() => { const timer = setTimeout(() => { void loadEntries(); void loadDraws(); void loadPublicReviews(); void loadPublicBonusReviews(); void loadExtraRequests(); void syncAccess(); if (configured) void getSupabaseBrowserClient().from("member_public_profiles").select("username, kouize").then((result: { data: unknown }) => setKouizeProfiles((result.data ?? []) as PublicKouizeProfile[])); }, 0); return () => clearTimeout(timer); }, [configured, loadDraws, loadEntries, loadExtraRequests, loadPublicBonusReviews, loadPublicReviews, syncAccess]);
   useEffect(() => { if (!configured) return; const deferredSync = createDeferredAuthSync(syncAccess); const { data } = getSupabaseBrowserClient().auth.onAuthStateChange(deferredSync.schedule); return () => { deferredSync.cancel(); data.subscription.unsubscribe(); }; }, [configured, syncAccess]);
   useEffect(() => {
     const currentGlobalDraw = draws.filter((draw) => draw.status === "published" && draw.draw_type === "global" && Boolean(draw.global_proposer_username)).sort((a, b) => b.draw_number - a.draw_number)[0];
@@ -422,6 +426,44 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
       if (layoutFrame !== null) window.cancelAnimationFrame(layoutFrame);
     };
   }, [activeTab, bonusOpen, bonusScrollRequest]);
+  useEffect(() => {
+    if (!member || consumedExtraNavigation.current) return;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      const requestId = params.get("extra");
+      if (!requestId) return;
+      consumedExtraNavigation.current = true;
+      const request = extraRequests.find((candidate) => candidate.id === requestId);
+      setExtraFocusId(requestId);
+      setExtraDrawNumber(request?.draw_number ?? null);
+      setExtraScrollRequest((current) => current + 1);
+      setActiveTab("selection");
+      params.delete("extra");
+      params.delete("mode");
+      const query = params.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [extraRequests, member]);
+
+  useEffect(() => {
+    if (activeTab !== "selection" || extraScrollRequest === 0 || consumedExtraScrollRequest.current >= extraScrollRequest) return;
+    let layoutFrame: number | null = null;
+    const mountFrame = window.requestAnimationFrame(() => {
+      layoutFrame = window.requestAnimationFrame(() => {
+        const target = document.getElementById("extra-listening-workspace");
+        if (!target) return;
+        consumedExtraScrollRequest.current = extraScrollRequest;
+        target.focus({ preventScroll: true });
+        const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - 24);
+        window.scrollTo({ top, behavior: "smooth" });
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(mountFrame);
+      if (layoutFrame !== null) window.cancelAnimationFrame(layoutFrame);
+    };
+  }, [activeTab, extraScrollRequest]);
   const finishGlobalReveal = () => {
     if (revealedGlobalDraw) window.localStorage.setItem(`dolziklub:global-draw-reveal:${revealedGlobalDraw.draw_number}`, "seen");
     setRevealedGlobalDraw(null);
@@ -443,8 +485,20 @@ export function TableurBoard({ albums }: { albums: Album[] }) {
     setBonusScrollRequest((current) => current + 1);
     setActiveTab("selection");
   };
-  const wheelParticipants = (draw: { participant_usernames: string[] }) => roster.filter((clubMember) => draw.participant_usernames.includes(clubMember.username));
-  return <>{pendingGlobalDraw?.globalProposer && <GlobalDrawWheel participants={wheelParticipants({ participant_usernames: pendingGlobalDraw.participants })} winnerUsername={pendingGlobalDraw.globalProposer} mode="creation" onComplete={() => void completeGlobalDrawCreation()} />}{revealedGlobalDraw?.global_proposer_username && <GlobalDrawWheel participants={wheelParticipants(revealedGlobalDraw)} winnerUsername={revealedGlobalDraw.global_proposer_username} drawNumber={revealedGlobalDraw.draw_number} mode="reveal" onComplete={finishGlobalReveal} />}<section className="tableur-board" aria-label="Tableur du DOL ZIKLUB"><div className="sheet-tabs" role="tablist">{visibleTabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div><div className="sheet-meta"><span className="eyebrow">{active.label}</span><span>{active.hint}</span></div>{activeTab === "admin" && message && <p className="selection-message" role="status">{message}</p>}<div role="tabpanel">{activeTab === "archive" && <div className="sheet-archive">{member ? <div className="bonus-review-toolbar"><aside className="bonus-review-callout" aria-label="Écoute bonus"><span className="bonus-review-callout__copy"><b>Écoute libre</b><small>Écoute et note l’album d’un autre membre. Hors moyennes officielles.</small></span><button type="button" className="sheet-entry-action bonus-review-trigger" onClick={openBonusWorkspace}>Écouter un album bonus</button></aside></div> : null}<LiveDraws entries={entries} reviews={publicReviews} bonusReviews={publicBonusReviews} draws={draws} member={member} onOpenProposal={goToProposal} onOpenReview={goToReview} focusEntryId={archiveFocusId} /><HistoricalDraws albums={albums} bonusReviews={publicBonusReviews} /></div>}{activeTab === "selection" && <SelectionWorkspace albums={albums} entries={entries} draws={draws} member={member} reviews={reviews} focusedProposal={focusedProposal} focusedReview={focusedReview} savingId={savingId} onProposal={(payload) => void saveProposal(payload)} onDeleteProposal={(entryId) => void deleteProposal(entryId)} onReview={(payload) => void saveReview(payload)} onResetReview={(entryId) => void resetReview(entryId)} onHistoricalSaved={returnToDraw} />}{activeTab === "selection" && bonusOpen && member && <BonusReviewWorkspace albums={albums} entries={entries} publicReviews={publicReviews} member={member} onChanged={() => void loadPublicBonusReviews()} />}{activeTab === "kouize" && <Kouize profiles={kouizeProfiles} member={member} isAdmin={isAdmin} />}{activeTab === "admin" && isAdmin && <AdminDraws entries={entries} draws={draws} savingId={savingId} onCreate={(config) => void createDraw(config)} onDelete={(draw) => void deleteDraw(draw)} onPublish={(draw) => void publishDraw(draw)} onValidate={(draw, assignments) => validateAssignments(draw, assignments)} />}{activeTab === "history" && isAdmin && <AdminDrawHistory />}</div></section></>;
+  const openExtraWorkspace = (drawNumber: number | null, requestId: string | null = null) => {
+    setExtraDrawNumber(drawNumber);
+    setExtraFocusId(requestId);
+    setExtraScrollRequest((current) => current + 1);
+    setActiveTab("selection");
+  };
+  const openExtraRequest = (requestId: string) => {
+    const request = extraRequests.find((candidate) => candidate.id === requestId);
+    openExtraWorkspace(request?.draw_number ?? null, requestId);
+  };
+  const currentExtraDraw = draws
+    .filter((draw) => draw.status === "published")
+    .sort((first, second) => second.draw_number - first.draw_number)[0] ?? null;  const wheelParticipants = (draw: { participant_usernames: string[] }) => roster.filter((clubMember) => draw.participant_usernames.includes(clubMember.username));
+  return <>{pendingGlobalDraw?.globalProposer && <GlobalDrawWheel participants={wheelParticipants({ participant_usernames: pendingGlobalDraw.participants })} winnerUsername={pendingGlobalDraw.globalProposer} mode="creation" onComplete={() => void completeGlobalDrawCreation()} />}{revealedGlobalDraw?.global_proposer_username && <GlobalDrawWheel participants={wheelParticipants(revealedGlobalDraw)} winnerUsername={revealedGlobalDraw.global_proposer_username} drawNumber={revealedGlobalDraw.draw_number} mode="reveal" onComplete={finishGlobalReveal} />}<section className="tableur-board" aria-label="Tableur du DOL ZIKLUB"><div className="sheet-tabs" role="tablist">{visibleTabs.map((tab) => <button key={tab.id} type="button" role="tab" aria-selected={activeTab === tab.id} className={activeTab === tab.id ? "active" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div><div className="sheet-meta"><span className="eyebrow">{active.label}</span><span>{active.hint}</span></div>{activeTab === "admin" && message && <p className="selection-message" role="status">{message}</p>}<div role="tabpanel">{activeTab === "archive" && <div className="sheet-archive">{member ? <div className="bonus-review-toolbar extra-listening-toolbar"><aside className="bonus-review-callout" aria-label="Avis bonus"><span className="bonus-review-callout__copy"><b>Avis bonus</b><small>Choisis un album déjà présent dans un tirage et ajoute ton propre avis.</small></span><button type="button" className="sheet-entry-action bonus-review-trigger" onClick={openBonusWorkspace}>Donner un avis bonus</button></aside>{currentExtraDraw ? <aside className="bonus-review-callout extra-listening-callout" aria-label="Écoute supplémentaire sur demande"><span className="bonus-review-callout__copy"><b>Écoute supplémentaire</b><small>Demande à un membre du tirage {formatDraw(currentExtraDraw.draw_number)} de choisir un nouvel album pour toi.</small></span><button type="button" className="sheet-entry-action bonus-review-trigger" onClick={() => openExtraWorkspace(currentExtraDraw.draw_number)}>Demander une écoute supplémentaire</button></aside> : null}</div> : null}<LiveDraws entries={entries} reviews={publicReviews} bonusReviews={publicBonusReviews} extraRequests={extraRequests} draws={draws} member={member} onOpenProposal={goToProposal} onOpenReview={goToReview} onOpenExtra={(requestId) => openExtraRequest(requestId)} focusEntryId={archiveFocusId} /><HistoricalDraws albums={albums} bonusReviews={publicBonusReviews} /></div>}{activeTab === "selection" && <SelectionWorkspace albums={albums} entries={entries} draws={draws} member={member} reviews={reviews} focusedProposal={focusedProposal} focusedReview={focusedReview} savingId={savingId} onProposal={(payload) => void saveProposal(payload)} onDeleteProposal={(entryId) => void deleteProposal(entryId)} onReview={(payload) => void saveReview(payload)} onResetReview={(entryId) => void resetReview(entryId)} onHistoricalSaved={returnToDraw} />}{activeTab === "selection" && bonusOpen && member && <BonusReviewWorkspace albums={albums} entries={entries} publicReviews={publicReviews} member={member} onChanged={() => void loadPublicBonusReviews()} />}{activeTab === "selection" && member && <ExtraListeningWorkspace draws={draws} member={member} initialDrawNumber={extraDrawNumber} focusedRequestId={extraFocusId} onChanged={() => void loadExtraRequests()} />}{activeTab === "kouize" && <Kouize profiles={kouizeProfiles} member={member} isAdmin={isAdmin} />}{activeTab === "admin" && isAdmin && <AdminDraws entries={entries} draws={draws} savingId={savingId} onCreate={(config) => void createDraw(config)} onDelete={(draw) => void deleteDraw(draw)} onPublish={(draw) => void publishDraw(draw)} onValidate={(draw, assignments) => validateAssignments(draw, assignments)} />}{activeTab === "history" && isAdmin && <AdminDrawHistory />}</div></section></>;
 }
 
 void LegacyLiveDraws;

@@ -40,6 +40,28 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "extra-listening-requests",
+    version: "2.6",
+    date: "2026-07-28",
+    title: "Une écoute supplémentaire, choisie rien que pour toi",
+    summary: "Tu peux maintenant demander à un membre du tirage de te proposer un album inédit, puis publier ton verdict dans une section séparée du tirage classique.",
+    categories: ["Nouvelle fonctionnalité", "Amélioration", "Albums", "Tirages"],
+    added: [
+      { text: "Chaque tirage possède désormais son sous-tableau « Écoutes supplémentaires », clairement identifié comme hors tirage classique." },
+      { text: "Le membre choisi reçoit la demande, propose son album avec l’aide Deezer, puis le demandeur peut enregistrer son avis, sa note et ses morceaux marquants." },
+      { text: "Les demandes et propositions déclenchent les notifications utiles sans créer de nouvelle place dans le tirage." },
+    ],
+    fixed: [
+      { text: "Le parcours existant porte maintenant le nom précis « Donner un avis bonus sur un album du tirage » afin de ne plus le confondre avec une nouvelle proposition." },
+    ],
+    improved: [
+      { text: "Les écoutes supplémentaires restent en dehors des moyennes, affectations et classements officiels." },
+    ],
+    links: [
+      { label: "Ouvrir le tableur", href: "/tableur" },
+    ],
+  },
+  {
     id: "unified-image-upload-fields",
     version: "2.5",
     date: "2026-07-28",

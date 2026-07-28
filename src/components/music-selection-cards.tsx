@@ -52,12 +52,14 @@ export function ProposalAssistantCard({
   saving,
   onSave,
   onDelete,
+  submitLabel,
 }: {
   entry: AssistedEntry;
   coverUrl: string | null;
   saving: boolean;
   onSave: (payload: AssistedProposalPayload) => void;
   onDelete: (entryId: string) => void;
+  submitLabel?: string;
 }) {
   const [title, setTitle] = useState(entry.album_title ?? "");
   const [artist, setArtist] = useState(entry.album_artist ?? "");
@@ -161,7 +163,9 @@ export function ProposalAssistantCard({
           <button type="submit" className="button" disabled={saving}>
             {saving
               ? "Enregistrement…"
-              : filled
+              : submitLabel
+                ? submitLabel
+                : filled
                 ? "Modifier mon album"
                 : "Confirmer l’album"}
           </button>

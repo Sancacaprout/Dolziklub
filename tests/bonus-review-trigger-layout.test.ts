@@ -29,10 +29,10 @@ test("opens the persistent bonus workspace but requests scrolling only from the 
     /\[activeTab, bonusOpen, bonusScrollRequest\]/,
   );
   assert.doesNotMatch(boardSource, /window\.setTimeout\([\s\S]{0,100}80/);
-  assert.match(boardSource, />Écouter un album bonus<\/button>/);
+  assert.match(boardSource, />Donner un avis bonus<\/button>/);
   assert.match(
     boardSource,
-    /<div className="bonus-review-toolbar"><aside className="bonus-review-callout"/,
+    /<div className="bonus-review-toolbar extra-listening-toolbar"><aside className="bonus-review-callout"/,
   );
   assert.doesNotMatch(boardSource, /bonusAction=/);
   assert.doesNotMatch(drawsSource, /bonusAction/);
@@ -74,7 +74,7 @@ test("renders an accessible bonus success banner and confirmed reset action", ()
 test("keeps the bonus action understandable and responsive", () => {
   assert.match(
     boardSource,
-    /Écoute et note l’album d’un autre membre\. Hors moyennes officielles\./,
+    /Choisis un album déjà présent dans un tirage et ajoute ton propre avis\./,
   );
   assert.match(
     cssSource,

@@ -545,9 +545,9 @@ export function BonusReviewWorkspace({
         <div>
           <p className="eyebrow">ÉCOUTES BONUS</p>
           <h2>
-            Un album que je veux <em>écouter en plus.</em>
+            Donner un avis bonus sur <em>un album du tirage.</em>
           </h2>
-          <p>{"Choisis un album pr\u00e9sent dans n\u2019importe quel tirage, avec ou sans avis officiel."}</p>
+          <p>{"Choisis un album d\u00e9j\u00e0 pr\u00e9sent dans un tirage et ajoute ton propre avis, m\u00eame s\u2019il n\u2019a pas encore de note officielle."}</p>
         </div>
       </div>
 
