@@ -407,7 +407,7 @@ function LiveDraw({
                         Album – Artiste
                       </span>
                     )}
-                  {bonus.length > 0 && <details open className="sheet-bonus-reviews" onClick={(event) => event.stopPropagation()}><summary>{"\u00c9coutes bonus"} ({bonus.length}) · {bonus.map((bonusReview) => bonusReview.member_display_name || bonusReview.member_username).join(", ")}</summary>{bonus.map((bonusReview) => <article key={`${bonusReview.entry_id}:${bonusReview.member_username}`}><div><MemberProfileLink name={bonusReview.member_display_name || bonusReview.member_username} /><RatingDisplay rating={bonusReview.rating} /></div><ReviewPreview title={bonusReview.review_title} review={bonusReview.review} /></article>)}</details>}
+                  {bonus.length > 0 && <details open className="sheet-bonus-reviews" onClick={(event) => event.stopPropagation()}><summary>{"\u00c9coutes bonus"} ({bonus.length}) · {bonus.map((bonusReview) => bonusReview.member_display_name || bonusReview.member_username).join(", ")}</summary>{bonus.map((bonusReview) => <article key={`${bonusReview.entry_id}:${bonusReview.member_username}`}><header className="sheet-bonus-reviews__meta"><MemberProfileLink name={bonusReview.member_display_name || bonusReview.member_username} /><RatingDisplay rating={bonusReview.rating} /></header><section className="sheet-bonus-reviews__content"><ReviewPreview title={bonusReview.review_title} review={bonusReview.review} /></section></article>)}</details>}
                   </td>
                   <td><MemberProfileLink name={entry.proposed_by_name} /></td>
                   <td><MemberProfileLink name={entry.listened_by_name} /></td>

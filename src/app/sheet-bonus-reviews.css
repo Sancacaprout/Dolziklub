@@ -1,6 +1,18 @@
-.sheet-bonus-reviews article > .review-preview {
-  display: grid;
+.sheet-bonus-reviews__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sheet-bonus-reviews__content,
+.sheet-bonus-reviews__content .review-preview {
+  width: 100%;
   min-width: 0;
+}
+
+.sheet-bonus-reviews__content .review-preview {
+  display: grid;
   max-width: none;
   align-items: start;
   justify-content: stretch;
@@ -31,7 +43,8 @@
 @media (max-width: 700px) {
   .sheet-bonus-reviews,
   .sheet-bonus-reviews article,
-  .sheet-bonus-reviews article > .review-preview {
+  .sheet-bonus-reviews__content,
+  .sheet-bonus-reviews__content .review-preview {
     width: 100%;
     min-width: 0;
   }
