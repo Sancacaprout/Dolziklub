@@ -23,7 +23,7 @@ export default async function MemberPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ previewTheme?: string; profilePreview?: string; themeLocked?: string }>;
+  searchParams: Promise<{ previewTheme?: string; profilePreview?: string; themeLocked?: string; previewSession?: string }>;
 }) {
   const requestedSlug = (await params).slug.trim().toLocaleLowerCase();
   const query = await searchParams;
@@ -31,6 +31,10 @@ export default async function MemberPage({
     ? query.previewTheme
     : null;
   const previewMode = query.profilePreview === "1";
+  const previewSession =
+    previewMode && forcedTheme === "custom" && /^[A-Za-z0-9_-]{1,100}$/.test(query.previewSession ?? "")
+      ? query.previewSession
+      : null;
   const snapshot = await getClubSnapshot();
   const member = snapshot.members.find((item) =>
     memberIdentityKeys(item).includes(requestedSlug),
@@ -48,6 +52,7 @@ export default async function MemberPage({
       forcedTheme={forcedTheme}
       previewMode={previewMode}
       lockedPreview={query.themeLocked === "1"}
+      previewSession={previewSession}
     >
       <main className="page member-profile-page">
         <LiveClubRefresh />

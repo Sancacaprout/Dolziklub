@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { WheelyThemeArt } from "@/components/wheely-theme-art";
 
 import { useEffect, useRef, useState } from "react";
@@ -164,6 +165,10 @@ export function ProfilePersonalization({ customThemeEnabled = false }: { customT
       setMessage("Termine le mini-jeu Wheely avant d’équiper ce thème.");
       return;
     }
+    if (draftTheme === "custom") {
+      setMessage("Publie le th\u00e8me depuis l\u2019\u00e9diteur personnalis\u00e9.");
+      return;
+    }
     setSaving(true);
     setMessage("");
 
@@ -227,11 +232,13 @@ export function ProfilePersonalization({ customThemeEnabled = false }: { customT
                   className="theme-card__choice"
                   onClick={() => {
                     if (theme.id === "wheely" && wheelyLocked) return;
+                    if (theme.id === "custom") return;
                     setDraftTheme(theme.id);
                     setMessage("");
                   }}
                   aria-pressed={draftTheme === theme.id}
                   disabled={theme.id === "wheely" && wheelyLocked}
+                  aria-disabled={theme.id === "custom" ? "true" : undefined}
                 >
                   <span className="theme-card__mini" aria-hidden="true">
                     {theme.id === "wheely" && theme.previewVariant === "wheely" ? (
@@ -262,13 +269,22 @@ export function ProfilePersonalization({ customThemeEnabled = false }: { customT
                     <small className="theme-card__unlock-help">Termine le mini-jeu Wheely pour débloquer ce thème.</small>
                   ) : null}
                 </button>
-                <button
-                  type="button"
-                  className="theme-card__preview"
-                  onClick={() => setPreviewTheme(theme.id)}
-                >
-                  Voir le profil
-                </button>
+                {theme.id === "custom" ? (
+                  <Link
+                    className="theme-card__preview"
+                    href="/compte/theme-personnalise"
+                  >
+                    {"Ouvrir l\u2019\u00e9diteur"}
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    className="theme-card__preview"
+                    onClick={() => setPreviewTheme(theme.id)}
+                  >
+                    Voir le profil
+                  </button>
+                )}
               </article>
             ))}
           </div>

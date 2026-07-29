@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { WheelyThemeArt } from "@/components/wheely-theme-art";
 import {
+  cloneProfileCustomTheme,
+  compileProfileCustomTheme,
+  createCustomThemePreviewReadyMessage,
+  readTrustedCustomThemePreviewUpdate,
+  type ProfileCustomThemeConfigV1,
+} from "@/lib/profile-custom-theme";
+import {
   defaultProfileTheme,
   isProfileThemeId,
   type ProfileThemeId,
@@ -18,16 +25,21 @@ export function ProfileThemeBoundary({
   forcedTheme,
   previewMode = false,
   lockedPreview = false,
+  previewSession = null,
   children,
 }: {
   username: string | null;
   forcedTheme?: ProfileThemeId | null;
   previewMode?: boolean;
   lockedPreview?: boolean;
+  previewSession?: string | null;
   children: ReactNode;
 }) {
   const [theme, setTheme] = useState<ProfileThemeId | null>(
     forcedTheme && forcedTheme !== defaultProfileTheme ? forcedTheme : null,
+  );
+  const [customConfig, setCustomConfig] = useState<ProfileCustomThemeConfigV1>(() =>
+    cloneProfileCustomTheme(),
   );
 
   useEffect(() => {
@@ -80,16 +92,41 @@ export function ProfileThemeBoundary({
     };
   }, [forcedTheme, username]);
 
+  useEffect(() => {
+    if (!previewMode || forcedTheme !== "custom" || !previewSession) return;
+    const expectedParent = window.parent;
+    const receiveConfig = (event: MessageEvent<unknown>) => {
+      const update = readTrustedCustomThemePreviewUpdate(event, {
+        origin: window.location.origin,
+        source: expectedParent,
+        sessionId: previewSession,
+      });
+      if (update) setCustomConfig(update.config);
+    };
+    window.addEventListener("message", receiveConfig);
+    expectedParent.postMessage(
+      createCustomThemePreviewReadyMessage(previewSession),
+      window.location.origin,
+    );
+    return () => window.removeEventListener("message", receiveConfig);
+  }, [forcedTheme, previewMode, previewSession]);
+
   const effectiveTheme = forcedTheme
     ? forcedTheme === defaultProfileTheme
       ? null
       : forcedTheme
     : theme;
+  const customTheme =
+    effectiveTheme === "custom" ? compileProfileCustomTheme(customConfig) : null;
 
   if (!effectiveTheme) return <>{children}</>;
 
   return (
-    <div className="profile-theme profile-theme--full-page" data-profile-theme={effectiveTheme}>
+    <div
+      className={`profile-theme profile-theme--full-page${customTheme ? ` ${customTheme.classes.join(" ")}` : ""}`}
+      data-profile-theme={effectiveTheme}
+      style={customTheme?.style}
+    >
       {effectiveTheme === "wheely" ? <WheelyThemeArt variant="profile" /> : null}
       {effectiveTheme === "wheely" && previewMode && lockedPreview ? (
         <p className="profile-theme-locked-preview" role="status">APERÇU — THÈME VERROUILLÉ</p>
