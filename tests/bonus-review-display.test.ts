@@ -22,7 +22,7 @@ test("bonus reviews keep their verdict readable instead of forcing it into colum
 
 test("bonus reviews fit narrow album cells and record the responsive fix", () => {
   assert.match(styles, /@media \(max-width: 700px\)[\s\S]*\.sheet-bonus-reviews article,[\s\S]*\.sheet-bonus-reviews__content,[\s\S]*min-width: 0;/);
-  assert.equal(siteUpdates[0].id, "bonus-reviews-responsive-layout");
-  assert.equal(siteUpdates[0].version, "2.10");
-  assert.equal(siteUpdates[0].date, "2026-07-29");
+  const update = siteUpdates.find((item) => item.id === "bonus-reviews-responsive-layout");
+  assert.equal(update?.version, "2.10");
+  assert.equal(update?.date, "2026-07-29");
 });

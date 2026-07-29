@@ -40,6 +40,28 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "le-tribunal",
+    version: "2.11",
+    date: "2026-07-29",
+    title: "Le Tribunal ouvre les dossiers du club",
+    summary: "Le Tribunal est ouvert : réponds à 16 questions anonymes sur les goûts, les notes et les propositions du club, puis découvre les résultats à la fin de l’édition.",
+    categories: ["Nouvelle fonctionnalité", "Amélioration", "Albums", "Administration"],
+    added: [
+      { text: "Une nouvelle page permet aux membres connectés de répondre anonymement à 16 questions sur le club, une question à la fois." },
+      { text: "Les questions s’appuient sur les vrais membres, albums proposés et avis du tableur, sans créer de doublons de données." },
+      { text: "Les résultats révélés affichent le podium, les votes, les pourcentages et les réponses libres sans dévoiler les votants." },
+    ],
+    fixed: [],
+    improved: [
+      { text: "Les administrateurs peuvent préparer une édition, l’ouvrir, la fermer, révéler ses résultats et masquer une réponse libre sans la supprimer." },
+      { text: "Chaque réponse est enregistrée immédiatement et peut être reprise ou modifiée tant que l’édition reste ouverte." },
+    ],
+    links: [
+      { label: "Entrer au Tribunal", href: "/tribunal" },
+    ],
+  },
+
+  {
     id: "bonus-reviews-responsive-layout",
     version: "2.10",
     date: "2026-07-29",
