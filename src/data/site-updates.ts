@@ -40,6 +40,23 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "collapsible-listening-workspaces",
+    version: "2.8",
+    date: "2026-07-29",
+    title: "Les espaces d’écoute savent maintenant se faire petits",
+    summary: "Les formulaires d’avis bonus et d’écoute supplémentaire peuvent être réduits à leur titre pour libérer rapidement de la place dans la sélection.",
+    categories: ["Amélioration", "Albums", "Tirages", "Écoutes bonus"],
+    added: [],
+    fixed: [],
+    improved: [
+      { text: "Le bouton « Réduire » masque l’album, les formulaires et les listes tout en conservant les saisies en cours." },
+      { text: "Le bandeau compact garde le titre visible et propose immédiatement l’action « Déplier », sur ordinateur comme sur mobile." },
+    ],
+    links: [
+      { label: "Ouvrir le tableur", href: "/tableur" },
+    ],
+  },
+  {
     id: "extra-listenings-on-member-profiles",
     version: "2.7",
     date: "2026-07-29",

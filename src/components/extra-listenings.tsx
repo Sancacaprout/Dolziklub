@@ -17,6 +17,7 @@ import {
 } from "@/lib/extra-listenings";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import collapseStyles from "./collapsible-workspace.module.css";
 import styles from "./extra-listenings.module.css";
 
 type DrawOption = {
@@ -231,6 +232,7 @@ export function ExtraListeningWorkspace({
   const [requestMessage, setRequestMessage] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   const currentDraw = useMemo(
     () => draws
@@ -413,12 +415,30 @@ export function ExtraListeningWorkspace({
 
   return (
     <section id="extra-listening-workspace" className={styles.workspace} tabIndex={-1}>
-      <header className={styles.workspaceHeader}>
-        <p className="eyebrow">ÉCOUTE SUPPLÉMENTAIRE SUR DEMANDE</p>
-        <h2>Ma prochaine écoute <em>choisie par un membre.</em></h2>
-        <p>Choisis un membre du tirage actuel : il pourra te proposer un album spécialement pour cette écoute, sans modifier le tirage classique.</p>
+      <header className={`${styles.workspaceHeader}${collapsed ? ` ${collapseStyles.compactHeader}` : ""}`}>
+        <div className={collapseStyles.headingRow}>
+          <div>
+            <p className="eyebrow">ÉCOUTE SUPPLÉMENTAIRE SUR DEMANDE</p>
+            <h2>Ma prochaine écoute <em>choisie par un membre.</em></h2>
+            {!collapsed ? <p>Choisis un membre du tirage actuel : il pourra te proposer un album spécialement pour cette écoute, sans modifier le tirage classique.</p> : null}
+          </div>
+          <button
+            type="button"
+            className={collapseStyles.collapseButton}
+            aria-expanded={!collapsed}
+            aria-controls="extra-listening-workspace-content"
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            {collapsed ? "Déplier" : "Réduire"}
+          </button>
+        </div>
       </header>
 
+      <div
+        id="extra-listening-workspace-content"
+        className={collapseStyles.content}
+        hidden={collapsed}
+      >
       {notice ? <p className={styles.notice} role="status" aria-live="polite">{notice}</p> : null}
 
       <form className={styles.requestForm} onSubmit={submitRequest}>
@@ -550,6 +570,7 @@ export function ExtraListeningWorkspace({
           )) : <p className={styles.empty}>Tu n’as encore demandé aucune écoute supplémentaire.</p>}
         </div>
       </section>
+      </div>
     </section>
   );
 }

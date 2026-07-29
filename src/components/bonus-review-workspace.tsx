@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/client";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import type { Album } from "@/types/album";
+import collapseStyles from "./collapsible-workspace.module.css";
 
 type Entry = {
   id: string;
@@ -295,6 +296,7 @@ export function BonusReviewWorkspace({
   const [reviews, setReviews] = useState<BonusReview[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   const candidates = useMemo(() => {
     const reviewed = new Set(
@@ -538,7 +540,7 @@ export function BonusReviewWorkspace({
   return (
     <section
       id="bonus-review-workspace"
-      className="review-workspace bonus-review-workspace"
+      className={`review-workspace bonus-review-workspace${collapsed ? ` ${collapseStyles.collapsed}` : ""}`}
       tabIndex={-1}
     >
       <div className="review-workspace__heading">
@@ -547,10 +549,24 @@ export function BonusReviewWorkspace({
           <h2>
             Donner un avis bonus sur <em>un album du tirage.</em>
           </h2>
-          <p>{"Choisis un album d\u00e9j\u00e0 pr\u00e9sent dans un tirage et ajoute ton propre avis, m\u00eame s\u2019il n\u2019a pas encore de note officielle."}</p>
+          {!collapsed ? <p>{"Choisis un album d\u00e9j\u00e0 pr\u00e9sent dans un tirage et ajoute ton propre avis, m\u00eame s\u2019il n\u2019a pas encore de note officielle."}</p> : null}
         </div>
+        <button
+          type="button"
+          className={collapseStyles.collapseButton}
+          aria-expanded={!collapsed}
+          aria-controls="bonus-review-workspace-content"
+          onClick={() => setCollapsed((current) => !current)}
+        >
+          {collapsed ? "Déplier" : "Réduire"}
+        </button>
       </div>
 
+      <div
+        id="bonus-review-workspace-content"
+        className={collapseStyles.content}
+        hidden={collapsed}
+      >
       {message ? (
         <p
           className={`selection-message bonus-review-message${message === "Avis bonus enregistré." ? " is-success" : ""}`}
@@ -636,6 +652,7 @@ export function BonusReviewWorkspace({
           <p>{"Aucun album n\u2019est encore renseign\u00e9 dans les tirages."}</p>
         </div>
       )}
+      </div>
     </section>
   );
 }
