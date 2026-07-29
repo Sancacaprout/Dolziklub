@@ -223,10 +223,12 @@ function LiveDraw({
   reviews,
   bonusReviews,
   member,
+  isAdmin,
   onOpenProposal,
   onOpenReview,
   extraRequests,
   onOpenExtra,
+  onDeleteExtra,
   focusEntryId,
 }: {
   draw: Draw;
@@ -234,10 +236,12 @@ function LiveDraw({
   reviews: Map<string, Review>;
   bonusReviews: Map<string, BonusReview[]>;
   member: Member | null;
+  isAdmin: boolean;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   extraRequests: ExtraListeningRequest[];
   onOpenExtra: (requestId: string, mode: "propose" | "listen" | "view") => void;
+  onDeleteExtra: (requestId: string) => void;
   focusEntryId: string | null;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -447,7 +451,9 @@ function LiveDraw({
         drawNumber={draw.draw_number}
         requests={extraRequests}
         member={member}
+        isAdmin={isAdmin}
         onOpen={onOpenExtra}
+        onDelete={onDeleteExtra}
       />
     </section>
   );
@@ -460,9 +466,11 @@ export function LiveDraws({
   extraRequests,
   draws,
   member,
+  isAdmin,
   onOpenProposal,
   onOpenReview,
   onOpenExtra,
+  onDeleteExtra,
   focusEntryId = null,
 }: {
   entries: Entry[];
@@ -471,9 +479,11 @@ export function LiveDraws({
   extraRequests: ExtraListeningRequest[];
   draws: Draw[];
   member: Member | null;
+  isAdmin: boolean;
   onOpenProposal: (id: string) => void;
   onOpenReview: (id: string) => void;
   onOpenExtra: (requestId: string, mode: "propose" | "listen" | "view") => void;
+  onDeleteExtra: (requestId: string) => void;
   focusEntryId?: string | null;
 }) {
   const reviewMap = new Map(reviews.map((review) => [review.album_id, review]));
@@ -489,10 +499,12 @@ export function LiveDraws({
             draw={draw}
             key={draw.draw_number}
             member={member}
+            isAdmin={isAdmin}
             onOpenProposal={onOpenProposal}
             onOpenReview={onOpenReview}
             extraRequests={extraRequests}
             onOpenExtra={onOpenExtra}
+            onDeleteExtra={onDeleteExtra}
             focusEntryId={focusEntryId}
             reviews={reviewMap}
             bonusReviews={bonusReviewMap}

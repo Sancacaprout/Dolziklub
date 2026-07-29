@@ -14,6 +14,8 @@ const snapshot = source("src/lib/club-snapshot.ts");
 const rankings = source("src/app/classements/page.tsx");
 const membersPage = source("src/app/membres/page.tsx");
 const memberPage = source("src/app/membres/[slug]/page.tsx");
+const extraProfileAlbums = source("src/lib/member-extra-listenings.ts");
+const albumCard = source("src/components/album-card.tsx");
 const refresh = source("src/components/live-club-refresh.tsx");
 const metrics = source("src/components/club-live-metrics.tsx");
 const board = source("src/components/rankings-board.tsx");
@@ -142,4 +144,21 @@ test("the rankings expose styles calculated from the synchronized catalog", () =
   assert.match(rankings, /const styles = stats\.styles\.map/);
   assert.match(rankings, /styles=\{styles\}/);
   assert.match(board, /Les styles les plus/);
+});
+
+test("member profiles include extra proposals and completed extra listens with a source label", () => {
+  assert.match(extraProfileAlbums, /from\("extra_listening_requests"\)/);
+  assert.match(extraProfileAlbums, /neq\("status", "cancelled"\)/);
+  assert.match(extraProfileAlbums, /request\.status === "reviewed"/);
+  assert.match(extraProfileAlbums, /isSameMemberIdentity\(request\.proposer_username/);
+  assert.match(extraProfileAlbums, /isSameMemberIdentity\(request\.requester_username/);
+  assert.match(extraProfileAlbums, /Écoute supplémentaire · Tirage/);
+  assert.match(memberPage, /getMemberExtraListeningAlbums\(member\.slug\)/);
+  assert.match(memberPage, /stats\.listened\.length \+ extraAlbums\.listened\.length/);
+  assert.match(memberPage, /stats\.proposed\.length \+ extraAlbums\.proposed\.length/);
+  assert.match(memberPage, /sourceLabel=\{entry\.sourceLabel\}/);
+  assert.match(memberPage, /Tirage classique/);
+  assert.match(albumCard, /sourceLabel\?: string/);
+  assert.match(albumCard, /hrefOverride\?: string/);
+  assert.match(refresh, /extra_listening_requests/);
 });

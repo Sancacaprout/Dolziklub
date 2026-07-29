@@ -22,6 +22,7 @@ export function LiveClubRefresh() {
       .on("postgres_changes", { event: "*", schema: "public", table: "archived_album_reviews" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "album_cover_overrides" }, refresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "member_public_profiles" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "extra_listening_requests" }, refresh)
       .subscribe();
     window.addEventListener("focus", refresh);
 

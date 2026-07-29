@@ -9,6 +9,10 @@ const migration = readFileSync(
   resolve("supabase/migrations/20260715222649_allow_half_step_verdicts_and_proposal_replacements.sql"),
   "utf8",
 );
+const archiveNumberMigration = readFileSync(
+  resolve("supabase/migrations/20260728205930_preserve_archive_number_on_album_replacement.sql"),
+  "utf8",
+);
 const tableur = readFileSync(resolve("src/components/tableur-board.tsx"), "utf8");
 const home = readFileSync(resolve("src/app/page.tsx"), "utf8");
 const liveAlbums = readFileSync(resolve("src/lib/live-albums.ts"), "utf8");
@@ -81,4 +85,17 @@ test("sorts the catalogue by archive number", () => {
   assert.match(albumCard, /Archive #\$\{archiveNumber\}/);
   assert.match(albumCard, /Archive #\$\{archiveNumber\} - Tirage/);
   assert.doesNotMatch(albumCard, /Tirage en cours/);
+});
+
+test("keeps one archive number when a proposed album is replaced", () => {
+  assert.match(archiveNumberMigration, /tg_op = 'UPDATE' and old\.archive_number is not null/);
+  assert.match(archiveNumberMigration, /new\.archive_number := old\.archive_number/);
+  assert.match(archiveNumberMigration, /pg_advisory_xact_lock/);
+  assert.match(archiveNumberMigration, /update of album_title, album_artist, archive_number/);
+  assert.ok(
+    archiveNumberMigration.indexOf("old.archive_number is not null") <
+      archiveNumberMigration.indexOf("new.archive_number := null"),
+  );
+  assert.match(archiveNumberMigration, /archive_number = 71/);
+  assert.match(archiveNumberMigration, /where archive_number < -73/);
 });

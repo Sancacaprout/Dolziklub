@@ -10,6 +10,14 @@ const migration = readFileSync(
   "supabase/migrations/20260728192203_extra_listening_requests.sql",
   "utf8",
 );
+const currentDrawMigration = readFileSync(
+  "supabase/migrations/20260728204655_limit_extra_listening_to_current_draw.sql",
+  "utf8",
+);
+const adminDeleteMigration = readFileSync(
+  "supabase/migrations/20260728210529_admin_delete_extra_listening_requests.sql",
+  "utf8",
+);
 const workspace = readFileSync("src/components/extra-listenings.tsx", "utf8");
 const tableur = readFileSync("src/components/tableur-board.tsx", "utf8");
 const liveDraws = readFileSync("src/components/live-draws.tsx", "utf8");
@@ -101,4 +109,44 @@ test("status labels and the public changelog use the agreed terminology", () => 
   assert.match(updates, /version: "2\.6"/);
   assert.match(migration, /'extra-listening-requests'/);
   assert.match(updates, /restent en dehors des moyennes, affectations et classements officiels/);
+});
+
+test("new extra-listening requests are restricted to the current published draw", () => {
+  assert.match(workspace, /filter\(\(draw\) => draw\.status === "published"\)/);
+  assert.match(workspace, /uniquement le tirage actuellement publié/);
+  assert.doesNotMatch(workspace, /eligibleDraws|initialDrawNumber|setDrawNumber/);
+  assert.doesNotMatch(tableur, /extraDrawNumber|setExtraDrawNumber/);
+  assert.match(tableur, /onClick=\{\(\) => openExtraWorkspace\(\)\}/);
+  assert.match(currentDrawMigration, /where status = 'published'[\s\S]*order by draw_number desc[\s\S]*limit 1/);
+  assert.match(currentDrawMigration, /new\.draw_number <> current_draw_number/);
+  assert.match(currentDrawMigration, /before insert on public\.extra_listening_requests/);
+  assert.match(updates, /limitées au seul tirage actuel/);
+});
+
+test("admins can permanently remove an extra listening through a protected RPC", () => {
+  assert.match(adminDeleteMigration, /create or replace function public\.admin_delete_extra_listening_request/);
+  assert.match(adminDeleteMigration, /security definer/);
+  assert.match(adminDeleteMigration, /set search_path = ''/);
+  assert.match(adminDeleteMigration, /auth\.uid\(\).*private\.is_member_admin\(\)/s);
+  assert.match(adminDeleteMigration, /from public\.extra_listening_requests[\s\S]*for update/);
+  assert.match(adminDeleteMigration, /delete from public\.extra_listening_requests/);
+  assert.match(adminDeleteMigration, /revoke all on function public\.admin_delete_extra_listening_request\(uuid\)[\s\S]*from public, anon/);
+  assert.match(adminDeleteMigration, /grant execute on function public\.admin_delete_extra_listening_request\(uuid\)[\s\S]*to authenticated/);
+  assert.match(tableur, /admin_delete_extra_listening_request/);
+  assert.match(tableur, /Supprimer définitivement cette écoute supplémentaire/);
+  assert.match(liveDraws, /isAdmin=\{isAdmin\}/);
+  assert.match(liveDraws, /onDelete=\{onDeleteExtra\}/);
+});
+
+test("the extra-listening table mirrors the main table without a status column", () => {
+  assert.match(workspace, /<th>Album · Artiste<\/th>/);
+  assert.doesNotMatch(workspace, /<th>Statut<\/th>/);
+  assert.match(workspace, /className=\{styles\.albumIdentity\}/);
+  assert.match(workspace, /href=\{albumUrl\}/);
+  assert.match(workspace, /<ReviewPreview title=\{request\.review_title\} review=\{request\.review\}/);
+  assert.match(workspace, /<MusicTrackChoiceButton[\s\S]*request\.best_track/);
+  assert.match(workspace, /<MusicTrackChoiceButton[\s\S]*request\.worst_track/);
+  assert.match(workspace, /isAdmin \? \(/);
+  assert.match(workspace, /className=\{styles\.deleteAction\}[\s\S]*Supprimer/);
+  assert.match(updates, /masque le statut et rend l’album, la best track, la worst track et l’avis complet directement accessibles/);
 });

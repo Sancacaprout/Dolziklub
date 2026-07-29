@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProposalAssistantCard, ReviewAssistantCard, type AssistedProposalPayload, type AssistedReviewPayload } from "@/components/music-selection-cards";
+import { MusicTrackChoiceButton } from "@/components/music-player";
 import { RatingDisplay } from "@/components/rating-display";
 import { ReviewPreview } from "@/components/review-preview";
 import { members } from "@/data/members";
@@ -15,6 +16,7 @@ import {
   type ExtraListeningRequest,
 } from "@/lib/extra-listenings";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import styles from "./extra-listenings.module.css";
 
 type DrawOption = {
@@ -75,12 +77,16 @@ export function ExtraListeningTable({
   drawNumber,
   requests,
   member,
+  isAdmin,
   onOpen,
+  onDelete,
 }: {
   drawNumber: number;
   requests: ExtraListeningRequest[];
   member: SignedMember | null;
+  isAdmin: boolean;
   onOpen: (requestId: string, mode: "propose" | "listen" | "view") => void;
+  onDelete: (requestId: string) => void;
 }) {
   const rows = requests
     .filter((request) => request.draw_number === drawNumber)
@@ -104,9 +110,7 @@ export function ExtraListeningTable({
               <tr>
                 <th>Demandeur</th>
                 <th>Proposé par</th>
-                <th>Album</th>
-                <th>Artiste</th>
-                <th>Statut</th>
+                <th>Album · Artiste</th>
                 <th>Avis</th>
                 <th>Note</th>
                 <th>Best track</th>
@@ -124,6 +128,10 @@ export function ExtraListeningTable({
                     ? "listen"
                     : "view";
                 const actionLabel = mode === "propose" ? "Proposer" : mode === "listen" ? "Écouter / noter" : "Voir";
+                const albumUrl = request.youtube_music_url
+                  ?? request.deezer_url
+                  ?? (request.album_title ? youtubeMusicSearchUrl(request.album_title, request.album_artist) : null);
+                const hasParticipantAction = Boolean(member && (requester || proposer));
                 return (
                   <tr key={request.id}>
                     <td><MemberLink username={request.requester_username} displayName={request.requester_display_name} /></td>
@@ -133,20 +141,63 @@ export function ExtraListeningTable({
                         {publicCoverUrl(request) ? (
                           <Image unoptimized src={publicCoverUrl(request)!} alt="" width={44} height={44} />
                         ) : null}
-                        <span>{request.album_title ?? "En attente"}</span>
+                        <span className={styles.albumIdentity}>
+                          {request.album_title && albumUrl ? (
+                            <a href={albumUrl} target="_blank" rel="noreferrer">{request.album_title}</a>
+                          ) : (
+                            <strong>{request.album_title ?? "En attente"}</strong>
+                          )}
+                          <small>{request.album_artist ?? "—"}</small>
+                        </span>
                       </div>
                     </td>
-                    <td>{request.album_artist ?? "—"}</td>
-                    <td><StatusBadge status={request.status} /></td>
-                    <td><ReviewPreview title={request.review_title} review={request.review} /></td>
+                    <td className={styles.reviewCell}><ReviewPreview title={request.review_title} review={request.review} /></td>
                     <td>{request.rating == null ? "—" : <RatingDisplay rating={request.rating} />}</td>
-                    <td>{request.best_track ?? "—"}</td>
-                    <td>{request.worst_track ?? "—"}</td>
                     <td>
-                      {member && (requester || proposer) ? (
-                        <button type="button" className={styles.tableAction} onClick={() => onOpen(request.id, mode)}>
-                          {actionLabel}
-                        </button>
+                      {request.best_track ? (
+                        <MusicTrackChoiceButton
+                          className={styles.trackLink}
+                          title={request.best_track}
+                          artist={request.album_artist ?? ""}
+                          albumTitle={request.album_title ?? undefined}
+                          youtubeMusicUrl={youtubeMusicSearchUrl(request.best_track, request.album_artist, request.album_title)}
+                        >
+                          {request.best_track}<span aria-hidden="true">↗</span>
+                        </MusicTrackChoiceButton>
+                      ) : "—"}
+                    </td>
+                    <td>
+                      {request.worst_track ? (
+                        <MusicTrackChoiceButton
+                          className={styles.trackLink}
+                          title={request.worst_track}
+                          artist={request.album_artist ?? ""}
+                          albumTitle={request.album_title ?? undefined}
+                          youtubeMusicUrl={youtubeMusicSearchUrl(request.worst_track, request.album_artist, request.album_title)}
+                        >
+                          {request.worst_track}<span aria-hidden="true">↗</span>
+                        </MusicTrackChoiceButton>
+                      ) : "—"}
+                    </td>
+                    <td>
+                      {hasParticipantAction || isAdmin ? (
+                        <div className={styles.tableActions}>
+                          {hasParticipantAction ? (
+                            <button type="button" className={styles.tableAction} onClick={() => onOpen(request.id, mode)}>
+                              {actionLabel}
+                            </button>
+                          ) : null}
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              className={styles.deleteAction}
+                              aria-label={`Supprimer l’écoute supplémentaire ${request.album_title ?? "en attente"}`}
+                              onClick={() => onDelete(request.id)}
+                            >
+                              Supprimer
+                            </button>
+                          ) : null}
+                        </div>
                       ) : "—"}
                     </td>
                   </tr>
@@ -165,40 +216,32 @@ export function ExtraListeningTable({
 export function ExtraListeningWorkspace({
   draws,
   member,
-  initialDrawNumber,
   focusedRequestId,
   onChanged,
 }: {
   draws: DrawOption[];
   member: SignedMember;
-  initialDrawNumber: number | null;
   focusedRequestId: string | null;
   onChanged?: () => void;
 }) {
   const configured = isSupabaseConfigured();
   const consumedFocus = useRef<string | null>(null);
   const [requests, setRequests] = useState<ExtraListeningRequest[]>([]);
-  const [drawNumber, setDrawNumber] = useState<number | null>(initialDrawNumber);
   const [proposerUsername, setProposerUsername] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
 
-  const eligibleDraws = useMemo(
+  const currentDraw = useMemo(
     () => draws
-      .filter((draw) =>
-        draw.status !== "draft"
-        && draw.participant_usernames.some((username) => isSameMember(username, member.username)),
-      )
-      .sort((first, second) => second.draw_number - first.draw_number),
-    [draws, member.username],
+      .filter((draw) => draw.status === "published")
+      .sort((first, second) => second.draw_number - first.draw_number)[0] ?? null,
+    [draws],
   );
-
-  const selectedDrawNumber =
-    drawNumber && eligibleDraws.some((draw) => draw.draw_number === drawNumber)
-      ? drawNumber
-      : eligibleDraws[0]?.draw_number ?? null;
-  const selectedDraw = eligibleDraws.find((draw) => draw.draw_number === selectedDrawNumber) ?? null;
+  const selectedDraw = currentDraw?.participant_usernames.some((username) => isSameMember(username, member.username))
+    ? currentDraw
+    : null;
+  const selectedDrawNumber = selectedDraw?.draw_number ?? null;
   const proposerOptions = members.filter((candidate) =>
     candidate.username
     && selectedDraw?.participant_usernames.some((username) => isSameMember(username, candidate.username))
@@ -222,15 +265,6 @@ export function ExtraListeningWorkspace({
     const timer = window.setTimeout(() => void loadRequests(), 0);
     return () => window.clearTimeout(timer);
   }, [loadRequests]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (initialDrawNumber && eligibleDraws.some((draw) => draw.draw_number === initialDrawNumber)) {
-        setDrawNumber(initialDrawNumber);
-      }
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [eligibleDraws, initialDrawNumber]);
 
   useEffect(() => {
     if (!focusedRequestId || consumedFocus.current === focusedRequestId || !requests.some((request) => request.id === focusedRequestId)) return;
@@ -382,28 +416,20 @@ export function ExtraListeningWorkspace({
       <header className={styles.workspaceHeader}>
         <p className="eyebrow">ÉCOUTE SUPPLÉMENTAIRE SUR DEMANDE</p>
         <h2>Ma prochaine écoute <em>choisie par un membre.</em></h2>
-        <p>Choisis un membre du tirage : il pourra te proposer un album spécialement pour cette écoute, sans modifier le tirage classique.</p>
+        <p>Choisis un membre du tirage actuel : il pourra te proposer un album spécialement pour cette écoute, sans modifier le tirage classique.</p>
       </header>
 
       {notice ? <p className={styles.notice} role="status" aria-live="polite">{notice}</p> : null}
 
       <form className={styles.requestForm} onSubmit={submitRequest}>
-        <label>
+        <div className={styles.currentDrawField}>
           <span>Tirage concerné</span>
-          <select value={selectedDrawNumber ?? ""} onChange={(event) => {
-            setDrawNumber(Number(event.target.value));
-            setProposerUsername("");
-          }} required>
-            {eligibleDraws.map((draw) => (
-              <option key={draw.draw_number} value={draw.draw_number}>
-                Tirage {formatDraw(draw.draw_number)}
-              </option>
-            ))}
-          </select>
-        </label>
+          <strong>{selectedDrawNumber ? <>Tirage {formatDraw(selectedDrawNumber)}</> : "Aucun tirage actuel disponible"}</strong>
+          <small>Les écoutes supplémentaires concernent uniquement le tirage actuellement publié.</small>
+        </div>
         <label>
           <span>Membre qui proposera l’album</span>
-          <select value={proposerUsername} onChange={(event) => setProposerUsername(event.target.value)} required>
+          <select value={proposerUsername} onChange={(event) => setProposerUsername(event.target.value)} disabled={!selectedDrawNumber} required>
             <option value="">Choisir un membre</option>
             {proposerOptions.map((candidate) => (
               <option key={candidate.username!} value={candidate.username!}>{candidate.displayName}</option>

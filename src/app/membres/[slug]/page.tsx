@@ -12,6 +12,7 @@ import { MemberStatsCards } from "@/components/member-stats-cards";
 import { ProfileThemeBoundary } from "@/components/profile-theme-boundary";
 import { memberIdentityKeys } from "@/data/members";
 import { getClubSnapshot } from "@/lib/club-snapshot";
+import { getMemberExtraListeningAlbums } from "@/lib/member-extra-listenings";
 import { isProfileThemeId } from "@/lib/profile-themes";
 import { getMemberStats } from "@/lib/statistics";
 
@@ -37,6 +38,9 @@ export default async function MemberPage({
   if (!member) notFound();
 
   const stats = getMemberStats(snapshot.albums, member.slug);
+  const extraAlbums = await getMemberExtraListeningAlbums(member.slug);
+  const listenedCount = stats.listened.length + extraAlbums.listened.length;
+  const proposedCount = stats.proposed.length + extraAlbums.proposed.length;
 
   return (
     <ProfileThemeBoundary
@@ -62,8 +66,8 @@ export default async function MemberPage({
         <MemberStatsCards
           username={member.username ?? member.slug}
           base={{
-            proposed: stats.proposed.length,
-            listened: stats.listened.length,
+            proposed: proposedCount,
+            listened: listenedCount,
             givenAverage: stats.givenAverage,
             receivedAverage: stats.receivedAverage,
           }}
@@ -73,10 +77,25 @@ export default async function MemberPage({
             <p className="eyebrow">VERDICTS RENDUS</p>
             <h2>Ce que {member.displayName} a écouté.</h2>
           </div>
-          {stats.listened.length ? (
+          {listenedCount ? (
             <div className="album-grid">
+              {extraAlbums.listened.map((entry) => (
+                <AlbumCard
+                  key={entry.album.id}
+                  album={entry.album}
+                  sourceLabel={entry.sourceLabel}
+                  hrefOverride={entry.href}
+                  external={entry.external}
+                />
+              ))}
               {stats.listened.map((album) => (
-                <AlbumCard key={album.id} album={album} />
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                  sourceLabel={album.drawNumber
+                    ? `Tirage classique · Tirage ${String(album.drawNumber).padStart(2, "0")}`
+                    : "Tirage classique"}
+                />
               ))}
             </div>
           ) : (
@@ -90,10 +109,25 @@ export default async function MemberPage({
             <p className="eyebrow">ALBUMS ENVOYÉS DANS LE BAC</p>
             <h2>Ce que {member.displayName} a proposé.</h2>
           </div>
-          {stats.proposed.length ? (
+          {proposedCount ? (
             <div className="album-grid">
+              {extraAlbums.proposed.map((entry) => (
+                <AlbumCard
+                  key={entry.album.id}
+                  album={entry.album}
+                  sourceLabel={entry.sourceLabel}
+                  hrefOverride={entry.href}
+                  external={entry.external}
+                />
+              ))}
               {stats.proposed.map((album) => (
-                <AlbumCard key={album.id} album={album} />
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                  sourceLabel={album.drawNumber
+                    ? `Tirage classique · Tirage ${String(album.drawNumber).padStart(2, "0")}`
+                    : "Tirage classique"}
+                />
               ))}
             </div>
           ) : (

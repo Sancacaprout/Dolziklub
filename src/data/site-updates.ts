@@ -40,6 +40,25 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "extra-listenings-on-member-profiles",
+    version: "2.7",
+    date: "2026-07-29",
+    title: "Les écoutes supplémentaires rejoignent les profils",
+    summary: "Les albums supplémentaires apparaissent maintenant dans les propositions et les écoutes des membres, sans être confondus avec les albums des tirages classiques.",
+    categories: ["Amélioration", "Profil", "Albums", "Tirages"],
+    added: [],
+    fixed: [],
+    improved: [
+      { text: "Une proposition supplémentaire rejoint la liste « a proposé » du membre qui a choisi l’album." },
+      { text: "Une écoute supplémentaire terminée rejoint la liste « a écouté » du membre qui a rendu son verdict." },
+      { text: "Chaque carte indique clairement « Écoute supplémentaire · Tirage XX » ou « Tirage classique · Tirage XX »." },
+    ],
+    links: [
+      { label: "Voir les membres", href: "/membres" },
+      { label: "Ouvrir le tableur", href: "/tableur" },
+    ],
+  },
+  {
     id: "extra-listening-requests",
     version: "2.6",
     date: "2026-07-28",
@@ -53,9 +72,13 @@ export const siteUpdates = [
     ],
     fixed: [
       { text: "Le parcours existant porte maintenant le nom précis « Donner un avis bonus sur un album du tirage » afin de ne plus le confondre avec une nouvelle proposition." },
+      { text: "Remplacer un album conserve désormais son numéro d’archive, même si la proposition est retirée puis recréée ; le trou observé après l’archive 70 est réparé." },
+      { text: "Les administrateurs peuvent désormais supprimer définitivement une écoute supplémentaire ajoutée par erreur." },
     ],
     improved: [
       { text: "Les écoutes supplémentaires restent en dehors des moyennes, affectations et classements officiels." },
+      { text: "Les demandes d’écoute supplémentaire sont limitées au seul tirage actuel : aucun ancien tirage ne peut être sélectionné." },
+      { text: "Le sous-tableau réunit maintenant l’album et l’artiste, masque le statut et rend l’album, la best track, la worst track et l’avis complet directement accessibles." },
     ],
     links: [
       { label: "Ouvrir le tableur", href: "/tableur" },
