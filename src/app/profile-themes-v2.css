@@ -50,6 +50,7 @@
 [data-profile-theme="noir-cinema"] .member-profile h1,[data-profile-theme="noir-cinema"] .member-archive h2,[data-profile-theme="noir-cinema"] .profile-favorites h2{font-family:Georgia,'Times New Roman',serif;font-weight:400;letter-spacing:.01em}
 [data-profile-theme="noir-cinema"] .member-profile__initial{border-radius:0;filter:grayscale(1) contrast(1.1);box-shadow:0 0 0 8px #070707,0 0 0 9px #b99b5e}
 [data-profile-theme="noir-cinema"] .profile-favorite-card{padding:.65rem;background:#0d0d0d;border:1px solid #4c4842}[data-profile-theme="noir-cinema"] .profile-favorite-card__cover{filter:grayscale(.35) contrast(1.08);box-shadow:0 16px 30px #000}
+[data-profile-theme="noir-cinema"] .album-card__credit b,[data-profile-theme="noir-cinema"] .album-card__list-credits b{color:var(--profile-text)}
 [data-profile-theme="noir-cinema"] .stat-cards>div{border-block:1px solid #b99b5e;background:#0b0b0b!important;text-align:center}
 [data-profile-theme="noir-cinema"] .favorite-artist-card--rank-1{transform:translateY(-2rem) scale(1.045);border-color:#b99b5e}[data-profile-theme="noir-cinema"] .favorite-artist-card__portrait{border-radius:0;filter:grayscale(.55) contrast(1.12)}
 [data-profile-theme="noir-cinema"] .favorite-clip-player{padding:clamp(1rem,3vw,2.5rem);background:#020202;border-top:18px solid #171717;border-bottom:18px solid #171717;box-shadow:0 20px 55px #000}[data-profile-theme="noir-cinema"] .favorite-clip-player iframe{box-shadow:0 0 35px #fff2}

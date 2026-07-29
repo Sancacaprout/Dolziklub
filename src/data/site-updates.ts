@@ -40,6 +40,22 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "noir-cinema-member-name-contrast",
+    version: "2.9",
+    date: "2026-07-29",
+    title: "Les prénoms ressortent dans Noir Cinéma",
+    summary: "Les noms des membres associés aux albums restent maintenant parfaitement lisibles sur les cartes sombres du thème Noir Cinéma.",
+    categories: ["Correction", "Profil", "Albums"],
+    added: [],
+    fixed: [
+      { text: "Les prénoms affichés après « Proposé par » et « Écouté par » utilisent désormais la couleur claire du thème, dans les cartes classiques comme dans les listes." },
+    ],
+    improved: [],
+    links: [
+      { label: "Voir les membres", href: "/membres" },
+    ],
+  },
+  {
     id: "collapsible-listening-workspaces",
     version: "2.8",
     date: "2026-07-29",

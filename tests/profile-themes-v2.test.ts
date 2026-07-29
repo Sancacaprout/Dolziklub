@@ -69,6 +69,7 @@ test("the Supabase migration extends only the check constraint and never disable
 
 test("the requested theme refinements preserve image colours and close Museum White frames", () => {
   assert.match(styles, /noir-cinema"\] img[^}]*filter:none!important/);
+  assert.match(styles, /noir-cinema"\] \.album-card__credit b,[^}]*album-card__list-credits b\{color:var\(--profile-text\)\}/);
   assert.match(styles, /manga-panel"\] \.member-profile__initial\{filter:none\}/);
   assert.match(styles, /cassette-sunset"\]\{background-image:[^}]*radial-gradient/);
   assert.match(styles, /museum-white"\] \.member-profile\{border:1px solid #292929/);
