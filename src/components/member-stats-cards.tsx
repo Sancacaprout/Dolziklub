@@ -42,7 +42,7 @@ export function MemberStatsCards({ username, base }: { username: string; base: M
 
   const cardStyle = (value: string) => ({ "--member-stat-color": value } as CSSProperties);
   return (
-    <div className="stat-cards">
+    <div className="stat-cards" data-profile-part="stats">
       <div style={cardStyle(colors.proposals)}><b>{base.proposed}</b><span>propositions</span></div>
       <div style={cardStyle(colors.listens)}><b>{base.listened}</b><span>écoutes</span></div>
       <div style={cardStyle(colors.given_average)}><b>{format(base.givenAverage)}</b><span className="stat-cards__label">Note moyenne attribuée</span></div>

@@ -49,7 +49,7 @@ export function MemberFavoriteTracks({ username }: { username: string | null }) 
 
   if (!loaded) return null;
   return (
-    <section className="profile-favorites profile-favorite-tracks" aria-labelledby="favorite-tracks-heading">
+    <section className="profile-favorites profile-favorite-tracks" aria-labelledby="favorite-tracks-heading" data-profile-part="favorite-tracks">
       <div className="member-archive__heading">
         <div>
           <p className="eyebrow">BANDE-SON PERSONNELLE</p>
@@ -62,7 +62,7 @@ export function MemberFavoriteTracks({ username }: { username: string | null }) 
             const title = decodeHtmlEntities(track.title);
             const artist = decodeHtmlEntities(track.artist_name);
             return (
-              <article className="profile-favorite-card" key={track.id}>
+              <article className="profile-favorite-card" key={track.id} data-profile-part="track-card">
                 <MusicTrackChoiceButton className="profile-favorite-card__action" title={title} artist={artist} youtubeMusicUrl={youtubeMusicSearchUrl(title, artist)}>
                   <div className="profile-favorite-card__cover">
                     {track.cover_source_url ? <img src={track.cover_source_url} alt={`Jaquette de ${title} par ${artist}`} /> : <span aria-hidden="true">DOL<br />ZIKLUB</span>}

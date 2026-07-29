@@ -11,7 +11,7 @@ export function YouTubeClipEmbed({
   title?: string;
 }) {
   return (
-    <div className="favorite-clip-player">
+    <div className="favorite-clip-player" data-profile-part="video">
       <iframe
         src={youtubePrivacyEmbedUrl(videoId)}
         title={title}
@@ -20,7 +20,7 @@ export function YouTubeClipEmbed({
         allowFullScreen
         referrerPolicy="strict-origin-when-cross-origin"
       />
-      <a href={youtubeWatchUrl(videoId)} target="_blank" rel="noreferrer">
+      <a href={youtubeWatchUrl(videoId)} target="_blank" rel="noreferrer" data-profile-part="button">
         Ouvrir sur YouTube ↗
       </a>
     </div>

@@ -101,11 +101,11 @@ export function AlbumCard({
 
   if (external) {
     return (
-      <a className={className} href={resolvedHref} target="_blank" rel="noreferrer">
+      <a className={className} href={resolvedHref} target="_blank" rel="noreferrer" data-profile-part="album-card">
         {content}
       </a>
     );
   }
 
-  return <Link className={className} href={resolvedHref}>{content}</Link>;
+  return <Link className={className} href={resolvedHref} data-profile-part="album-card">{content}</Link>;
 }

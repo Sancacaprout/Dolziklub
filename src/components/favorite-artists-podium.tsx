@@ -42,7 +42,7 @@ export function FavoriteArtistsPodium({
     .filter((artist): artist is FavoriteArtist => Boolean(artist));
 
   return (
-    <section className="profile-favorites profile-favorite-artists" aria-labelledby={headingId}>
+    <section className="profile-favorites profile-favorite-artists" aria-labelledby={headingId} data-profile-part="favorite-artists">
       <div className="member-archive__heading">
         <div>
           <p className="eyebrow">PODIUM PERSONNEL</p>
@@ -74,6 +74,7 @@ export function FavoriteArtistsPodium({
               className={"favorite-artist-card favorite-artist-card--rank-" + artist.rank}
               key={artist.id}
               data-rank={artist.rank}
+              data-profile-part="podium-card"
             >
               {artist.deezer_url ? (
                 <a href={artist.deezer_url} target="_blank" rel="noreferrer">

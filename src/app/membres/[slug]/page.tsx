@@ -14,6 +14,7 @@ import { memberIdentityKeys } from "@/data/members";
 import { getClubSnapshot } from "@/lib/club-snapshot";
 import { getMemberExtraListeningAlbums } from "@/lib/member-extra-listenings";
 import { isProfileThemeId } from "@/lib/profile-themes";
+import { getPublishedProfileTheme } from "@/lib/profile-theme-server";
 import { getMemberStats } from "@/lib/statistics";
 
 export const dynamic = "force-dynamic";
@@ -42,21 +43,25 @@ export default async function MemberPage({
   if (!member) notFound();
 
   const stats = getMemberStats(snapshot.albums, member.slug);
-  const extraAlbums = await getMemberExtraListeningAlbums(member.slug);
+  const [extraAlbums, publishedTheme] = await Promise.all([
+    getMemberExtraListeningAlbums(member.slug),
+    getPublishedProfileTheme(member.username),
+  ]);
   const listenedCount = stats.listened.length + extraAlbums.listened.length;
   const proposedCount = stats.proposed.length + extraAlbums.proposed.length;
 
   return (
     <ProfileThemeBoundary
-      username={member.username}
+      initialTheme={publishedTheme.id}
+      initialCustomConfig={publishedTheme.customConfig}
       forcedTheme={forcedTheme}
       previewMode={previewMode}
       lockedPreview={query.themeLocked === "1"}
       previewSession={previewSession}
     >
-      <main className="page member-profile-page">
+      <main className="page member-profile-page" data-profile-part="profile-root">
         <LiveClubRefresh />
-        <Link className="back" href="/membres">
+        <Link className="back" href="/membres" data-profile-part="button">
           ← Tous les membres
         </Link>
         <MemberPublicProfile
@@ -77,7 +82,7 @@ export default async function MemberPage({
             receivedAverage: stats.receivedAverage,
           }}
         />
-        <section className="member-archive member-archive--listened">
+        <section className="member-archive member-archive--listened" data-profile-part="listened">
           <div className="member-archive__heading">
             <p className="eyebrow">VERDICTS RENDUS</p>
             <h2>Ce que {member.displayName} a écouté.</h2>
@@ -109,7 +114,7 @@ export default async function MemberPage({
             </p>
           )}
         </section>
-        <section className="member-archive member-archive--proposed">
+        <section className="member-archive member-archive--proposed" data-profile-part="proposed">
           <div className="member-archive__heading">
             <p className="eyebrow">ALBUMS ENVOYÉS DANS LE BAC</p>
             <h2>Ce que {member.displayName} a proposé.</h2>

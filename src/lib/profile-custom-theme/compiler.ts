@@ -16,6 +16,13 @@ function safeAssetImage(assetId: string | null, assets: ProfileCustomThemeAssetM
   return `url(${JSON.stringify(assets[assetId])})`;
 }
 
+function avatarShadowValue(config: ProfileCustomThemeConfigV1) {
+  if (config.avatar.shadow === "none") return "none";
+  if (config.avatar.shadow === "glow") return `0 0 24px ${config.colors.accent}`;
+  if (config.avatar.shadow === "hard") return `6px 6px 0 ${config.avatar.borderColor}`;
+  return `0 10px 24px ${config.colors.border}33`;
+}
+
 export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, assets: ProfileCustomThemeAssetMap = {}) {
   const style: CustomThemeStyle = {
     "--profile-custom-page": config.colors.page, "--profile-custom-surface": config.colors.surface, "--profile-custom-surface-alt": config.colors.surfaceAlt,
@@ -35,11 +42,14 @@ export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, as
     "--profile-custom-card-track-bg": config.cards.track.background, "--profile-custom-card-album-title-scale": config.cards.album.titleScale,
     "--profile-custom-card-track-title-scale": config.cards.track.titleScale, "--profile-custom-card-album-rotation": `${config.cards.album.rotation}deg`,
     "--profile-custom-card-track-rotation": `${config.cards.track.rotation}deg`, "--profile-custom-avatar-size": `${config.avatar.size}px`,
-    "--profile-custom-avatar-bg": config.avatar.background, "--profile-custom-avatar-border": `${config.avatar.borderWidth}px solid ${config.avatar.borderColor}`,
+    "--profile-custom-avatar-bg": config.avatar.background, "--profile-custom-avatar-shadow": avatarShadowValue(config), "--profile-custom-avatar-border": `${config.avatar.borderWidth}px solid ${config.avatar.borderColor}`,
     "--profile-custom-medal-gold": config.podium.gold, "--profile-custom-medal-silver": config.podium.silver, "--profile-custom-medal-bronze": config.podium.bronze,
     "--profile-custom-video-spacing": `${config.video.spacing}px`, "--profile-custom-motion-duration": `${config.motion.duration}ms`,
     "--profile-background": config.colors.page, "--profile-surface": config.colors.surface, "--profile-text": config.colors.text,
     "--profile-muted": config.colors.mutedText, "--profile-accent": config.colors.accent, "--profile-border": config.colors.border,
+    "--profile-surface-secondary": config.colors.surfaceAlt, "--profile-shadow": config.colors.border,
+    "--profile-stat-color": config.colors.statBackground, "--profile-button-background": config.colors.buttonBackground,
+    "--profile-button-text": config.colors.buttonText, "--profile-kouize": config.colors.surfaceAlt, "--profile-kouize-text": config.colors.text,
   };
   for (const [role, token] of Object.entries(config.typography)) {
     style[`--profile-custom-font-${role}`] = fontStacks[token.family]; style[`--profile-custom-font-${role}-size`] = `${token.size}px`;
@@ -59,5 +69,10 @@ export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, as
     `profile-custom-avatar-${config.avatar.shape}`, `profile-custom-stats-${config.stats.variant}`, `profile-custom-podium-${config.podium.shape}`,
     `profile-custom-podium-frame-${config.podium.frame}`, `profile-custom-motion-entrance-${config.motion.entrance}`,
     `profile-custom-motion-hover-${config.motion.hover}`, `profile-custom-motion-link-${config.motion.link}`,
+    `profile-custom-album-align-${config.cards.album.textAlign}`, `profile-custom-track-align-${config.cards.track.textAlign}`,
+    `profile-custom-album-frame-${config.cards.album.imageFrame}`, `profile-custom-track-frame-${config.cards.track.imageFrame}`,
+    `profile-custom-album-badge-${config.cards.album.badgeStyle}`, `profile-custom-track-badge-${config.cards.track.badgeStyle}`,
+    `profile-custom-album-hover-${config.cards.album.hover}`, `profile-custom-track-hover-${config.cards.track.hover}`,
+    `profile-custom-heading-shadow-${config.headings.shadow}`,
   ] };
 }

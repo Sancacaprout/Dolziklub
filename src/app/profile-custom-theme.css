@@ -17,7 +17,7 @@
 [data-profile-theme="custom"].profile-custom-bg-pattern { background-color: var(--profile-custom-background-color); }
 [data-profile-theme="custom"].profile-custom-bg-pattern::before {
   position: fixed;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
   content: "";
   pointer-events: none;
@@ -36,6 +36,19 @@
 [data-profile-theme="custom"].profile-custom-pattern-stars::before { background-image: radial-gradient(circle, var(--profile-custom-pattern-color) 0 1px, transparent 2px); }
 [data-profile-theme="custom"].profile-custom-pattern-collage::before { background-image: linear-gradient(25deg, transparent 45%, var(--profile-custom-pattern-color) 46% 54%, transparent 55%), linear-gradient(-35deg, transparent 45%, var(--profile-custom-pattern-color) 46% 54%, transparent 55%); }
 [data-profile-theme="custom"].profile-custom-pattern-halftone::before { background-image: radial-gradient(circle, var(--profile-custom-pattern-color) 0 30%, transparent 32%); }
+[data-profile-theme="custom"].profile-theme--full-page::after {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: var(--profile-custom-overlay);
+  opacity: var(--profile-custom-overlay-opacity);
+}
+[data-profile-theme="custom"] [data-profile-part="profile-root"] {
+  position: relative;
+  z-index: 1;
+}
 
 [data-profile-theme="custom"] h1,
 [data-profile-theme="custom"] h2,
@@ -61,6 +74,156 @@
   text-transform: var(--profile-custom-font-label-transform);
 }
 [data-profile-theme="custom"] a { color: var(--profile-custom-link); }
+
+[data-profile-theme="custom"] [data-profile-part="header"] {
+  border: var(--profile-custom-header-border);
+  border-radius: var(--profile-custom-header-radius);
+  background: var(--profile-custom-surface);
+  box-shadow: var(--profile-custom-header-shadow);
+}
+[data-profile-theme="custom"] [data-profile-part="quiz"] {
+  border: var(--profile-custom-quiz-border);
+  border-radius: var(--profile-custom-quiz-radius);
+  background: var(--profile-custom-surface-alt);
+  color: var(--profile-custom-text);
+  box-shadow: var(--profile-custom-quiz-shadow);
+}
+[data-profile-theme="custom"] [data-profile-part="avatar"] {
+  width: min(var(--profile-custom-avatar-size), 100%);
+  border: var(--profile-custom-avatar-border);
+  background: var(--profile-custom-avatar-bg);
+  box-shadow: var(--profile-custom-avatar-shadow);
+}
+[data-profile-theme="custom"].profile-custom-avatar-circle [data-profile-part="avatar"] { border-radius: 50%; }
+[data-profile-theme="custom"].profile-custom-avatar-square [data-profile-part="avatar"] { border-radius: 0; }
+[data-profile-theme="custom"].profile-custom-avatar-rounded [data-profile-part="avatar"] { border-radius: 20%; }
+[data-profile-theme="custom"].profile-custom-avatar-hexagon [data-profile-part="avatar"] { border-radius: 0; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+
+[data-profile-theme="custom"] [data-profile-part="favorite-albums"],
+[data-profile-theme="custom"] [data-profile-part="favorite-tracks"],
+[data-profile-theme="custom"] [data-profile-part="favorite-artists"],
+[data-profile-theme="custom"] [data-profile-part="favorite-clip"] { color: var(--profile-custom-text); }
+[data-profile-theme="custom"] .member-archive__heading {
+  border-color: var(--profile-custom-separator);
+  text-align: inherit;
+}
+[data-profile-theme="custom"].profile-custom-heading-align-center .member-archive__heading { justify-content: center; text-align: center; }
+[data-profile-theme="custom"].profile-custom-heading-line .member-archive__heading { border-bottom: 2px solid var(--profile-custom-separator); }
+[data-profile-theme="custom"].profile-custom-heading-double .member-archive__heading { border-bottom: 5px double var(--profile-custom-separator); }
+[data-profile-theme="custom"].profile-custom-heading-block .member-archive__heading { padding: .8rem 1rem; border: 0; background: var(--profile-custom-heading-bg); }
+[data-profile-theme="custom"].profile-custom-heading-boxed .member-archive__heading { padding: .8rem 1rem; border: 2px solid var(--profile-custom-separator); background: var(--profile-custom-heading-bg); }
+[data-profile-theme="custom"].profile-custom-heading-none .member-archive__heading { border-bottom: 0; }
+[data-profile-theme="custom"].profile-custom-heading-shadow-soft .member-archive__heading { box-shadow: 0 10px 24px color-mix(in srgb, var(--profile-custom-border) 20%, transparent); }
+[data-profile-theme="custom"].profile-custom-heading-shadow-hard .member-archive__heading { box-shadow: 5px 5px 0 var(--profile-custom-border); }
+
+[data-profile-theme="custom"] [data-profile-part="album-card"] {
+  border: var(--profile-custom-album-card-border);
+  border-radius: var(--profile-custom-album-card-radius);
+  background: var(--profile-custom-card-album-bg);
+  box-shadow: var(--profile-custom-album-card-shadow);
+  color: var(--profile-custom-text);
+  rotate: var(--profile-custom-card-album-rotation);
+  transition: transform var(--profile-custom-motion-duration) ease, box-shadow var(--profile-custom-motion-duration) ease;
+}
+[data-profile-theme="custom"] [data-profile-part="track-card"] {
+  border: var(--profile-custom-track-card-border);
+  border-radius: var(--profile-custom-track-card-radius);
+  background: var(--profile-custom-card-track-bg);
+  box-shadow: var(--profile-custom-track-card-shadow);
+  color: var(--profile-custom-text);
+  rotate: var(--profile-custom-card-track-rotation);
+  transition: transform var(--profile-custom-motion-duration) ease, box-shadow var(--profile-custom-motion-duration) ease;
+}
+[data-profile-theme="custom"].profile-custom-album-align-center [data-profile-part="album-card"],
+[data-profile-theme="custom"].profile-custom-track-align-center [data-profile-part="track-card"] { text-align: center; }
+[data-profile-theme="custom"] [data-profile-part="album-card"] h3 { font-size: calc(1em * var(--profile-custom-card-album-title-scale)); }
+[data-profile-theme="custom"] [data-profile-part="track-card"] h3 { font-size: calc(1em * var(--profile-custom-card-track-title-scale)); }
+[data-profile-theme="custom"].profile-custom-album-frame-none [data-profile-part="album-card"] .cover-frame,
+[data-profile-theme="custom"].profile-custom-album-frame-none [data-profile-part="album-card"] .profile-favorite-card__cover,
+[data-profile-theme="custom"].profile-custom-track-frame-none [data-profile-part="track-card"] .profile-favorite-card__cover { border: 0; box-shadow: none; }
+[data-profile-theme="custom"].profile-custom-album-frame-double [data-profile-part="album-card"] .cover-frame,
+[data-profile-theme="custom"].profile-custom-album-frame-double [data-profile-part="album-card"] .profile-favorite-card__cover,
+[data-profile-theme="custom"].profile-custom-track-frame-double [data-profile-part="track-card"] .profile-favorite-card__cover { border-style: double; border-width: 5px; }
+[data-profile-theme="custom"].profile-custom-album-hover-lift [data-profile-part="album-card"]:hover,
+[data-profile-theme="custom"].profile-custom-track-hover-lift [data-profile-part="track-card"]:hover { transform: translateY(-4px); }
+[data-profile-theme="custom"].profile-custom-album-hover-zoom [data-profile-part="album-card"]:hover,
+[data-profile-theme="custom"].profile-custom-track-hover-zoom [data-profile-part="track-card"]:hover { transform: scale(1.02); }
+[data-profile-theme="custom"].profile-custom-album-hover-glow [data-profile-part="album-card"]:hover,
+[data-profile-theme="custom"].profile-custom-track-hover-glow [data-profile-part="track-card"]:hover { box-shadow: 0 0 22px var(--profile-custom-accent); }
+
+[data-profile-theme="custom"] [data-profile-part="stats"] {
+  gap: .75rem;
+  border: var(--profile-custom-stats-border);
+  border-radius: var(--profile-custom-stats-radius);
+  background: transparent;
+  box-shadow: var(--profile-custom-stats-shadow);
+}
+[data-profile-theme="custom"] [data-profile-part="stats"] > div { border: 1px solid var(--profile-custom-border); background: var(--profile-custom-stat-bg); color: var(--profile-custom-stat-text); }
+[data-profile-theme="custom"] [data-profile-part="stats"] b { font-family: var(--profile-custom-font-stat); font-size: var(--profile-custom-font-stat-size); font-weight: var(--profile-custom-font-stat-weight); line-height: var(--profile-custom-font-stat-line); }
+[data-profile-theme="custom"].profile-custom-stats-cards [data-profile-part="stats"] > div { border-radius: 14px; }
+[data-profile-theme="custom"].profile-custom-stats-hud [data-profile-part="stats"] > div { border-left: 5px solid var(--profile-custom-accent); background: color-mix(in srgb, var(--profile-custom-stat-bg) 78%, black); }
+[data-profile-theme="custom"].profile-custom-stats-bars [data-profile-part="stats"] > div { background: linear-gradient(90deg, var(--profile-custom-accent) 0 12px, var(--profile-custom-stat-bg) 12px); }
+[data-profile-theme="custom"].profile-custom-stats-tickets [data-profile-part="stats"] > div { clip-path: polygon(0 8px, 8px 0, calc(100% - 8px) 0, 100% 8px, 100% calc(100% - 8px), calc(100% - 8px) 100%, 8px 100%, 0 calc(100% - 8px)); }
+[data-profile-theme="custom"].profile-custom-stats-capsules [data-profile-part="stats"] > div { border-radius: 999px; text-align: center; }
+[data-profile-theme="custom"].profile-custom-stats-giant [data-profile-part="stats"] b { font-size: min(15vw, calc(var(--profile-custom-font-stat-size) * 1.35)); }
+
+[data-profile-theme="custom"] [data-profile-part="podium-card"] { border: var(--profile-custom-podium-border); border-radius: var(--profile-custom-podium-radius); box-shadow: var(--profile-custom-podium-shadow); }
+[data-profile-theme="custom"].profile-custom-podium-circle [data-profile-part="podium-card"] .favorite-artist-card__portrait { border-radius: 50%; }
+[data-profile-theme="custom"].profile-custom-podium-square [data-profile-part="podium-card"] .favorite-artist-card__portrait { border-radius: 0; }
+[data-profile-theme="custom"].profile-custom-podium-rounded [data-profile-part="podium-card"] .favorite-artist-card__portrait { border-radius: 18%; }
+[data-profile-theme="custom"].profile-custom-podium-hexagon [data-profile-part="podium-card"] .favorite-artist-card__portrait { border-radius: 0; clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%); }
+[data-profile-theme="custom"].profile-custom-podium-frame-none [data-profile-part="podium-card"] { border: 0; box-shadow: none; }
+[data-profile-theme="custom"].profile-custom-podium-frame-double [data-profile-part="podium-card"] { border-style: double; border-width: 5px; }
+[data-profile-theme="custom"].profile-custom-podium-frame-medallion [data-profile-part="podium-card"] .favorite-artist-card__portrait { outline: 7px solid var(--profile-custom-accent); outline-offset: 4px; }
+
+[data-profile-theme="custom"] [data-profile-part="video"] { padding: var(--profile-custom-video-spacing); border: var(--profile-custom-video-border); border-radius: var(--profile-custom-video-radius); box-shadow: var(--profile-custom-video-shadow); }
+[data-profile-theme="custom"] [data-profile-part="video"] iframe { aspect-ratio: 16 / 9; border-color: var(--profile-custom-border); }
+[data-profile-theme="custom"] [data-profile-part="listened"] { border: var(--profile-custom-listened-border); border-radius: var(--profile-custom-listened-radius); box-shadow: var(--profile-custom-listened-shadow); }
+[data-profile-theme="custom"] [data-profile-part="proposed"] { border: var(--profile-custom-proposed-border); border-radius: var(--profile-custom-proposed-radius); box-shadow: var(--profile-custom-proposed-shadow); }
+[data-profile-theme="custom"] [data-profile-part="bonus"] { border: var(--profile-custom-bonus-border); border-radius: var(--profile-custom-bonus-radius); box-shadow: var(--profile-custom-bonus-shadow); }
+[data-profile-theme="custom"] [data-profile-part="bonus-card"] { border-color: var(--profile-custom-border); background: var(--profile-custom-surface-alt); box-shadow: 5px 5px 0 var(--profile-custom-separator); }
+
+[data-profile-theme="custom"] [data-profile-part="button"],
+[data-profile-theme="custom"] .button,
+[data-profile-theme="custom"] button:not(.music-player__button) {
+  border: var(--profile-custom-button-border);
+  border-radius: var(--profile-custom-button-radius);
+  background: var(--profile-custom-button-bg);
+  color: var(--profile-custom-button-text);
+  box-shadow: var(--profile-custom-button-shadow);
+  font-family: var(--profile-custom-font-button);
+  font-size: var(--profile-custom-font-button-size);
+  font-weight: var(--profile-custom-font-button-weight);
+  letter-spacing: var(--profile-custom-font-button-spacing);
+  text-transform: var(--profile-custom-font-button-transform);
+}
+[data-profile-theme="custom"].profile-custom-button-pill [data-profile-part="button"],
+[data-profile-theme="custom"].profile-custom-button-pill .button { border-radius: 999px; }
+[data-profile-theme="custom"].profile-custom-button-ticket [data-profile-part="button"],
+[data-profile-theme="custom"].profile-custom-button-ticket .button { clip-path: polygon(0 7px, 7px 0, calc(100% - 7px) 0, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0 calc(100% - 7px)); }
+[data-profile-theme="custom"].profile-custom-button-minimal [data-profile-part="button"],
+[data-profile-theme="custom"].profile-custom-button-minimal .button { border-width: 0 0 1px; background: transparent; box-shadow: none; }
+[data-profile-theme="custom"].profile-custom-button-hover-lift [data-profile-part="button"]:hover,
+[data-profile-theme="custom"].profile-custom-button-hover-lift .button:hover { transform: translateY(-2px); }
+[data-profile-theme="custom"].profile-custom-button-hover-glow [data-profile-part="button"]:hover,
+[data-profile-theme="custom"].profile-custom-button-hover-glow .button:hover { box-shadow: 0 0 18px var(--profile-custom-accent); }
+[data-profile-theme="custom"].profile-custom-button-hover-invert [data-profile-part="button"]:hover,
+[data-profile-theme="custom"].profile-custom-button-hover-invert .button:hover { background: var(--profile-custom-button-text); color: var(--profile-custom-button-bg); }
+[data-profile-theme="custom"].profile-custom-button-click-press [data-profile-part="button"]:active,
+[data-profile-theme="custom"].profile-custom-button-click-press .button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+[data-profile-theme="custom"] .rating { border: var(--profile-custom-badge-border); border-radius: var(--profile-custom-badge-radius); background: var(--profile-custom-badge-bg); color: var(--profile-custom-badge-text); box-shadow: var(--profile-custom-badge-shadow); }
+[data-profile-theme="custom"].profile-custom-album-badge-pill [data-profile-part="album-card"] .rating,
+[data-profile-theme="custom"].profile-custom-track-badge-pill [data-profile-part="track-card"] .rating { border-radius: 999px; }
+[data-profile-theme="custom"].profile-custom-album-badge-soft [data-profile-part="album-card"] .rating,
+[data-profile-theme="custom"].profile-custom-track-badge-soft [data-profile-part="track-card"] .rating { border-radius: 8px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-profile-theme="custom"].profile-custom-motion-entrance-fade [data-profile-part="profile-root"] > section { animation: profile-custom-fade var(--profile-custom-motion-duration) ease both; }
+  [data-profile-theme="custom"].profile-custom-motion-entrance-slide [data-profile-part="profile-root"] > section { animation: profile-custom-slide var(--profile-custom-motion-duration) ease both; }
+}
+@keyframes profile-custom-fade { from { opacity: .01; } to { opacity: 1; } }
+@keyframes profile-custom-slide { from { opacity: .01; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 
 .custom-theme-editor-page {
   width: min(1900px, 100%);
@@ -182,4 +345,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .custom-theme-editor__preview-canvas iframe { transition: none; }
+  [data-profile-theme="custom"] [data-profile-part] {
+    animation: none !important;
+    transition: none !important;
+  }
 }
