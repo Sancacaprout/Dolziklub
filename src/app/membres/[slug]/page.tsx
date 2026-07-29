@@ -54,6 +54,7 @@ export default async function MemberPage({
     <ProfileThemeBoundary
       initialTheme={publishedTheme.id}
       initialCustomConfig={publishedTheme.customConfig}
+      initialCustomAssets={publishedTheme.customAssets}
       forcedTheme={forcedTheme}
       previewMode={previewMode}
       lockedPreview={query.themeLocked === "1"}

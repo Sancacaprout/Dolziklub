@@ -83,7 +83,7 @@ test("the editor keeps changes local and caps undo history at fifty states", () 
   assert.match(editorSource, /\.slice\(-MAX_HISTORY\)/);
   assert.match(editorSource, /target\.postMessage\([\s\S]*window\.location\.origin/);
   assert.doesNotMatch(editorSource, /\.insert\(|\.update\(|\.upsert\(|\.delete\(|\.rpc\(|storage\./);
-  assert.match(editorSource, /BROUILLON LOCAL/);
+  assert.match(editorSource, /CustomThemePersistence/);
 });
 
 test("the editor route and iframe preview stay behind the server flag", () => {

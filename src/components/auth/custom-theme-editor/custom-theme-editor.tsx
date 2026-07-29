@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CustomThemeAssets, CustomThemeMotion } from "@/components/auth/custom-theme-editor/custom-theme-assets";
 import { CustomThemeTutorial } from "@/components/auth/custom-theme-editor/custom-theme-tutorial";
+import { CustomThemePersistence } from "@/components/auth/custom-theme-editor/custom-theme-persistence";
 import {
   useCallback,
   useEffect,
@@ -45,6 +46,7 @@ type HistoryState = {
 };
 type HistoryAction =
   | { type: "commit"; value: ProfileCustomThemeConfigV1 }
+  | { type: "load"; value: ProfileCustomThemeConfigV1 }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "reset" };
@@ -107,6 +109,9 @@ const patternLabels: Record<CustomThemePatternKind, string> = {
 };
 
 function historyReducer(state: HistoryState, action: HistoryAction): HistoryState {
+  if (action.type === "load") {
+    return { past: [], present: cloneProfileCustomTheme(action.value), future: [] };
+  }
   if (action.type === "commit") {
     if (JSON.stringify(action.value) === JSON.stringify(state.present)) return state;
     return {
@@ -304,6 +309,9 @@ export function CustomThemeEditor() {
   const commit = (next: ProfileCustomThemeConfigV1) => {
     dispatch({ type: "commit", value: next });
   };
+  const replaceConfig = useCallback((next: ProfileCustomThemeConfigV1) => {
+    dispatch({ type: "load", value: next });
+  }, []);
 
   const updateColor = (key: keyof ProfileCustomThemeConfigV1["colors"], value: string) => {
     const next = cloneProfileCustomTheme(config);
@@ -361,9 +369,7 @@ export function CustomThemeEditor() {
           <h1>Compose ton univers.</h1>
           <p>Le profil garde toutes ses sections et leur ordre. Ici, tu changes uniquement leur apparence.</p>
         </div>
-        <p className="custom-theme-editor__local-status" role="status">
-          BROUILLON LOCAL · AUCUNE ÉCRITURE EN LIGNE
-        </p>
+        <CustomThemePersistence config={config} onReplace={replaceConfig} />
       </header>
 
       <nav className="custom-theme-editor__toolbar" aria-label="Actions de l’éditeur">
