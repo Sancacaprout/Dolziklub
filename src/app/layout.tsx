@@ -3,6 +3,7 @@ import { DM_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "./upload-fields.css";
 import "./profile-themes-v2.css";
+import "./sheet-bonus-reviews.css";
 import { Footer } from "@/components/footer";
 import { NotificationBell } from "@/components/notification-bell";
 import { MusicPlayerProvider } from "@/components/music-player";

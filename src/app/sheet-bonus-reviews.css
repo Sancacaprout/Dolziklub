@@ -1,0 +1,38 @@
+.sheet-bonus-reviews article > .review-preview {
+  display: grid;
+  min-width: 0;
+  max-width: none;
+  align-items: start;
+  justify-content: stretch;
+  gap: 0.45rem;
+}
+
+.sheet-bonus-reviews .review-preview__title,
+.sheet-bonus-reviews .review-preview p,
+.sheet-bonus-reviews .review-preview__toggle {
+  min-width: 0;
+}
+
+.sheet-bonus-reviews .review-preview__title,
+.sheet-bonus-reviews .review-preview p {
+  overflow-wrap: anywhere;
+}
+
+.sheet-bonus-reviews .review-preview p {
+  line-height: 1.45;
+}
+
+.sheet-bonus-reviews .review-preview__toggle {
+  width: auto;
+  justify-self: start;
+  text-align: left;
+}
+
+@media (max-width: 700px) {
+  .sheet-bonus-reviews,
+  .sheet-bonus-reviews article,
+  .sheet-bonus-reviews article > .review-preview {
+    width: 100%;
+    min-width: 0;
+  }
+}

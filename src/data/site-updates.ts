@@ -40,6 +40,23 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "bonus-reviews-responsive-layout",
+    version: "2.10",
+    date: "2026-07-29",
+    title: "Les écoutes bonus retrouvent toute leur largeur",
+    summary: "Les avis bonus restent maintenant lisibles dans les cellules étroites du tableur, notamment sur mobile.",
+    categories: ["Correction", "Albums", "Tirages", "Écoutes bonus"],
+    added: [],
+    fixed: [
+      { text: "Le titre de l’avis, son texte et le lien « Lire l’avis complet » s’affichent de nouveau verticalement au lieu d’être comprimés en colonnes." },
+      { text: "Les blocs d’écoutes bonus peuvent désormais rétrécir jusqu’à la largeur disponible sans provoquer de débordement sur mobile." },
+    ],
+    improved: [],
+    links: [
+      { label: "Ouvrir le tableur", href: "/tableur" },
+    ],
+  },
+  {
     id: "noir-cinema-member-name-contrast",
     version: "2.9",
     date: "2026-07-29",
