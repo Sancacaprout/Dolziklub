@@ -1,7 +1,8 @@
+import { sanitizeProfileThemeAssetMap } from "@/lib/profile-custom-theme/assets";
 import {
   validateProfileCustomThemeConfig,
 } from "@/lib/profile-custom-theme/validator";
-import type { ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeAssetMap, ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
 
 export const CUSTOM_THEME_PREVIEW_READY = "dolziklub:custom-theme-preview-ready";
 export const CUSTOM_THEME_PREVIEW_UPDATE = "dolziklub:custom-theme-preview-update";
@@ -15,6 +16,7 @@ export type CustomThemePreviewUpdateMessage = {
   type: typeof CUSTOM_THEME_PREVIEW_UPDATE;
   sessionId: string;
   config: ProfileCustomThemeConfigV1;
+  assets: ProfileCustomThemeAssetMap;
 };
 
 type PreviewMessageEvent = Pick<MessageEvent<unknown>, "data" | "origin" | "source">;
@@ -32,8 +34,9 @@ export function createCustomThemePreviewReadyMessage(
 export function createCustomThemePreviewUpdateMessage(
   sessionId: string,
   config: ProfileCustomThemeConfigV1,
+  assets: ProfileCustomThemeAssetMap = {},
 ): CustomThemePreviewUpdateMessage {
-  return { type: CUSTOM_THEME_PREVIEW_UPDATE, sessionId, config };
+  return { type: CUSTOM_THEME_PREVIEW_UPDATE, sessionId, config, assets };
 }
 
 export function readTrustedCustomThemePreviewReady(
@@ -61,9 +64,12 @@ export function readTrustedCustomThemePreviewUpdate(
   ) return null;
   const validation = validateProfileCustomThemeConfig(event.data.config);
   if (!validation.ok) return null;
+  const assets = sanitizeProfileThemeAssetMap(event.data.assets);
+  if (!assets) return null;
   return {
     type: CUSTOM_THEME_PREVIEW_UPDATE,
     sessionId: expected.sessionId,
     config: validation.value,
+    assets,
   } satisfies CustomThemePreviewUpdateMessage;
 }

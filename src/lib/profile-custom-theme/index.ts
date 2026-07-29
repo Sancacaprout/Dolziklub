@@ -1,3 +1,4 @@
+export * from "@/lib/profile-custom-theme/assets";
 export * from "@/lib/profile-custom-theme/compiler";
 export * from "@/lib/profile-custom-theme/contrast";
 export * from "@/lib/profile-custom-theme/defaults";

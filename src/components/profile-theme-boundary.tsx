@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
+import { ProfileCustomThemeDecorations } from "@/components/profile-custom-theme-decorations";
 import { WheelyThemeArt } from "@/components/wheely-theme-art";
 import {
   cloneProfileCustomTheme,
   compileProfileCustomTheme,
   createCustomThemePreviewReadyMessage,
   readTrustedCustomThemePreviewUpdate,
+  type ProfileCustomThemeAssetMap,
   type ProfileCustomThemeConfigV1,
 } from "@/lib/profile-custom-theme";
 import {
@@ -18,6 +20,7 @@ import {
 export function ProfileThemeBoundary({
   initialTheme = null,
   initialCustomConfig = null,
+  initialCustomAssets = {},
   forcedTheme,
   previewMode = false,
   lockedPreview = false,
@@ -26,6 +29,7 @@ export function ProfileThemeBoundary({
 }: {
   initialTheme?: ProfileThemeId | null;
   initialCustomConfig?: ProfileCustomThemeConfigV1 | null;
+  initialCustomAssets?: ProfileCustomThemeAssetMap;
   forcedTheme?: ProfileThemeId | null;
   previewMode?: boolean;
   lockedPreview?: boolean;
@@ -34,6 +38,9 @@ export function ProfileThemeBoundary({
 }) {
   const [customConfig, setCustomConfig] = useState<ProfileCustomThemeConfigV1>(() =>
     cloneProfileCustomTheme(initialCustomConfig ?? undefined),
+  );
+  const [customAssets, setCustomAssets] = useState<ProfileCustomThemeAssetMap>(
+    initialCustomAssets,
   );
 
   useEffect(() => {
@@ -50,7 +57,10 @@ export function ProfileThemeBoundary({
         source: expectedParent,
         sessionId: previewSession,
       });
-      if (update) setCustomConfig(update.config);
+      if (update) {
+        setCustomConfig(update.config);
+        setCustomAssets(update.assets);
+      }
     };
     window.addEventListener("message", receiveConfig);
     expectedParent.postMessage(
@@ -68,7 +78,9 @@ export function ProfileThemeBoundary({
       ? null
       : initialTheme;
   const customTheme =
-    effectiveTheme === "custom" ? compileProfileCustomTheme(customConfig) : null;
+    effectiveTheme === "custom"
+      ? compileProfileCustomTheme(customConfig, customAssets)
+      : null;
 
   if (!effectiveTheme) return <>{children}</>;
 
@@ -85,6 +97,9 @@ export function ProfileThemeBoundary({
       {effectiveTheme === "wheely" ? <WheelyThemeArt variant="profile" /> : null}
       {effectiveTheme === "wheely" && previewMode && lockedPreview ? (
         <p className="profile-theme-locked-preview" role="status">APERÇU — THÈME VERROUILLÉ</p>
+      ) : null}
+      {effectiveTheme === "custom" ? (
+        <ProfileCustomThemeDecorations config={customConfig} assets={customAssets} />
       ) : null}
       {children}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CustomThemeAssets, CustomThemeMotion } from "@/components/auth/custom-theme-editor/custom-theme-assets";
 import {
   useCallback,
   useEffect,
@@ -24,6 +25,7 @@ import {
   type CustomThemePatternKind,
   type CustomThemeTypographyRole,
   type CustomThemeTypographyToken,
+  type ProfileCustomThemeAssetMap,
   type ProfileCustomThemeConfigV1,
 } from "@/lib/profile-custom-theme";
 import {
@@ -204,6 +206,7 @@ export function CustomThemeEditor() {
   const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [mobilePanel, setMobilePanel] = useState<"settings" | "preview">("settings");
   const [previewReady, setPreviewReady] = useState(false);
+  const [assetMap, setAssetMap] = useState<ProfileCustomThemeAssetMap>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const previewSession = `custom-theme-${useId().replace(/:/g, "")}`;
   const [history, dispatch] = useReducer(historyReducer, {
@@ -251,11 +254,14 @@ export function CustomThemeEditor() {
     return () => { active = false; };
   }, [configured]);
 
-  const postPreview = useCallback((nextConfig: ProfileCustomThemeConfigV1) => {
+  const postPreview = useCallback((
+    nextConfig: ProfileCustomThemeConfigV1,
+    nextAssets: ProfileCustomThemeAssetMap,
+  ) => {
     const target = iframeRef.current?.contentWindow;
     if (!target) return;
     target.postMessage(
-      createCustomThemePreviewUpdateMessage(previewSession, nextConfig),
+      createCustomThemePreviewUpdateMessage(previewSession, nextConfig, nextAssets),
       window.location.origin,
     );
   }, [previewSession]);
@@ -269,15 +275,15 @@ export function CustomThemeEditor() {
       });
       if (!ready) return;
       setPreviewReady(true);
-      postPreview(config);
+      postPreview(config, assetMap);
     };
     window.addEventListener("message", receiveReady);
     return () => window.removeEventListener("message", receiveReady);
-  }, [config, postPreview, previewSession]);
+  }, [assetMap, config, postPreview, previewSession]);
 
   useEffect(() => {
-    if (previewReady) postPreview(config);
-  }, [config, postPreview, previewReady]);
+    if (previewReady) postPreview(config, assetMap);
+  }, [assetMap, config, postPreview, previewReady]);
 
   const commit = (next: ProfileCustomThemeConfigV1) => {
     dispatch({ type: "commit", value: next });
@@ -373,13 +379,14 @@ export function CustomThemeEditor() {
                 value={config.backgrounds.mode}
                 onChange={(event) => {
                   const next = cloneProfileCustomTheme(config);
-                  next.backgrounds.mode = event.target.value as "solid" | "gradient" | "pattern";
+                  next.backgrounds.mode = event.target.value as "solid" | "gradient" | "pattern" | "image";
                   commit(next);
                 }}
               >
                 <option value="solid">Couleur unie</option>
                 <option value="gradient">Dégradé</option>
                 <option value="pattern">Motif</option>
+                <option value="image">Image priv&#233;e</option>
               </select>
             </label>
             <ColorControl key={config.backgrounds.color} label="Couleur du fond" value={config.backgrounds.color} defaultValue={defaultProfileCustomTheme.backgrounds.color} onChange={(value) => {
@@ -400,7 +407,11 @@ export function CustomThemeEditor() {
                 <label className="custom-theme-field"><span>Opacité · {Math.round(config.backgrounds.pattern.opacity * 100)}%</span><input type="range" min="0" max="0.5" step="0.01" value={config.backgrounds.pattern.opacity} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.opacity = Number(event.target.value); commit(next); }} /></label>
               </>
             ) : null}
-            <p className="custom-theme-editor__hint">Les images de fond arrivent dans la phase Assets, après la validation de Sharp sur Vercel.</p>
+          </EditorSection>
+
+          <EditorSection title="Images et d&#233;corations">
+            <p className="custom-theme-editor__hint">Les images restent priv&#233;es tant qu&#39;un th&#232;me n&#39;est pas publi&#233;. Elles ne peuvent occuper que les emplacements s&#251;rs pr&#233;vus par le site.</p>
+            <CustomThemeAssets config={config} onCommit={commit} onAssetMapChange={setAssetMap} />
           </EditorSection>
 
           <EditorSection title="Couleurs">
@@ -431,6 +442,10 @@ export function CustomThemeEditor() {
               })}
             </div>
           </EditorSection>
+
+          <EditorSection title="Mouvements">
+            <CustomThemeMotion config={config} onCommit={commit} />
+          </EditorSection>
         </aside>
 
         <section className="custom-theme-editor__preview" data-mobile-visible={mobilePanel === "preview"} aria-label="Aperçu réel du profil">
@@ -450,7 +465,7 @@ export function CustomThemeEditor() {
               src={`/membres/${encodeURIComponent(account.username)}?previewTheme=custom&profilePreview=1&previewSession=${encodeURIComponent(previewSession)}`}
               onLoad={() => {
                 setPreviewReady(false);
-                postPreview(config);
+                postPreview(config, assetMap);
               }}
             />
           </div>
