@@ -112,7 +112,7 @@ export function TribunalBoard() {
         return;
       }
       setSignedOut(false);
-      const { data, error } = await supabase.rpc("get_tribunal_context", { p_session_id: sessionId });
+      const { data, error } = await supabase.rpc("get_tribunal_context_v2", { p_session_id: sessionId });
       if (error) throw error;
       const next = data as TribunalContext;
       setContext(next);
@@ -168,7 +168,7 @@ export function TribunalBoard() {
   const filteredReviews = useMemo(() => {
     const needle = normalise(search.trim());
     if (!needle) return context?.reviews ?? [];
-    return (context?.reviews ?? []).filter((review) => normalise(`${review.albumTitle} ${review.artist} ${review.memberName} ${review.reviewTitle ?? ""}`).includes(needle));
+    return (context?.reviews ?? []).filter((review) => normalise(`${review.albumTitle} ${review.artist} ${review.memberName} ${review.reviewTitle ?? ""} ${review.reviewExcerpt}`).includes(needle));
   }, [context?.reviews, search]);
 
   const avatarUrl = (participant: TribunalParticipant) => {
@@ -176,9 +176,9 @@ export function TribunalBoard() {
     const base = getSupabaseBrowserClient().storage.from("member-avatars").getPublicUrl(participant.avatarPath).data.publicUrl;
     return `${base}?v=${encodeURIComponent(participant.avatarUpdatedAt ?? participant.avatarPath)}`;
   };
-  const albumCover = (album: TribunalAlbum) => album.coverPath
-    ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(album.coverPath).data.publicUrl
-    : album.coverSourceUrl;
+  const evidenceCover = (evidence: { coverPath: string | null; coverSourceUrl: string | null }) => evidence.coverPath
+    ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(evidence.coverPath).data.publicUrl
+    : evidence.coverSourceUrl;
 
   const canSave = Boolean(question && !currentIsJoker && (
     question.type === "member" ? draft.targetParticipantId
@@ -198,7 +198,7 @@ export function TribunalBoard() {
     setSaving(true);
     setMessage("");
     try {
-      const { data, error } = await getSupabaseBrowserClient().rpc("save_my_tribunal_response", {
+      const { data, error } = await getSupabaseBrowserClient().rpc("save_my_tribunal_response_v2", {
         p_session_id: context.session.id,
         p_question_id: question.id,
         p_target_participant_id: draft.targetParticipantId || null,
@@ -271,7 +271,7 @@ export function TribunalBoard() {
     setLoading(true);
     setMessage("");
     try {
-      const { data, error } = await getSupabaseBrowserClient().rpc("get_tribunal_results", { p_session_id: context.session.id });
+      const { data, error } = await getSupabaseBrowserClient().rpc("get_tribunal_results_v2", { p_session_id: context.session.id });
       if (error) throw error;
       setResults(data as TribunalResults);
       setPhase("results");
@@ -368,10 +368,10 @@ export function TribunalBoard() {
         {!currentIsJoker && question.type === "member_text" ? <label className={styles.freeText}><span>TA PHRASE</span><textarea value={draft.freeText} maxLength={question.config.maxLength ?? 160} placeholder={question.config.placeholder} onChange={(event) => setDraft((current) => ({ ...current, freeText: event.target.value }))} />{question.position === 13 && draft.targetParticipantId && draft.freeText.trim() ? <strong>Les goûts de {memberOptions.find((member) => member.id === draft.targetParticipantId)?.displayName} ressemblent à {draft.freeText.trim()}</strong> : null}<small>{draft.freeText.length} / {question.config.maxLength ?? 160}</small></label> : null}
 
         {!currentIsJoker && question.type === "album" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album ou un artiste" /> : null}
-        {!currentIsJoker && question.type === "album" ? <div className={styles.albumGrid}>{filteredAlbums.map((album) => <AlbumChoice key={album.id} album={album} cover={albumCover(album)} selected={draft.targetAlbumId === album.id} onSelect={() => setDraft((current) => ({ ...current, targetAlbumId: album.id }))} />)}</div> : null}
+        {!currentIsJoker && question.type === "album" ? <div className={styles.albumGrid}>{filteredAlbums.map((album) => <AlbumChoice key={album.id} album={album} cover={evidenceCover(album)} selected={draft.targetAlbumId === album.id} onSelect={() => setDraft((current) => ({ ...current, targetAlbumId: album.id }))} />)}</div> : null}
 
         {!currentIsJoker && question.type === "review" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album, un membre ou un avis" /> : null}
-        {!currentIsJoker && question.type === "review" ? <div className={styles.reviewGrid}>{filteredReviews.map((review) => <ReviewChoice key={review.id} review={review} selected={draft.targetReviewId === review.id} onSelect={() => setDraft((current) => ({ ...current, targetReviewId: review.id }))} />)}</div> : null}
+        {!currentIsJoker && question.type === "review" ? <div className={styles.reviewGrid}>{filteredReviews.map((review) => <ReviewChoice key={review.id} review={review} cover={evidenceCover(review)} selected={draft.targetReviewId === review.id} onSelect={() => setDraft((current) => ({ ...current, targetReviewId: review.id }))} />)}</div> : null}
 
         {stamp ? <p className={styles.stamp} role="status">{stamp}</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
@@ -395,8 +395,8 @@ function AlbumChoice({ album, cover, selected, onSelect }: { album: TribunalAlbu
   return <button type="button" className={`${styles.albumChoice} ${selected ? styles.selected : ""}`} aria-pressed={selected} onClick={onSelect}>{cover ? <img src={cover} alt={`Pochette de ${album.title}`} /> : <span className={styles.coverFallback}>DOL<br />ZIKLUB</span>}<span><small>TIRAGE {drawLabel(album.drawNumber)} · PROPOSÉ PAR {album.proposedBy ?? "LE CLUB"}</small><b>{album.title}</b><em>{album.artist}</em></span>{selected ? <i>PREUVE RETENUE</i> : null}</button>;
 }
 
-function ReviewChoice({ review, selected, onSelect }: { review: TribunalReview; selected: boolean; onSelect: () => void }) {
-  return <button type="button" className={`${styles.reviewChoice} ${selected ? styles.selected : ""}`} aria-pressed={selected} onClick={onSelect}><span><small>TIRAGE {drawLabel(review.drawNumber)} · {review.memberName}</small><b>{review.albumTitle}</b><em>{review.artist}</em></span><strong>{String(review.rating).replace(".", ",")} / 5</strong>{review.reviewTitle ? <h3>{review.reviewTitle}</h3> : null}<p>{review.reviewExcerpt}</p>{selected ? <i>NOTE SUSPECTE RETENUE</i> : null}</button>;
+function ReviewChoice({ review, cover, selected, onSelect }: { review: TribunalReview; cover: string | null; selected: boolean; onSelect: () => void }) {
+  return <button type="button" className={`${styles.reviewChoice} ${selected ? styles.selected : ""}`} aria-pressed={selected} onClick={onSelect}>{cover ? <img src={cover} alt={`Pochette de ${review.albumTitle}`} /> : <span className={styles.reviewCoverFallback}>DOL<br />ZIKLUB</span>}<span><small>TIRAGE {drawLabel(review.drawNumber)} · {review.memberName}</small><b>{review.albumTitle}</b><em>{review.artist}</em></span><strong>{String(review.rating).replace(".", ",")} / 5</strong>{review.reviewTitle ? <h3>{review.reviewTitle}</h3> : null}<p>{review.reviewExcerpt}</p>{selected ? <i>NOTE SUSPECTE RETENUE</i> : null}</button>;
 }
 
 function ResultsView({ results, onBack }: { results: TribunalResults; onBack: () => void }) {

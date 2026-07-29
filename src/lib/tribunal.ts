@@ -66,6 +66,8 @@ export type TribunalReview = {
   reviewTitle: string | null;
   reviewExcerpt: string;
   drawNumber: number;
+  coverPath: string | null;
+  coverSourceUrl: string | null;
 };
 
 export type TribunalModerationItem = {

@@ -8,6 +8,7 @@ const stylesSource = readFileSync("src/app/tribunal/tribunal.module.css", "utf8"
 const headerSource = readFileSync("src/components/site-header.tsx", "utf8");
 const migrationSource = readFileSync("supabase/migrations/20260729081842_create_tribunal.sql", "utf8");
 const jokerMigrationSource = readFileSync("supabase/migrations/20260729090804_add_tribunal_joker.sql", "utf8");
+const completeArchiveMigrationSource = readFileSync("supabase/migrations/20260729093433_extend_tribunal_to_complete_archives.sql", "utf8");
 
 const expectedPrompts = [
   "Qui a les goûts musicaux les plus merdiques ?",
@@ -80,6 +81,31 @@ test("allows one permanent joker per member and edition without affecting result
   assert.match(migrationSource, /and not response\.is_hidden/);
   assert.match(stylesSource, /\.jokerNotice/);
   assert.match(stylesSource, /\.jokerAction/);
+});
+
+test("offers every historical album and review with covers and durable archive answers", () => {
+  assert.match(completeArchiveMigrationSource, /create table private\.tribunal_archive_albums/);
+  assert.match(completeArchiveMigrationSource, /\('archive-1', 1, 1, 'Bunka'/);
+  assert.match(completeArchiveMigrationSource, /\('archive-49', 49, 6, 'FANTASYLAND'/);
+  assert.equal(
+    (completeArchiveMigrationSource.match(/^  \('archive-\d+', \d+, \d+,/gm) ?? []).length,
+    49,
+  );
+  assert.match(completeArchiveMigrationSource, /private\.tribunal_album_evidence\(\)/);
+  assert.match(completeArchiveMigrationSource, /private\.tribunal_review_evidence\(\)/);
+  assert.match(completeArchiveMigrationSource, /entry\.archive_number is null or entry\.archive_number > 49/);
+  assert.match(completeArchiveMigrationSource, /target_archive_album_id text/);
+  assert.match(completeArchiveMigrationSource, /target_archive_review_id text/);
+  assert.match(completeArchiveMigrationSource, /save_my_tribunal_response_v2/);
+  assert.match(completeArchiveMigrationSource, /get_tribunal_context_v2/);
+  assert.match(completeArchiveMigrationSource, /get_tribunal_results_v2/);
+  assert.match(completeArchiveMigrationSource, /coverSourceUrl/);
+  assert.match(boardSource, /get_tribunal_context_v2/);
+  assert.match(boardSource, /save_my_tribunal_response_v2/);
+  assert.match(boardSource, /get_tribunal_results_v2/);
+  assert.match(boardSource, /cover=\{evidenceCover\(review\)\}/);
+  assert.match(boardSource, /Pochette de \$\{review\.albumTitle\}/);
+  assert.match(stylesSource, /\.reviewCoverFallback/);
 });
 
 test("keeps responses authenticated, unique, anonymous and moderated without deletion", () => {
