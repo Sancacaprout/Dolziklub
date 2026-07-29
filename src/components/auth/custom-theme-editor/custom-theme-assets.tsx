@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CUSTOM_THEME_MAX_DECORATIONS,
   cloneProfileCustomTheme,
@@ -53,6 +53,7 @@ export function CustomThemeAssets({
   const [assets, setAssets] = useState<ProfileCustomThemeAsset[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -66,13 +67,20 @@ export function CustomThemeAssets({
     return () => { active = false; };
   }, []);
 
-  useEffect(() => {
-    const referenced = new Set(referencedProfileThemeAssetIds(config));
+  const syncAssetMap = useCallback((
+    nextConfig: ProfileCustomThemeConfigV1,
+    availableAssets: ProfileCustomThemeAsset[] = assets,
+  ) => {
+    const referenced = new Set(referencedProfileThemeAssetIds(nextConfig));
     const map = Object.fromEntries(
-      assets.filter((asset) => referenced.has(asset.id)).map((asset) => [asset.id, asset.signedUrl]),
+      availableAssets.filter((asset) => referenced.has(asset.id)).map((asset) => [asset.id, asset.signedUrl]),
     );
     onAssetMapChange(map);
-  }, [assets, config, onAssetMapChange]);
+  }, [assets, onAssetMapChange]);
+
+  useEffect(() => {
+    syncAssetMap(config);
+  }, [config, syncAssetMap]);
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
@@ -83,7 +91,9 @@ export function CustomThemeAssets({
       body.set("file", file);
       const payload = await assetRequest("/api/profile-theme/assets", { method: "POST", body });
       if (!payload?.asset) throw new Error("La réponse de l’upload est incomplète.");
-      setAssets((current) => [payload.asset as ProfileCustomThemeAsset, ...current]);
+      const uploadedAsset = payload.asset as ProfileCustomThemeAsset;
+      setAssets((current) => [uploadedAsset, ...current]);
+      setSelectedAssetId(uploadedAsset.id);
       setMessage("Image privée convertie en WebP et enregistrée.");
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : "L’image n’a pas pu être envoyée.");
@@ -97,7 +107,10 @@ export function CustomThemeAssets({
     const next = cloneProfileCustomTheme(config);
     next.backgrounds.mode = "image";
     next.backgrounds.image.assetId = assetId;
+    syncAssetMap(next);
     onCommit(next);
+    setSelectedAssetId(assetId);
+    setMessage("Image appliqu\u00e9e au fond. Ajuste son cadrage juste en dessous.");
   };
 
   const addDecoration = (assetId: string) => {
@@ -114,7 +127,10 @@ export function CustomThemeAssets({
       visibility: "all",
       alt: "",
     });
+    syncAssetMap(next);
     onCommit(next);
+    setSelectedAssetId(assetId);
+    setMessage("D\u00e9coration ajout\u00e9e dans un emplacement s\u00fbr. Ses r\u00e9glages sont affich\u00e9s plus bas.");
   };
 
   const removeAsset = async (asset: ProfileCustomThemeAsset) => {
@@ -148,6 +164,10 @@ export function CustomThemeAssets({
 
   return (
     <>
+      <div className="custom-theme-asset-examples">
+        <p><b>Image de fond</b><span>Exemple : une texture papier, une photo floue ou une pochette qui couvre toute la page derrière le profil.</span></p>
+        <p><b>Décoration</b><span>Exemple : un sticker, une étoile ou un petit dessin placé dans l’un des huit emplacements autorisés.</span></p>
+      </div>
       <label className="custom-theme-asset-upload">
         <span>Ajouter une image privée</span>
         <input
@@ -163,7 +183,7 @@ export function CustomThemeAssets({
       {assets.length ? (
         <div className="custom-theme-asset-grid">
           {assets.map((asset) => (
-            <article key={asset.id}>
+            <article key={asset.id} data-selected={selectedAssetId === asset.id}>
               {/* URL privée signée, produite uniquement par notre API. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={asset.signedUrl} alt="Aperçu de l’image importée" />
@@ -220,9 +240,15 @@ export function CustomThemeMotion({
     next.motion = { ...next.motion, ...patch };
     onCommit(next);
   };
+  const applyPreset = (preset: "subtle" | "dynamic" | "glow") => {
+    if (preset === "subtle") update({ entrance: "fade", hover: "lift", link: "underline", duration: 200 });
+    if (preset === "dynamic") update({ entrance: "slide", hover: "zoom", link: "underline", duration: 300 });
+    if (preset === "glow") update({ entrance: "fade", hover: "glow", link: "underline", duration: 350 });
+  };
   return (
     <>
       <label className="custom-theme-field"><span>Entrée des sections</span><select value={config.motion.entrance} onChange={(event) => update({ entrance: event.target.value as "none" | "fade" | "slide" })}><option value="none">Aucune</option><option value="fade">Fondu</option><option value="slide">Glissement court</option></select></label>
+      <div className="custom-theme-motion-presets" role="group" aria-label="Ambiances de mouvement"><button type="button" onClick={() => applyPreset("subtle")}>Subtil</button><button type="button" onClick={() => applyPreset("dynamic")}>Dynamique</button><button type="button" onClick={() => applyPreset("glow")}>Halo</button></div>
       <label className="custom-theme-field"><span>Survol général</span><select value={config.motion.hover} onChange={(event) => update({ hover: event.target.value as "none" | "lift" | "zoom" | "glow" })}><option value="none">Aucun</option><option value="lift">Soulèvement</option><option value="zoom">Zoom léger</option><option value="glow">Halo</option></select></label>
       <label className="custom-theme-field"><span>Liens</span><select value={config.motion.link} onChange={(event) => update({ link: event.target.value as "none" | "underline" })}><option value="none">Standard</option><option value="underline">Soulignement animé</option></select></label>
       <label className="custom-theme-field"><span>Durée · {config.motion.duration} ms</span><input type="range" min="100" max="400" step="25" value={config.motion.duration} onChange={(event) => update({ duration: Number(event.target.value) })} /></label>

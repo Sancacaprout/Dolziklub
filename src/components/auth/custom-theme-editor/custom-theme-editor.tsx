@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CustomThemeAssets, CustomThemeMotion } from "@/components/auth/custom-theme-editor/custom-theme-assets";
+import { CustomThemeTutorial } from "@/components/auth/custom-theme-editor/custom-theme-tutorial";
 import {
   useCallback,
   useEffect,
@@ -81,6 +82,12 @@ const fontLabels: Record<CustomThemeFontFamily, string> = {
   "dm-mono": "DM Mono",
   "system-sans": "Sans-serif système",
   "system-serif": "Serif système",
+  "editorial-serif": "Serif éditoriale (Didot / Bodoni)",
+  "humanist-sans": "Sans humaniste (Trebuchet)",
+  "condensed-sans": "Sans condensée (Arial Narrow)",
+  "rounded-sans": "Sans arrondie",
+  typewriter: "Machine à écrire",
+  poster: "Affiche épaisse (Impact)",
 };
 
 const patternLabels: Record<CustomThemePatternKind, string> = {
@@ -153,11 +160,16 @@ function ColorControl({
   onChange: (value: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
+  const [pickerDraft, setPickerDraft] = useState(value);
 
   const applyDraft = () => {
     const normalized = draft.toUpperCase();
     if (HEX_COLOR.test(normalized)) onChange(normalized);
     else setDraft(value);
+  };
+  const applyPicker = () => {
+    const normalized = pickerDraft.toUpperCase();
+    if (normalized !== value && HEX_COLOR.test(normalized)) onChange(normalized);
   };
 
   return (
@@ -166,8 +178,10 @@ function ColorControl({
         <span>{label}</span>
         <input
           type="color"
-          value={value}
-          onChange={(event) => onChange(event.target.value.toUpperCase())}
+          value={pickerDraft}
+          onInput={(event) => setPickerDraft(event.currentTarget.value.toUpperCase())}
+          onChange={(event) => setPickerDraft(event.currentTarget.value.toUpperCase())}
+          onBlur={applyPicker}
         />
         <input
           className="custom-theme-color-field__hex"
@@ -207,7 +221,9 @@ export function CustomThemeEditor() {
   const [mobilePanel, setMobilePanel] = useState<"settings" | "preview">("settings");
   const [previewReady, setPreviewReady] = useState(false);
   const [assetMap, setAssetMap] = useState<ProfileCustomThemeAssetMap>({});
+  const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const previewRef = useRef<HTMLElement>(null);
   const previewSession = `custom-theme-${useId().replace(/:/g, "")}`;
   const [history, dispatch] = useReducer(historyReducer, {
     past: [],
@@ -305,6 +321,17 @@ export function CustomThemeEditor() {
     commit(next);
   };
 
+  useEffect(() => {
+    const updateFullscreenState = () => setIsPreviewFullscreen(document.fullscreenElement === previewRef.current);
+    document.addEventListener("fullscreenchange", updateFullscreenState);
+    return () => document.removeEventListener("fullscreenchange", updateFullscreenState);
+  }, []);
+
+  const togglePreviewFullscreen = async () => {
+    if (document.fullscreenElement === previewRef.current) await document.exitFullscreen();
+    else await previewRef.current?.requestFullscreen();
+  };
+
   const iframeWidth = viewport === "desktop" ? 1280 : viewport === "tablet" ? 768 : 390;
 
   if (accountError) {
@@ -343,6 +370,7 @@ export function CustomThemeEditor() {
         <button type="button" onClick={() => dispatch({ type: "undo" })} disabled={!history.past.length}>Annuler</button>
         <button type="button" onClick={() => dispatch({ type: "redo" })} disabled={!history.future.length}>Rétablir</button>
         <button type="button" onClick={() => dispatch({ type: "reset" })}>Tout réinitialiser</button>
+        <CustomThemeTutorial />
         <span aria-live="polite">{history.past.length + 1} état{history.past.length ? "s" : ""} local{history.past.length ? "aux" : ""}</span>
       </nav>
 
@@ -443,19 +471,42 @@ export function CustomThemeEditor() {
             </div>
           </EditorSection>
 
+          <EditorSection title="Cartes et cadres">
+            <p className="custom-theme-editor__hint">Tu modifies seulement la finition. Les grilles, l’ordre, la taille des colonnes et le contenu restent imposés par le site.</p>
+            {(["album", "track"] as const).map((cardType) => {
+              const target = cardType === "album" ? "albumCard" : "trackCard";
+              const label = cardType === "album" ? "Albums" : "Morceaux";
+              const card = config.cards[cardType];
+              return (
+                <fieldset className="custom-theme-card-controls" key={cardType}>
+                  <legend>{label}</legend>
+                  <label className="custom-theme-field"><span>Coins des cartes et jaquettes · {config.radii[target]} px</span><input type="range" min="0" max="32" value={config.radii[target]} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.radii[target] = Number(event.target.value); commit(next); }} /></label>
+                  <label className="custom-theme-field"><span>Cadre de la jaquette</span><select value={card.imageFrame} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].imageFrame = event.target.value as "none" | "line" | "double"; commit(next); }}><option value="none">Sans cadre</option><option value="line">Trait simple</option><option value="double">Double trait</option></select></label>
+                  <ColorControl key={`${cardType}-${card.background}`} label="Fond de la carte" value={card.background} defaultValue={defaultProfileCustomTheme.cards[cardType].background} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].background = value; commit(next); }} />
+                  <label className="custom-theme-field"><span>Mouvement au survol</span><select value={card.hover} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].hover = event.target.value as "none" | "lift" | "zoom" | "glow"; commit(next); }}><option value="none">Aucun</option><option value="lift">Soulèvement</option><option value="zoom">Zoom léger</option><option value="glow">Halo</option></select></label>
+                  <label className="custom-theme-field"><span>Inclinaison · {card.rotation.toFixed(1)}°</span><input type="range" min="-3" max="3" step="0.5" value={card.rotation} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].rotation = Number(event.target.value); commit(next); }} /></label>
+                  <button type="button" className="custom-theme-editor__reset-property" onClick={() => { const next = cloneProfileCustomTheme(config); next.cards[cardType] = cloneProfileCustomTheme().cards[cardType]; next.radii[target] = cloneProfileCustomTheme().radii[target]; commit(next); }}>Réinitialiser ces cadres</button>
+                </fieldset>
+              );
+            })}
+          </EditorSection>
+
           <EditorSection title="Mouvements">
             <CustomThemeMotion config={config} onCommit={commit} />
           </EditorSection>
         </aside>
 
-        <section className="custom-theme-editor__preview" data-mobile-visible={mobilePanel === "preview"} aria-label="Aperçu réel du profil">
+        <section ref={previewRef} className="custom-theme-editor__preview" data-mobile-visible={mobilePanel === "preview"} aria-label="Aperçu réel du profil">
           <div className="custom-theme-editor__preview-bar">
             <div role="group" aria-label="Largeur de l’aperçu">
               {(["desktop", "tablet", "mobile"] as const).map((size) => (
                 <button key={size} type="button" className={viewport === size ? "is-selected" : ""} aria-pressed={viewport === size} onClick={() => setViewport(size)}>{size === "desktop" ? "Ordinateur" : size === "tablet" ? "Tablette" : "Mobile"}</button>
               ))}
             </div>
-            <span>{iframeWidth}px · {previewReady ? "APERÇU SYNCHRONISÉ" : "CHARGEMENT"}</span>
+            <div className="custom-theme-editor__preview-status">
+              <span>{iframeWidth}px · {previewReady ? "APERÇU SYNCHRONISÉ" : "CHARGEMENT"}</span>
+              <button type="button" onClick={() => void togglePreviewFullscreen()}>{isPreviewFullscreen ? "Quitter le plein écran" : "Plein écran"}</button>
+            </div>
           </div>
           <div className="custom-theme-editor__preview-canvas">
             <iframe

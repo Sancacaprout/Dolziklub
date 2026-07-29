@@ -9,6 +9,12 @@ export const customThemeFontFamilies = [
   "dm-mono",
   "system-sans",
   "system-serif",
+  "editorial-serif",
+  "humanist-sans",
+  "condensed-sans",
+  "rounded-sans",
+  "typewriter",
+  "poster",
 ] as const;
 
 export const customThemeTypographyRoles = [

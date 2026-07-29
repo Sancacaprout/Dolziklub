@@ -8,6 +8,7 @@ import {
   cloneProfileCustomTheme,
   compileProfileCustomTheme,
   customThemeContrastRatio,
+  customThemeFontFamilies,
   customThemeInspirations,
   defaultProfileCustomTheme,
   profileCustomThemeByteLength,
@@ -45,8 +46,11 @@ test("the validator rejects unknown, hostile and out-of-range values", () => {
 
 test("the compiler only emits explicit visual variables and safe enum classes", () => {
   const compiled = compileProfileCustomTheme(defaultProfileCustomTheme);
-  assert.equal(compiled.style["--profile-custom-page"], "#F5F1E8");
+  assert.equal(compiled.style["--profile-custom-page"], defaultProfileCustomTheme.colors.page);
   assert.ok(compiled.classes.includes("profile-custom-bg-solid"));
+  assert.ok(customThemeFontFamilies.includes("poster"));
+  assert.equal(defaultProfileCustomTheme.shadows.albumCard.kind, "none");
+  assert.equal(defaultProfileCustomTheme.motion.entrance, "none");
   assert.doesNotMatch(Object.keys(compiled.style).join(" "), /--profile-custom-(?:display|visibility|order)\\b|grid-area|z-index/);
   assert.doesNotMatch(compilerSource, /innerHTML|cssText|eval\(|new Function/);
 });

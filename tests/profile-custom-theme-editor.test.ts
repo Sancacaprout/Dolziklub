@@ -23,6 +23,14 @@ const memberPageSource = readFileSync(
   new URL("../src/app/membres/[slug]/page.tsx", import.meta.url),
   "utf8",
 );
+const tutorialSource = readFileSync(
+  new URL("../src/components/auth/custom-theme-editor/custom-theme-tutorial.tsx", import.meta.url),
+  "utf8",
+);
+const customThemeStyles = readFileSync(
+  new URL("../src/app/profile-custom-theme.css", import.meta.url),
+  "utf8",
+);
 
 test("preview messages require the exact origin, window and session", () => {
   const source = {} as MessageEventSource;
@@ -92,4 +100,19 @@ test("phase two exposes the full color, typography and inspiration controls", ()
   assert.match(editorSource, /Ordinateur/);
   assert.match(editorSource, /Tablette/);
   assert.match(editorSource, /Mobile/);
+});
+
+test("editor polish keeps color picking stable and adds safe visual controls", () => {
+  assert.match(editorSource, /onInput=\{\(event\) => setPickerDraft/);
+  assert.match(editorSource, /onBlur=\{applyPicker\}/);
+  assert.match(editorSource, /requestFullscreen\(\)/);
+  assert.match(editorSource, /Coins des cartes et jaquettes/);
+  assert.match(customThemeStyles, /border-radius: var\(--profile-custom-album-card-radius\)/);
+  assert.match(customThemeStyles, /profile-custom-album-frame-line[\s\S]*box-shadow: none/);
+});
+
+test("the complete tutorial is skippable, relaunchable and keyboard friendly", () => {
+  assert.match(tutorialSource, /const steps = \[[\s\S]*08 · FILET DE SÉCURITÉ/);
+  assert.match(tutorialSource, /useSyncExternalStore/);
+  assert.match(tutorialSource, /aria-modal="true"[\s\S]*event\.key === "Escape"[\s\S]*event\.key === "Tab"/);
 });

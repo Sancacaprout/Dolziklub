@@ -2,7 +2,18 @@ import type { CSSProperties } from "react";
 import type { CustomThemeBoxTarget, CustomThemeShadowToken, ProfileCustomThemeAssetMap, ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
 
 type CustomThemeStyle = CSSProperties & Record<`--${string}`, string | number>;
-const fontStacks = { "space-grotesk": "var(--font-display), Arial, sans-serif", "dm-mono": "var(--font-mono), Consolas, monospace", "system-sans": "Arial, Helvetica, sans-serif", "system-serif": "Georgia, 'Times New Roman', serif" } as const;
+const fontStacks = {
+  "space-grotesk": "var(--font-display), Arial, sans-serif",
+  "dm-mono": "var(--font-mono), Consolas, monospace",
+  "system-sans": "Arial, Helvetica, sans-serif",
+  "system-serif": "Georgia, 'Times New Roman', serif",
+  "editorial-serif": "Didot, 'Bodoni MT', Georgia, serif",
+  "humanist-sans": "'Trebuchet MS', Verdana, sans-serif",
+  "condensed-sans": "'Arial Narrow', 'Liberation Sans Narrow', Arial, sans-serif",
+  "rounded-sans": "'Arial Rounded MT Bold', 'Trebuchet MS', Arial, sans-serif",
+  typewriter: "'Courier New', Courier, monospace",
+  poster: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
+} as const;
 const targetNames: Record<CustomThemeBoxTarget, string> = { header: "header", quiz: "quiz", albumCard: "album-card", trackCard: "track-card", podium: "podium", video: "video", stats: "stats", listened: "listened", proposed: "proposed", bonus: "bonus", button: "button", badge: "badge" };
 
 function shadowValue(token: CustomThemeShadowToken) {
