@@ -140,4 +140,7 @@ test("keeps the evidence-board UI keyboard, mobile and motion accessible", () =>
   assert.match(stylesSource, /@media \(max-width:620px\)/);
   assert.match(stylesSource, /@media \(prefers-reduced-motion:reduce\)/);
   assert.match(stylesSource, /min-height:44px/);
+  assert.match(stylesSource, /\.evidenceStack strong \{[^}]*place-items:center/);
+  assert.match(stylesSource, /\.evidenceStack strong \{[^}]*box-sizing:border-box/);
+  assert.match(stylesSource, /\.evidenceStack strong \{[^}]*white-space:nowrap/);
 });
