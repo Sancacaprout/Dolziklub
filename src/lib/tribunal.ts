@@ -7,6 +7,7 @@ export type TribunalAnswer = {
   targetAlbumId: string | null;
   targetReviewId: string | null;
   freeText: string | null;
+  isJoker?: boolean;
 };
 
 export type TribunalQuestion = {

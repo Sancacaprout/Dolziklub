@@ -51,6 +51,16 @@ function answerToDraft(answer: TribunalAnswer | null): DraftAnswer {
   };
 }
 
+function isJokerAnswer(answer: TribunalAnswer | null) {
+  return Boolean(answer?.isJoker || (
+    answer
+    && answer.targetParticipantId === null
+    && answer.targetAlbumId === null
+    && answer.targetReviewId === null
+    && answer.freeText === null
+  ));
+}
+
 function initials(name: string) {
   return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toLocaleUpperCase();
 }
@@ -129,6 +139,9 @@ export function TribunalBoard() {
   );
   const question = questions[questionIndex] ?? null;
   const completedCount = questions.filter((item) => item.answer).length;
+  const jokerUsed = questions.some((item) => isJokerAnswer(item.answer));
+  const currentIsJoker = isJokerAnswer(question?.answer ?? null);
+  const answeredCount = completedCount - (jokerUsed ? 1 : 0);
   const progress = questions.length ? Math.round((completedCount / questions.length) * 100) : 0;
 
   useEffect(() => {
@@ -167,7 +180,7 @@ export function TribunalBoard() {
     ? getSupabaseBrowserClient().storage.from("album-covers").getPublicUrl(album.coverPath).data.publicUrl
     : album.coverSourceUrl;
 
-  const canSave = Boolean(question && (
+  const canSave = Boolean(question && !currentIsJoker && (
     question.type === "member" ? draft.targetParticipantId
       : question.type === "member_text" ? draft.targetParticipantId && draft.freeText.trim() && draft.freeText.trim().length <= (question.config.maxLength ?? 160)
         : question.type === "album" ? draft.targetAlbumId
@@ -213,6 +226,41 @@ export function TribunalBoard() {
       else setQuestionIndex((index) => index + 1);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "La réponse n’a pas pu être enregistrée.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const spendJoker = async () => {
+    if (!context?.session || !question || question.answer || jokerUsed || saving) return;
+    if (!confirm("Utiliser ton unique joker pour cette édition ? Cette question sera définitivement passée.")) return;
+    setSaving(true);
+    setMessage("");
+    try {
+      const { data, error } = await getSupabaseBrowserClient().rpc("use_my_tribunal_joker", {
+        p_session_id: context.session.id,
+        p_question_id: question.id,
+      });
+      if (error) throw error;
+      const saved = data as TribunalAnswer;
+      setContext((current) => {
+        if (!current?.session) return current;
+        const nextQuestions = current.questions.map((item) => item.id === question.id ? { ...item, answer: saved } : item);
+        return {
+          ...current,
+          questions: nextQuestions,
+          session: {
+            ...current.session,
+            completedCount: nextQuestions.filter((item) => item.isActive && item.answer).length,
+          },
+        };
+      });
+      setStamp("JOKER UTILISÉ · DOSSIER CLASSÉ SANS SUITE");
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      if (questionIndex >= questions.length - 1) setPhase("complete");
+      else setQuestionIndex((index) => index + 1);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Le joker n’a pas pu être utilisé.");
     } finally {
       setSaving(false);
     }
@@ -309,28 +357,29 @@ export function TribunalBoard() {
       <div className={styles.questionCard} key={question.id}>
         <span className={styles.exhibit}>PIÈCE N° {String(question.position).padStart(2, "0")}</span>
         <h2 id="tribunal-question">{question.prompt}</h2>
+        {currentIsJoker ? <div className={styles.jokerNotice} role="status"><b>JOKER UTILISÉ</b><span>Cette question est classée sans réponse. Ton joker est consommé pour cette édition.</span></div> : null}
 
-        {(question.type === "member" || question.type === "member_text") ? <div className={styles.memberGrid}>{memberOptions.map((participant) => {
+        {!currentIsJoker && (question.type === "member" || question.type === "member_text") ? <div className={styles.memberGrid}>{memberOptions.map((participant) => {
           const avatar = avatarUrl(participant);
           const selected = draft.targetParticipantId === participant.id;
           return <button key={participant.id} type="button" className={`${styles.memberChoice} ${selected ? styles.selected : ""}`} aria-pressed={selected} onClick={() => setDraft((current) => ({ ...current, targetParticipantId: participant.id }))}>{avatar ? <img src={avatar} alt="" /> : <span aria-hidden="true">{initials(participant.displayName)}</span>}<b>{participant.displayName}</b><small>@{participant.username}</small>{selected ? <i>SÉLECTIONNÉ</i> : null}</button>;
         })}</div> : null}
 
-        {question.type === "member_text" ? <label className={styles.freeText}><span>TA PHRASE</span><textarea value={draft.freeText} maxLength={question.config.maxLength ?? 160} placeholder={question.config.placeholder} onChange={(event) => setDraft((current) => ({ ...current, freeText: event.target.value }))} />{question.position === 13 && draft.targetParticipantId && draft.freeText.trim() ? <strong>Les goûts de {memberOptions.find((member) => member.id === draft.targetParticipantId)?.displayName} ressemblent à {draft.freeText.trim()}</strong> : null}<small>{draft.freeText.length} / {question.config.maxLength ?? 160}</small></label> : null}
+        {!currentIsJoker && question.type === "member_text" ? <label className={styles.freeText}><span>TA PHRASE</span><textarea value={draft.freeText} maxLength={question.config.maxLength ?? 160} placeholder={question.config.placeholder} onChange={(event) => setDraft((current) => ({ ...current, freeText: event.target.value }))} />{question.position === 13 && draft.targetParticipantId && draft.freeText.trim() ? <strong>Les goûts de {memberOptions.find((member) => member.id === draft.targetParticipantId)?.displayName} ressemblent à {draft.freeText.trim()}</strong> : null}<small>{draft.freeText.length} / {question.config.maxLength ?? 160}</small></label> : null}
 
-        {question.type === "album" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album ou un artiste" /> : null}
-        {question.type === "album" ? <div className={styles.albumGrid}>{filteredAlbums.map((album) => <AlbumChoice key={album.id} album={album} cover={albumCover(album)} selected={draft.targetAlbumId === album.id} onSelect={() => setDraft((current) => ({ ...current, targetAlbumId: album.id }))} />)}</div> : null}
+        {!currentIsJoker && question.type === "album" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album ou un artiste" /> : null}
+        {!currentIsJoker && question.type === "album" ? <div className={styles.albumGrid}>{filteredAlbums.map((album) => <AlbumChoice key={album.id} album={album} cover={albumCover(album)} selected={draft.targetAlbumId === album.id} onSelect={() => setDraft((current) => ({ ...current, targetAlbumId: album.id }))} />)}</div> : null}
 
-        {question.type === "review" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album, un membre ou un avis" /> : null}
-        {question.type === "review" ? <div className={styles.reviewGrid}>{filteredReviews.map((review) => <ReviewChoice key={review.id} review={review} selected={draft.targetReviewId === review.id} onSelect={() => setDraft((current) => ({ ...current, targetReviewId: review.id }))} />)}</div> : null}
+        {!currentIsJoker && question.type === "review" ? <ChoiceSearch value={search} onChange={setSearch} label="Chercher un album, un membre ou un avis" /> : null}
+        {!currentIsJoker && question.type === "review" ? <div className={styles.reviewGrid}>{filteredReviews.map((review) => <ReviewChoice key={review.id} review={review} selected={draft.targetReviewId === review.id} onSelect={() => setDraft((current) => ({ ...current, targetReviewId: review.id }))} />)}</div> : null}
 
         {stamp ? <p className={styles.stamp} role="status">{stamp}</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
-        <footer className={styles.questionActions}>{questionIndex > 0 ? <button type="button" onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}<button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>{saving ? "ENREGISTREMENT…" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}</button></footer>
+        <footer className={styles.questionActions}>{questionIndex > 0 ? <button type="button" onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}{!jokerUsed && !question.answer ? <button type="button" className={styles.jokerAction} disabled={saving} onClick={() => void spendJoker()}>{saving ? "CLASSEMENT…" : "UTILISER MON JOKER · 1 FOIS"}</button> : null}{currentIsJoker ? <button type="button" className={styles.validate} onClick={() => { if (questionIndex >= questions.length - 1) setPhase("complete"); else setQuestionIndex((index) => index + 1); }}>{questionIndex >= questions.length - 1 ? "TERMINER" : "QUESTION SUIVANTE"}</button> : <button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>{saving ? "ENREGISTREMENT…" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}</button>}</footer>
       </div>
     </section> : null}
 
-    {phase === "complete" && context?.session ? <section className={styles.complete}><p className={styles.kicker}>DOSSIER DÉPOSÉ</p><h2>Tu as livré<br /><em>tes seize balles perdues.</em></h2><div><b>{completedCount}</b><span>RÉPONSES ENREGISTRÉES</span></div>{context.session.status === "results_revealed" ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults()}>VOIR LES DÉGÂTS</button> : <p>Les résultats apparaîtront quand l’administration aura fermé puis révélé l’édition.</p>}<button type="button" className={styles.textAction} onClick={() => { setQuestionIndex(0); setPhase("question"); }}>REVOIR MES RÉPONSES</button></section> : null}
+    {phase === "complete" && context?.session ? <section className={styles.complete}><p className={styles.kicker}>DOSSIER DÉPOSÉ</p><h2>Tu as livré<br /><em>tes seize balles perdues.</em></h2><div><b>{answeredCount}</b><span>RÉPONSES ENREGISTRÉES{jokerUsed ? " · 1 JOKER UTILISÉ" : ""}</span></div>{context.session.status === "results_revealed" ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults()}>VOIR LES DÉGÂTS</button> : <p>Les résultats apparaîtront quand l’administration aura fermé puis révélé l’édition.</p>}<button type="button" className={styles.textAction} onClick={() => { setQuestionIndex(0); setPhase("question"); }}>REVOIR MES RÉPONSES</button></section> : null}
 
     {phase === "results" && results ? <ResultsView results={results} onBack={() => setPhase("intro")} /> : null}
 

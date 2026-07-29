@@ -40,6 +40,26 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "tribunal-one-joker",
+    version: "2.13",
+    date: "2026-07-29",
+    title: "Un joker entre au Tribunal",
+    summary: "Chaque membre peut désormais passer une seule question par édition grâce à un joker personnel.",
+    categories: ["Nouvelle fonctionnalité", "Amélioration"],
+    added: [
+      { text: "Le bouton « Utiliser mon joker » permet de classer une question sans y répondre." },
+      { text: "Chaque membre ne dispose que d’un seul joker par édition, même en cas de double clic ou de plusieurs onglets." },
+    ],
+    fixed: [],
+    improved: [
+      { text: "La question passée compte dans la progression mais le joker est exclu des votes, pourcentages et classements." },
+    ],
+    links: [
+      { label: "Entrer au Tribunal", href: "/tribunal" },
+    ],
+  },
+
+  {
     id: "tribunal-validation-stamp-duration",
     version: "2.12",
     date: "2026-07-29",

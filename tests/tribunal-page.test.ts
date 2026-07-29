@@ -7,6 +7,7 @@ const boardSource = readFileSync("src/components/tribunal-board.tsx", "utf8");
 const stylesSource = readFileSync("src/app/tribunal/tribunal.module.css", "utf8");
 const headerSource = readFileSync("src/components/site-header.tsx", "utf8");
 const migrationSource = readFileSync("supabase/migrations/20260729081842_create_tribunal.sql", "utf8");
+const jokerMigrationSource = readFileSync("supabase/migrations/20260729090804_add_tribunal_joker.sql", "utf8");
 
 const expectedPrompts = [
   "Qui a les goûts musicaux les plus merdiques ?",
@@ -59,6 +60,26 @@ test("supports progress, immediate persistence, resuming and editing answers", (
   assert.match(boardSource, /maxLength=\{question\.config\.maxLength \?\? 160\}/);
   assert.match(boardSource, /Chercher un album ou un artiste/);
   assert.match(boardSource, /Chercher un album, un membre ou un avis/);
+});
+
+test("allows one permanent joker per member and edition without affecting results", () => {
+  assert.match(boardSource, /use_my_tribunal_joker/);
+  assert.match(boardSource, /UTILISER MON JOKER · 1 FOIS/);
+  assert.match(boardSource, /JOKER UTILISÉ · DOSSIER CLASSÉ SANS SUITE/);
+  assert.match(boardSource, /currentIsJoker/);
+  assert.match(boardSource, /answeredCount/);
+  assert.match(jokerMigrationSource, /add column if not exists is_joker boolean not null default false/);
+  assert.match(jokerMigrationSource, /create unique index if not exists tribunal_responses_one_joker_per_member_session_idx/);
+  assert.match(jokerMigrationSource, /where is_joker/);
+  assert.match(jokerMigrationSource, /new\.is_hidden := true/);
+  assert.match(jokerMigrationSource, /hidden_by = respondent_participant_id/);
+  assert.match(jokerMigrationSource, /old\.is_joker and not new\.is_joker/);
+  assert.match(jokerMigrationSource, /Un joker ne peut contenir aucune réponse/);
+  assert.match(jokerMigrationSource, /function public\.use_my_tribunal_joker/);
+  assert.match(jokerMigrationSource, /revoke all on function public\.use_my_tribunal_joker\(bigint, bigint\) from public, anon, authenticated/);
+  assert.match(migrationSource, /and not response\.is_hidden/);
+  assert.match(stylesSource, /\.jokerNotice/);
+  assert.match(stylesSource, /\.jokerAction/);
 });
 
 test("keeps responses authenticated, unique, anonymous and moderated without deletion", () => {
