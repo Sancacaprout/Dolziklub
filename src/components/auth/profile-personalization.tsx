@@ -19,7 +19,7 @@ type Account = {
   displayName: string;
 };
 
-export function ProfilePersonalization() {
+export function ProfilePersonalization({ customThemeEnabled = false }: { customThemeEnabled?: boolean }) {
   const configured = isSupabaseConfigured();
   const [account, setAccount] = useState<Account | null>(null);
   const [savedTheme, setSavedTheme] = useState<ProfileThemeId>(defaultProfileTheme);
@@ -212,7 +212,7 @@ export function ProfilePersonalization() {
         <fieldset className="theme-picker">
           <legend>Thème de profil</legend>
           <div className="theme-picker__grid">
-            {profileThemes.map((theme) => (
+            {profileThemes.filter((theme) => theme.id !== "custom" || customThemeEnabled).map((theme) => (
               <article
                 key={theme.id}
                 className={`theme-card profile-theme${

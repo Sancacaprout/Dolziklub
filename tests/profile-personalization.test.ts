@@ -8,9 +8,9 @@ const themeEditor = readFileSync(new URL("../src/components/auth/profile-persona
 const uploadField = readFileSync(new URL("../src/components/image-upload-field.tsx", import.meta.url), "utf8");
 const musicAssist = readFileSync(new URL("../src/components/music-assist.tsx", import.meta.url), "utf8");
 
-test("the profile theme catalogue contains the club default and fifteen visual themes", () => {
-  assert.equal(profileThemes.length, 16);
-  assert.equal(new Set(profileThemeIds).size, 16);
+test("the profile theme catalogue contains the club default, fifteen visual themes and the custom editor", () => {
+  assert.equal(profileThemes.length, 17);
+  assert.equal(new Set(profileThemeIds).size, 17);
   assert.equal(defaultProfileTheme, "dol-ziklub");
   assert.equal(isProfileThemeId("dol-ziklub"), true);
   assert.equal(isProfileThemeId("dark-vinyl"), true);
@@ -19,6 +19,7 @@ test("the profile theme catalogue contains the club default and fifteen visual t
   assert.equal(isProfileThemeId("manga-panel"), true);
   assert.equal(isProfileThemeId("cassette-sunset"), true);
   assert.equal(isProfileThemeId("museum-white"), true);
+  assert.equal(isProfileThemeId("custom"), true);
   assert.equal(isProfileThemeId("unknown-theme"), false);
 });
 
