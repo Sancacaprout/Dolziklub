@@ -52,6 +52,7 @@ test("supports progress, immediate persistence, resuming and editing answers", (
   assert.match(boardSource, /16 questions\. Aucun goût musical ne sortira intact\./);
   assert.match(boardSource, /questionIndex \+ 1} \/ \{questions\.length/);
   assert.match(boardSource, /save_my_tribunal_response/);
+  assert.match(boardSource, /setTimeout\(resolve, 1200\)/);
   assert.match(boardSource, /firstMissing/);
   assert.match(boardSource, /REPRENDRE LE TRIBUNAL/);
   assert.match(boardSource, /METTRE À JOUR ET CONTINUER/);

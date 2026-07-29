@@ -118,7 +118,10 @@ export function TribunalBoard() {
     }
   }, [configured]);
 
-  useEffect(() => { void loadContext(); }, [loadContext]);
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => void loadContext(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadContext]);
 
   const questions = useMemo(
     () => context?.questions.filter((question) => question.isActive) ?? [],
@@ -129,10 +132,15 @@ export function TribunalBoard() {
   const progress = questions.length ? Math.round((completedCount / questions.length) * 100) : 0;
 
   useEffect(() => {
-    setDraft(answerToDraft(question?.answer ?? null));
-    setSearch("");
-    setStamp("");
-    setMessage("");
+    const timeoutId = window.setTimeout(() => {
+      setDraft(answerToDraft(question?.answer ?? null));
+      setSearch("");
+      setStamp("");
+      setMessage("");
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+    // Reset only when navigating to another question, not when saving the current answer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id]);
 
   const memberOptions = useMemo(
@@ -200,7 +208,7 @@ export function TribunalBoard() {
         };
       });
       setStamp(tribunalStampMessages[(question.position - 1) % tribunalStampMessages.length]);
-      await new Promise((resolve) => setTimeout(resolve, 520));
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       if (questionIndex >= questions.length - 1) setPhase("complete");
       else setQuestionIndex((index) => index + 1);
     } catch (error) {

@@ -40,6 +40,24 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "tribunal-validation-stamp-duration",
+    version: "2.12",
+    date: "2026-07-29",
+    title: "Le verdict du Tribunal reste un peu plus longtemps",
+    summary: "Le tampon affiché après chaque réponse reste désormais assez longtemps à l’écran pour que son message soit parfaitement lisible.",
+    categories: ["Amélioration"],
+    added: [],
+    fixed: [],
+    improved: [
+      { text: "Le message de validation reste visible pendant 1,2 seconde avant l’arrivée de la question suivante." },
+      { text: "L’apparition du tampon est légèrement plus douce, tout en respectant la préférence de réduction des animations." },
+    ],
+    links: [
+      { label: "Entrer au Tribunal", href: "/tribunal" },
+    ],
+  },
+
+  {
     id: "le-tribunal",
     version: "2.11",
     date: "2026-07-29",
