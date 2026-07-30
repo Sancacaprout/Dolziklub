@@ -303,8 +303,11 @@ export function CustomThemeEditor() {
   }, [assetMap, config, postPreview, previewSession]);
 
   useEffect(() => {
-    if (previewReady) postPreview(config, assetMap);
-  }, [assetMap, config, postPreview, previewReady]);
+    // An update sent before the iframe listener exists is harmless: the READY
+    // handshake below sends the latest state again. Keeping this effect independent
+    // from the visual ready flag prevents late load events from freezing changes.
+    postPreview(config, assetMap);
+  }, [assetMap, config, postPreview]);
 
   const commit = (next: ProfileCustomThemeConfigV1) => {
     dispatch({ type: "commit", value: next });
@@ -521,7 +524,6 @@ export function CustomThemeEditor() {
               style={{ width: iframeWidth }}
               src={`/membres/${encodeURIComponent(account.username)}?previewTheme=custom&profilePreview=1&previewSession=${encodeURIComponent(previewSession)}`}
               onLoad={() => {
-                setPreviewReady(false);
                 postPreview(config, assetMap);
               }}
             />
