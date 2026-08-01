@@ -104,7 +104,7 @@ test("phase two exposes the full color, typography and inspiration controls", ()
 
 test("editor polish keeps color picking stable and adds safe visual controls", () => {
   assert.match(editorSource, /onInput=\{\(event\) => previewPicker/);
-  assert.match(editorSource, /onBlur=\{applyPicker\}/);
+  assert.match(editorSource, /onBlur=\{\(event\) => applyPicker\(event\.currentTarget\)\}/);
   assert.match(editorSource, /requestFullscreen\(\)/);
   assert.match(editorSource, /Coins des cartes et jaquettes/);
   assert.match(customThemeStyles, /border-radius: var\(--profile-custom-album-card-radius\)/);
