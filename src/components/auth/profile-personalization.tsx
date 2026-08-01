@@ -22,19 +22,32 @@ type Account = {
 
 function CustomThemeCardArt() {
   return (
-    <span className="theme-card__workbench">
-      <span className="theme-card__workbench-ruler theme-card__workbench-ruler--top" />
-      <span className="theme-card__workbench-ruler theme-card__workbench-ruler--side" />
-      <span className="theme-card__workbench-layer theme-card__workbench-layer--back" />
-      <span className="theme-card__workbench-layer theme-card__workbench-layer--front">
-        <span className="theme-card__workbench-title" />
-        <span className="theme-card__workbench-copy" />
-        <span className="theme-card__workbench-action" />
+    <span className="theme-card__studio">
+      <span className="theme-card__studio-kicker">STUDIO / 01</span>
+      <span className="theme-card__studio-canvas">
+        <span className="theme-card__studio-selection">
+          <span className="theme-card__studio-portrait">DZ</span>
+          <span className="theme-card__studio-type">
+            <b>TON STYLE</b>
+            <i />
+            <i />
+          </span>
+        </span>
+        <span className="theme-card__studio-accent" />
       </span>
-      <span className="theme-card__workbench-pencil" />
-      <span className="theme-card__workbench-label">
-        <span>TON STYLE</span>
-        <span>EN CONSTRUCTION</span>
+      <span className="theme-card__studio-layers">
+        <b>CALQUES</b>
+        <i className="is-active" />
+        <i />
+        <i />
+      </span>
+      <span className="theme-card__studio-palette">
+        <i />
+        <i />
+        <i />
+      </span>
+      <span className="theme-card__studio-label">
+        CRÉATION <b>SUR MESURE</b>
       </span>
     </span>
   );

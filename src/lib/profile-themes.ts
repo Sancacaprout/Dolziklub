@@ -66,7 +66,7 @@ export const profileThemes: readonly ProfileTheme[] = [
   { id: "manga-panel", name: "Manga Panel", description: "Cases dynamiques, trames, bulles et encre noire.", previewColors: ["#FAF8F0", "#090909", "#E3312D"], artPath: "", previewMotif: "manga-page" },
   { id: "cassette-sunset", name: "Cassette Sunset", description: "Mixtape rétro, coucher de soleil et écran d’autoradio.", previewColors: ["#24153D", "#F6D3A2", "#F36B46"], artPath: "", previewMotif: "cassette-deck" },
   { id: "museum-white", name: "Museum White", description: "Galerie contemporaine, cartels fins et espace blanc.", previewColors: ["#F8F6F0", "#171717", "#9B2B27"], artPath: "", previewMotif: "museum-label" },
-  { id: "custom", name: "PERSONNALISÉ", description: "Compose ton propre système visuel avec des réglages sûrs et une structure toujours stable.", previewColors: ["#F5F1E8", "#183650", "#CCF51D"], artPath: "", previewMotif: "custom-editor" },
+  { id: "custom", name: "PERSONNALISÉ", description: "Crée un univers de profil unique, jusque dans les moindres détails.", previewColors: ["#11131D", "#F4E9D8", "#D94B36"], artPath: "", previewMotif: "custom-editor" },
 ] as const;
 
 export const defaultProfileTheme: ProfileThemeId = "dol-ziklub";

@@ -87,12 +87,15 @@ test("every theme card uses the same compact and aligned profile preview action"
 test("the custom theme card is a responsive design workbench with one clear action", () => {
   assert.match(editor, /function CustomThemeCardArt\(\)/);
   assert.match(editor, /theme-card--custom/);
-  assert.match(editor, /theme-card__workbench-layer--front/);
+  assert.match(editor, /theme-card__studio-canvas/);
+  assert.match(editor, /theme-card__studio-layers/);
+  assert.match(editor, /CRÉATION/);
   assert.match(editor, /aria-disabled=\{theme\.id === "custom"/);
   assert.match(editor, /href="\/compte\/theme-personnalise"/);
-  assert.match(styles, /theme-card--custom\{[^}]*background-image:linear-gradient/);
-  assert.match(styles, /theme-card__workbench-pencil/);
-  assert.match(styles, /theme-card--custom \.theme-card__preview\{[^}]*background:#ccf51d/);
-  assert.match(styles, /@media \(max-width:700px\)\{\.theme-card__mini--custom/);
+  assert.match(styles, /theme-card--custom\{[^}]*background-image:radial-gradient/);
+  assert.match(styles, /theme-card__studio-selection/);
+  assert.match(styles, /theme-card--custom \.theme-card__preview\{[^}]*background:#d94b36/);
+  assert.match(styles, /@media \(max-width:700px\)\{\.profile-personalization \.theme-picker__grid\{grid-template-columns:1fr\}/);
+  assert.match(styles, /\.theme-card__mini--custom\{min-height:88px\}/);
   assert.match(styles, /@media \(prefers-reduced-motion:reduce\)\{\.theme-card--custom/);
 });
