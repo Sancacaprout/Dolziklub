@@ -10,6 +10,7 @@ const sessionKey = "dol-badges-seen";
 export function BadgeUnlockQueue() {
   const [queue, setQueue] = useState<MemberBadge[]>([]);
   const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
   const seen = useRef(new Set<string>());
 
   const refresh = useCallback(async () => {
@@ -48,6 +49,7 @@ export function BadgeUnlockQueue() {
 
   const current = queue[0];
   const remember = (badge: MemberBadge) => {
+    setClaimError(null);
     seen.current.add(badge.key);
     sessionStorage.setItem(sessionKey, JSON.stringify([...seen.current]));
     setQueue((items) => items.slice(1));
@@ -55,12 +57,15 @@ export function BadgeUnlockQueue() {
 
   const claim = async () => {
     if (!current) return;
+    setClaimError(null);
     setClaiming(true);
     const { error } = await getSupabaseBrowserClient().rpc("claim_my_badge", { p_badge_key: current.key });
     setClaiming(false);
     if (!error) {
       remember(current);
       window.dispatchEvent(new Event("dol-badges-refresh"));
+    } else {
+      setClaimError("Le badge n’a pas pu être récupéré. Réessaie dans un instant.");
     }
   };
 
@@ -73,11 +78,12 @@ export function BadgeUnlockQueue() {
         <BadgeArt imagePath={current.imagePath} name={current.name} rarity={current.rarity} size={240} />
         <h2 id="badge-reveal-title">{current.name}</h2>
         <p>{current.description}</p>
+        {claimError ? <p className="badge-reveal__error" role="alert">{claimError}</p> : null}
         <div>
           <button className="button" type="button" onClick={() => void claim()} disabled={claiming}>
             {claiming ? "Réclamation…" : "Réclamer le badge"}
           </button>
-          <button type="button" onClick={() => remember(current)}>Plus tard</button>
+          <button type="button" onClick={() => remember(current)} disabled={claiming}>Plus tard</button>
         </div>
         {queue.length > 1 ? <small>{queue.length - 1} autre{queue.length > 2 ? "s" : ""} badge{queue.length > 2 ? "s" : ""} en attente</small> : null}
       </article>
