@@ -70,8 +70,8 @@ export function AlbumCard({
 
   const content: ReactNode = list ? (
     <>
-      <div className="cover-frame">{cover}</div>
-      <div className="album-card__list-main">
+      <div className="cover-frame" data-profile-part="cover">{cover}</div>
+      <div className="album-card__list-main" data-profile-part="copy">
         <p className="eyebrow">{archiveLabel}</p>
         <h3>{album.title}</h3>
         <p>{album.artist}</p>
@@ -84,8 +84,8 @@ export function AlbumCard({
     </>
   ) : (
     <>
-      <div className="cover-frame">{cover}</div>
-      <div className="album-card__copy">
+      <div className="cover-frame" data-profile-part="cover">{cover}</div>
+      <div className="album-card__copy" data-profile-part="copy">
         <p className="eyebrow">{archiveLabel}</p>
         <h3>{album.title}</h3>
         <p>{album.artist}</p>

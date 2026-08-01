@@ -42,7 +42,7 @@ export function FavoriteArtistsPodium({
     .filter((artist): artist is FavoriteArtist => Boolean(artist));
 
   return (
-    <section className="profile-favorites profile-favorite-artists" aria-labelledby={headingId} data-profile-part="favorite-artists">
+    <section className="profile-favorites profile-favorite-artists" aria-labelledby={headingId} data-profile-part="favorite-artists" data-profile-section="favoriteArtists">
       <div className="member-archive__heading">
         <div>
           <p className="eyebrow">PODIUM PERSONNEL</p>

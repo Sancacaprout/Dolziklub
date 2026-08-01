@@ -38,7 +38,7 @@ export function MemberFavoriteClip({ username }: { username: string | null }) {
 
   if (!videoId) return null;
   return (
-    <section className="profile-favorites profile-favorite-clip" aria-labelledby="favorite-clip-heading" data-profile-part="favorite-clip">
+    <section className="profile-favorites profile-favorite-clip" aria-labelledby="favorite-clip-heading" data-profile-part="favorite-clip" data-profile-section="favoriteClip">
       <div className="member-archive__heading">
         <div>
           <p className="eyebrow">VIDÉO FÉTICHE</p>

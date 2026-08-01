@@ -9,9 +9,9 @@ import {
   type CustomThemeDecorationSlot,
   type ProfileCustomThemeAsset,
   type ProfileCustomThemeAssetMap,
-  type ProfileCustomThemeConfigV1,
 } from "@/lib/profile-custom-theme";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { ProfileCustomThemeConfigV2 } from "@/lib/profile-custom-theme/sections";
 
 const slotLabels: Record<CustomThemeDecorationSlot, string> = {
   "page-top-left": "Page · haut gauche",
@@ -45,8 +45,8 @@ export function CustomThemeAssets({
   onCommit,
   onAssetMapChange,
 }: {
-  config: ProfileCustomThemeConfigV1;
-  onCommit: (config: ProfileCustomThemeConfigV1) => void;
+  config: ProfileCustomThemeConfigV2;
+  onCommit: (config: ProfileCustomThemeConfigV2) => void;
   onAssetMapChange: (assets: ProfileCustomThemeAssetMap) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +68,7 @@ export function CustomThemeAssets({
   }, []);
 
   const syncAssetMap = useCallback((
-    nextConfig: ProfileCustomThemeConfigV1,
+    nextConfig: ProfileCustomThemeConfigV2,
     availableAssets: ProfileCustomThemeAsset[] = assets,
   ) => {
     const referenced = new Set(referencedProfileThemeAssetIds(nextConfig));
@@ -153,7 +153,7 @@ export function CustomThemeAssets({
 
   const updateDecoration = (
     id: string,
-    patch: Partial<ProfileCustomThemeConfigV1["decorations"][number]>,
+    patch: Partial<ProfileCustomThemeConfigV2["decorations"][number]>,
   ) => {
     const next = cloneProfileCustomTheme(config);
     next.decorations = next.decorations.map((decoration) =>
@@ -203,7 +203,7 @@ export function CustomThemeAssets({
           <legend>Image de fond</legend>
           <label className="custom-theme-field"><span>Opacité · {Math.round(config.backgrounds.image.opacity * 100)}%</span><input type="range" min="0.1" max="1" step="0.05" value={config.backgrounds.image.opacity} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.image.opacity = Number(event.target.value); onCommit(next); }} /></label>
           <label className="custom-theme-field"><span>Cadrage</span><select value={config.backgrounds.image.size} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.image.size = event.target.value as "cover" | "contain"; onCommit(next); }}><option value="cover">Couvrir</option><option value="contain">Contenir</option></select></label>
-          <label className="custom-theme-field"><span>Position</span><select value={config.backgrounds.image.position} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.image.position = event.target.value as ProfileCustomThemeConfigV1["backgrounds"]["image"]["position"]; onCommit(next); }}>{["center", "top", "bottom", "left", "right"].map((position) => <option key={position} value={position}>{position}</option>)}</select></label>
+          <label className="custom-theme-field"><span>Position</span><select value={config.backgrounds.image.position} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.image.position = event.target.value as ProfileCustomThemeConfigV2["backgrounds"]["image"]["position"]; onCommit(next); }}>{["center", "top", "bottom", "left", "right"].map((position) => <option key={position} value={position}>{position}</option>)}</select></label>
           <button type="button" className="custom-theme-editor__reset-property" onClick={() => { const next = cloneProfileCustomTheme(config); next.backgrounds.mode = "solid"; next.backgrounds.image.assetId = null; onCommit(next); }}>Retirer l’image de fond</button>
         </fieldset>
       ) : null}
@@ -232,10 +232,10 @@ export function CustomThemeMotion({
   config,
   onCommit,
 }: {
-  config: ProfileCustomThemeConfigV1;
-  onCommit: (config: ProfileCustomThemeConfigV1) => void;
+  config: ProfileCustomThemeConfigV2;
+  onCommit: (config: ProfileCustomThemeConfigV2) => void;
 }) {
-  const update = (patch: Partial<ProfileCustomThemeConfigV1["motion"]>) => {
+  const update = (patch: Partial<ProfileCustomThemeConfigV2["motion"]>) => {
     const next = cloneProfileCustomTheme(config);
     next.motion = { ...next.motion, ...patch };
     onCommit(next);

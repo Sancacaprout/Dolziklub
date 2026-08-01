@@ -1,6 +1,6 @@
 import type {
   ProfileCustomThemeAssetMap,
-  ProfileCustomThemeConfigV1,
+  ProfileCustomThemeConfig,
 } from "@/lib/profile-custom-theme";
 
 type DecorationStyle = React.CSSProperties & {
@@ -14,7 +14,7 @@ export function ProfileCustomThemeDecorations({
   config,
   assets,
 }: {
-  config: ProfileCustomThemeConfigV1;
+  config: ProfileCustomThemeConfig;
   assets: ProfileCustomThemeAssetMap;
 }) {
   return (

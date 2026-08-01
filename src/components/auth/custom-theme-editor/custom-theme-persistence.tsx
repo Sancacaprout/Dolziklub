@@ -4,20 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   cloneProfileCustomTheme,
-  type ProfileCustomThemeConfigV1,
+  normalizeProfileCustomThemeV2,
+  type ProfileCustomThemeConfig,
 } from "@/lib/profile-custom-theme";
+import type { ProfileCustomThemeConfigV2 } from "@/lib/profile-custom-theme/sections";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ThemeSnapshot = {
   status: "never" | "draft" | "published" | "changes";
   draft: {
-    config: ProfileCustomThemeConfigV1;
+    config: ProfileCustomThemeConfig;
     revision: number;
     updatedAt?: string;
     tutorialCompleted: boolean;
   } | null;
   publication: {
-    config: ProfileCustomThemeConfigV1;
+    config: ProfileCustomThemeConfig;
     revision: number;
     publishedAt?: string;
   } | null;
@@ -27,7 +29,7 @@ type RemoteState = {
   ready: boolean;
   draftRevision: number;
   publishedRevision: number | null;
-  savedConfig: ProfileCustomThemeConfigV1 | null;
+  savedConfig: ProfileCustomThemeConfig | null;
   status: ThemeSnapshot["status"];
 };
 
@@ -60,8 +62,8 @@ export function CustomThemePersistence({
   config,
   onReplace,
 }: {
-  config: ProfileCustomThemeConfigV1;
-  onReplace: (config: ProfileCustomThemeConfigV1) => void;
+  config: ProfileCustomThemeConfigV2;
+  onReplace: (config: ProfileCustomThemeConfigV2) => void;
 }) {
   const router = useRouter();
   const [remote, setRemote] = useState<RemoteState>(initialRemote);
@@ -82,7 +84,7 @@ export function CustomThemePersistence({
       .then((payload) => {
         if (!active) return;
         const snapshot = payload as unknown as ThemeSnapshot;
-        const loadedConfig = snapshot.draft?.config ?? snapshot.publication?.config ?? cloneProfileCustomTheme();
+        const loadedConfig = normalizeProfileCustomThemeV2(snapshot.draft?.config ?? snapshot.publication?.config ?? cloneProfileCustomTheme());
         onReplace(loadedConfig);
         setRemote({
           ready: true,
@@ -170,7 +172,7 @@ export function CustomThemePersistence({
     setMessage("");
     try {
       const payload = await themeRequest(`/api/profile-theme/draft?expectedRevision=${remote.draftRevision}`, { method: "DELETE" });
-      const restored = payload?.config as ProfileCustomThemeConfigV1;
+      const restored = normalizeProfileCustomThemeV2(payload?.config as ProfileCustomThemeConfig);
       const revision = Number(payload?.revision ?? 0);
       const publishedRevision = payload?.publishedRevision == null ? null : Number(payload.publishedRevision);
       onReplace(restored);

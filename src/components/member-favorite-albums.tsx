@@ -43,13 +43,13 @@ export function MemberFavoriteAlbums({ username }: { username: string | null }) 
 
   if (!loaded) return null;
   return (
-    <section className="profile-favorites" aria-labelledby="favorite-albums-heading" data-profile-part="favorite-albums">
+    <section className="profile-favorites" aria-labelledby="favorite-albums-heading" data-profile-part="favorite-albums" data-profile-section="favoriteAlbums">
       <div className="member-archive__heading"><div><p className="eyebrow">COLLECTION PERSONNELLE</p><h2 id="favorite-albums-heading">Mes 3 albums préférés</h2></div></div>
       {favorites.length ? <div className="profile-favorites__grid">{favorites.map((favorite) => {
         const cover = coverUrl(favorite);
         return <article className="profile-favorite-card" key={favorite.id} data-profile-part="album-card">
-          <div className="profile-favorite-card__cover">{cover ? <img src={cover} alt={`Jaquette de ${favorite.title} par ${favorite.artist_name}`} /> : <span aria-hidden="true">DOL<br />ZIKLUB</span>}</div>
-          <h3>{favorite.title}</h3><p>{favorite.artist_name}</p>
+          <div className="profile-favorite-card__cover" data-profile-part="cover">{cover ? <img src={cover} alt={`Jaquette de ${favorite.title} par ${favorite.artist_name}`} /> : <span aria-hidden="true">DOL<br />ZIKLUB</span>}</div>
+          <div className="profile-favorite-card__copy" data-profile-part="copy"><h3>{favorite.title}</h3><p>{favorite.artist_name}</p></div>
         </article>;
       })}</div> : <p className="profile-favorites__empty">Aucun album favori renseigné pour le moment.</p>}
     </section>

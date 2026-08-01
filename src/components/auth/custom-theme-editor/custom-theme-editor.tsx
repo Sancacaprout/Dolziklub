@@ -5,6 +5,10 @@ import { CustomThemeAssets, CustomThemeMotion } from "@/components/auth/custom-t
 import { CustomThemeTutorial } from "@/components/auth/custom-theme-editor/custom-theme-tutorial";
 import { CustomThemePersistence } from "@/components/auth/custom-theme-editor/custom-theme-persistence";
 import {
+  CustomThemeSectionControls,
+  CustomThemeSectionNavigation,
+} from "@/components/auth/custom-theme-editor/custom-theme-section-controls";
+import {
   useCallback,
   useEffect,
   useId,
@@ -17,18 +21,23 @@ import {
   applyCustomThemeInspiration,
   cloneProfileCustomTheme,
   createCustomThemePreviewUpdateMessage,
+  createCustomThemePreviewFocusMessage,
   customThemeFontFamilies,
   customThemeInspirations,
   customThemePatternKinds,
   customThemeTypographyRoles,
   defaultProfileCustomTheme,
   readTrustedCustomThemePreviewReady,
+  normalizeProfileCustomThemeV2,
+  readTrustedCustomThemePreviewSection,
+  upgradeProfileCustomThemeV1ToV2,
   type CustomThemeFontFamily,
   type CustomThemePatternKind,
   type CustomThemeTypographyRole,
   type CustomThemeTypographyToken,
   type ProfileCustomThemeAssetMap,
-  type ProfileCustomThemeConfigV1,
+  type ProfileCustomThemeConfigV2,
+  type ProfileCustomThemeSectionId,
 } from "@/lib/profile-custom-theme";
 import {
   getSupabaseBrowserClient,
@@ -40,13 +49,13 @@ const HEX_COLOR = /^#[0-9A-F]{6}$/i;
 
 type Account = { username: string; displayName: string };
 type HistoryState = {
-  past: ProfileCustomThemeConfigV1[];
-  present: ProfileCustomThemeConfigV1;
-  future: ProfileCustomThemeConfigV1[];
+  past: ProfileCustomThemeConfigV2[];
+  present: ProfileCustomThemeConfigV2;
+  future: ProfileCustomThemeConfigV2[];
 };
 type HistoryAction =
-  | { type: "commit"; value: ProfileCustomThemeConfigV1 }
-  | { type: "load"; value: ProfileCustomThemeConfigV1 }
+  | { type: "commit"; value: ProfileCustomThemeConfigV2 }
+  | { type: "load"; value: ProfileCustomThemeConfigV2 }
   | { type: "undo" }
   | { type: "redo" }
   | { type: "reset" };
@@ -137,7 +146,7 @@ function historyReducer(state: HistoryState, action: HistoryAction): HistoryStat
   if (action.type === "reset") {
     return {
       past: [...state.past, state.present].slice(-MAX_HISTORY),
-      present: cloneProfileCustomTheme(),
+      present: upgradeProfileCustomThemeV1ToV2(cloneProfileCustomTheme()),
       future: [],
     };
   }
@@ -158,23 +167,29 @@ function ColorControl({
   value,
   defaultValue,
   onChange,
+  onPreview,
 }: {
   label: string;
   value: string;
   defaultValue: string;
   onChange: (value: string) => void;
+  onPreview?: (value: string) => void;
 }) {
-  const [draft, setDraft] = useState(value);
-  const [pickerDraft, setPickerDraft] = useState(value);
-
-  const applyDraft = () => {
-    const normalized = draft.toUpperCase();
-    if (HEX_COLOR.test(normalized)) onChange(normalized);
-    else setDraft(value);
+  const applyDraft = (input: HTMLInputElement) => {
+    const normalized = input.value.toUpperCase();
+    if (HEX_COLOR.test(normalized)) {
+      onPreview?.(normalized);
+      onChange(normalized);
+    }
+    else input.value = value;
   };
-  const applyPicker = () => {
-    const normalized = pickerDraft.toUpperCase();
+  const applyPicker = (input: HTMLInputElement) => {
+    const normalized = input.value.toUpperCase();
     if (normalized !== value && HEX_COLOR.test(normalized)) onChange(normalized);
+    else onPreview?.(value);
+  };
+  const previewPicker = (nextValue: string) => {
+    const normalized = nextValue.toUpperCase(); onPreview?.(normalized);
   };
 
   return (
@@ -183,23 +198,26 @@ function ColorControl({
         <span>{label}</span>
         <input
           type="color"
-          value={pickerDraft}
-          onInput={(event) => setPickerDraft(event.currentTarget.value.toUpperCase())}
-          onChange={(event) => setPickerDraft(event.currentTarget.value.toUpperCase())}
-          onBlur={applyPicker}
+          key={value}
+          defaultValue={value}
+          onInput={(event) => previewPicker(event.currentTarget.value)}
+          onBlur={(event) => applyPicker(event.currentTarget)}
         />
         <input
           className="custom-theme-color-field__hex"
-          value={draft}
+          key={value}
+          defaultValue={value}
           inputMode="text"
           maxLength={7}
           aria-label={`${label}, valeur hexadécimale`}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={applyDraft}
+          onInput={(event) => {
+            const normalized = event.currentTarget.value.toUpperCase(); if (HEX_COLOR.test(normalized)) onPreview?.(normalized);
+          }}
+          onBlur={(event) => applyDraft(event.currentTarget)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
-              applyDraft();
+              applyDraft(event.currentTarget);
             }
           }}
         />
@@ -229,10 +247,12 @@ export function CustomThemeEditor() {
   const [isPreviewFullscreen, setIsPreviewFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const previewRef = useRef<HTMLElement>(null);
+  const [selectedSection, setSelectedSection] = useState<ProfileCustomThemeSectionId | null>(null);
+  const [hoveredSection, setHoveredSection] = useState<ProfileCustomThemeSectionId | null>(null);
   const previewSession = `custom-theme-${useId().replace(/:/g, "")}`;
   const [history, dispatch] = useReducer(historyReducer, {
     past: [],
-    present: cloneProfileCustomTheme(),
+    present: upgradeProfileCustomThemeV1ToV2(cloneProfileCustomTheme()),
     future: [],
   });
   const config = history.present;
@@ -276,7 +296,7 @@ export function CustomThemeEditor() {
   }, [configured]);
 
   const postPreview = useCallback((
-    nextConfig: ProfileCustomThemeConfigV1,
+    nextConfig: ProfileCustomThemeConfigV2,
     nextAssets: ProfileCustomThemeAssetMap,
   ) => {
     const target = iframeRef.current?.contentWindow;
@@ -294,9 +314,17 @@ export function CustomThemeEditor() {
         source: iframeRef.current?.contentWindow ?? null,
         sessionId: previewSession,
       });
-      if (!ready) return;
-      setPreviewReady(true);
-      postPreview(config, assetMap);
+      if (ready) {
+        setPreviewReady(true);
+        postPreview(config, assetMap);
+        return;
+      }
+      const section = readTrustedCustomThemePreviewSection(event, {
+        origin: window.location.origin, source: iframeRef.current?.contentWindow ?? null, sessionId: previewSession,
+      });
+      if (!section) return;
+      if (section.interaction === "hover") setHoveredSection(section.sectionId);
+      else if (section.sectionId) setSelectedSection(section.sectionId);
     };
     window.addEventListener("message", receiveReady);
     return () => window.removeEventListener("message", receiveReady);
@@ -309,20 +337,31 @@ export function CustomThemeEditor() {
     postPreview(config, assetMap);
   }, [assetMap, config, postPreview]);
 
-  const commit = (next: ProfileCustomThemeConfigV1) => {
+  const commit = (next: ProfileCustomThemeConfigV2) => {
     dispatch({ type: "commit", value: next });
   };
-  const replaceConfig = useCallback((next: ProfileCustomThemeConfigV1) => {
-    dispatch({ type: "load", value: next });
+  const replaceConfig = useCallback((next: ProfileCustomThemeConfigV2) => {
+    dispatch({ type: "load", value: normalizeProfileCustomThemeV2(next) });
   }, []);
 
-  const updateColor = (key: keyof ProfileCustomThemeConfigV1["colors"], value: string) => {
+  const updateColor = (key: keyof ProfileCustomThemeConfigV2["colors"], value: string) => {
     const next = cloneProfileCustomTheme(config);
     next.colors[key] = value;
     if (key === "page") next.backgrounds.color = value;
     commit(next);
   };
 
+  const previewMutation = (mutate: (next: ProfileCustomThemeConfigV2) => void) => {
+    const next = cloneProfileCustomTheme(config);
+    mutate(next);
+    postPreview(next, assetMap);
+  };
+  const previewColor = (key: keyof ProfileCustomThemeConfigV2["colors"], value: string) => {
+    previewMutation((next) => {
+      next.colors[key] = value;
+      if (key === "page") next.backgrounds.color = value;
+    });
+  };
   const updateTypography = (
     role: CustomThemeTypographyRole,
     patch: Partial<CustomThemeTypographyToken>,
@@ -331,6 +370,23 @@ export function CustomThemeEditor() {
     next.typography[role] = { ...next.typography[role], ...patch };
     commit(next);
   };
+
+  const selectSection = useCallback((sectionId: ProfileCustomThemeSectionId | null) => {
+    setSelectedSection(sectionId);
+    if (!sectionId) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      createCustomThemePreviewFocusMessage(previewSession, sectionId, true),
+      window.location.origin,
+    );
+  }, [previewSession]);
+
+  useEffect(() => {
+    if (!selectedSection || !previewReady) return;
+    iframeRef.current?.contentWindow?.postMessage(
+      createCustomThemePreviewFocusMessage(previewSession, selectedSection, false),
+      window.location.origin,
+    );
+  }, [previewReady, previewSession, selectedSection]);
 
   useEffect(() => {
     const updateFullscreenState = () => setIsPreviewFullscreen(document.fullscreenElement === previewRef.current);
@@ -375,7 +431,7 @@ export function CustomThemeEditor() {
         <CustomThemePersistence config={config} onReplace={replaceConfig} />
       </header>
 
-      <nav className="custom-theme-editor__toolbar" aria-label="Actions de l’éditeur">
+      <nav className="custom-theme-editor__toolbar" aria-label="Actions de l’éditeur" data-tutorial-anchor="history-controls">
         <button type="button" onClick={() => dispatch({ type: "undo" })} disabled={!history.past.length}>Annuler</button>
         <button type="button" onClick={() => dispatch({ type: "redo" })} disabled={!history.future.length}>Rétablir</button>
         <button type="button" onClick={() => dispatch({ type: "reset" })}>Tout réinitialiser</button>
@@ -390,6 +446,11 @@ export function CustomThemeEditor() {
 
       <div className="custom-theme-editor__workspace">
         <aside className="custom-theme-editor__settings" data-mobile-visible={mobilePanel === "settings"}>
+          <CustomThemeSectionNavigation selected={selectedSection} hovered={hoveredSection} onSelect={selectSection} />
+          {selectedSection ? (
+            <CustomThemeSectionControls sectionId={selectedSection} config={config} onCommit={commit} />
+          ) : (
+            <div className="custom-theme-global-controls" data-tutorial-anchor="global-controls">
           <EditorSection title="S’inspirer de…">
             <p className="custom-theme-editor__hint">Une inspiration applique des tokens apparentés ; elle ne copie jamais le thème source.</p>
             <div className="custom-theme-inspirations">
@@ -409,7 +470,7 @@ export function CustomThemeEditor() {
             </div>
           </EditorSection>
 
-          <EditorSection title="Fond">
+          <div data-tutorial-anchor="background-controls"><EditorSection title="Fond">
             <label className="custom-theme-field">
               <span>Type de fond</span>
               <select
@@ -426,40 +487,40 @@ export function CustomThemeEditor() {
                 <option value="image">Image priv&#233;e</option>
               </select>
             </label>
-            <ColorControl key={config.backgrounds.color} label="Couleur du fond" value={config.backgrounds.color} defaultValue={defaultProfileCustomTheme.backgrounds.color} onChange={(value) => {
+            <ColorControl label="Couleur du fond" value={config.backgrounds.color} defaultValue={defaultProfileCustomTheme.backgrounds.color} onPreview={(value) => previewMutation((next) => { next.backgrounds.color = value; next.colors.page = value; })} onChange={(value) => {
               const next = cloneProfileCustomTheme(config); next.backgrounds.color = value; next.colors.page = value; commit(next);
             }} />
             {config.backgrounds.mode === "gradient" ? (
               <>
-                <ColorControl key={config.backgrounds.gradient.from} label="Départ" value={config.backgrounds.gradient.from} defaultValue={defaultProfileCustomTheme.backgrounds.gradient.from} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.gradient.from = value; commit(next); }} />
-                <ColorControl key={config.backgrounds.gradient.to} label="Arrivée" value={config.backgrounds.gradient.to} defaultValue={defaultProfileCustomTheme.backgrounds.gradient.to} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.gradient.to = value; commit(next); }} />
+                <ColorControl label="Départ" value={config.backgrounds.gradient.from} defaultValue={defaultProfileCustomTheme.backgrounds.gradient.from} onPreview={(value) => previewMutation((next) => { next.backgrounds.gradient.from = value; })} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.gradient.from = value; commit(next); }} />
+                <ColorControl label="Arrivée" value={config.backgrounds.gradient.to} defaultValue={defaultProfileCustomTheme.backgrounds.gradient.to} onPreview={(value) => previewMutation((next) => { next.backgrounds.gradient.to = value; })} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.gradient.to = value; commit(next); }} />
                 <label className="custom-theme-field"><span>Angle · {config.backgrounds.gradient.angle}°</span><input type="range" min="0" max="360" value={config.backgrounds.gradient.angle} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.gradient.angle = Number(event.target.value); commit(next); }} /></label>
               </>
             ) : null}
             {config.backgrounds.mode === "pattern" ? (
               <>
                 <label className="custom-theme-field"><span>Motif</span><select value={config.backgrounds.pattern.kind} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.kind = event.target.value as CustomThemePatternKind; commit(next); }}>{customThemePatternKinds.map((kind) => <option key={kind} value={kind}>{patternLabels[kind]}</option>)}</select></label>
-                <ColorControl key={config.backgrounds.pattern.color} label="Couleur du motif" value={config.backgrounds.pattern.color} defaultValue={defaultProfileCustomTheme.backgrounds.pattern.color} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.color = value; commit(next); }} />
+                <ColorControl label="Couleur du motif" value={config.backgrounds.pattern.color} defaultValue={defaultProfileCustomTheme.backgrounds.pattern.color} onPreview={(value) => previewMutation((next) => { next.backgrounds.pattern.color = value; })} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.color = value; commit(next); }} />
                 <label className="custom-theme-field"><span>Échelle · {config.backgrounds.pattern.scale}px</span><input type="range" min="8" max="120" value={config.backgrounds.pattern.scale} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.scale = Number(event.target.value); commit(next); }} /></label>
                 <label className="custom-theme-field"><span>Opacité · {Math.round(config.backgrounds.pattern.opacity * 100)}%</span><input type="range" min="0" max="0.5" step="0.01" value={config.backgrounds.pattern.opacity} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.backgrounds.pattern.opacity = Number(event.target.value); commit(next); }} /></label>
               </>
             ) : null}
-          </EditorSection>
+          </EditorSection></div>
 
-          <EditorSection title="Images et d&#233;corations">
+          <div data-tutorial-anchor="asset-controls"><EditorSection title="Images et d&#233;corations">
             <p className="custom-theme-editor__hint">Les images restent priv&#233;es tant qu&#39;un th&#232;me n&#39;est pas publi&#233;. Elles ne peuvent occuper que les emplacements s&#251;rs pr&#233;vus par le site.</p>
             <CustomThemeAssets config={config} onCommit={commit} onAssetMapChange={setAssetMap} />
-          </EditorSection>
+          </EditorSection></div>
 
           <EditorSection title="Couleurs">
             <div className="custom-theme-colors">
               {colorFields.map(([key, label]) => (
-                <ColorControl key={key + config.colors[key]} label={label} value={config.colors[key]} defaultValue={defaultProfileCustomTheme.colors[key]} onChange={(value) => updateColor(key, value)} />
+                <ColorControl key={key} label={label} value={config.colors[key]} defaultValue={defaultProfileCustomTheme.colors[key]} onPreview={(value) => previewColor(key, value)} onChange={(value) => updateColor(key, value)} />
               ))}
             </div>
           </EditorSection>
 
-          <EditorSection title="Polices">
+          <div data-tutorial-anchor="typography-controls"><EditorSection title="Polices">
             <div className="custom-theme-typography">
               {customThemeTypographyRoles.map((role) => {
                 const token = config.typography[role];
@@ -478,9 +539,9 @@ export function CustomThemeEditor() {
                 );
               })}
             </div>
-          </EditorSection>
+          </EditorSection></div>
 
-          <EditorSection title="Cartes et cadres">
+          <div data-tutorial-anchor="card-controls"><EditorSection title="Cartes et cadres">
             <p className="custom-theme-editor__hint">Tu modifies seulement la finition. Les grilles, l’ordre, la taille des colonnes et le contenu restent imposés par le site.</p>
             {(["album", "track"] as const).map((cardType) => {
               const target = cardType === "album" ? "albumCard" : "trackCard";
@@ -491,21 +552,23 @@ export function CustomThemeEditor() {
                   <legend>{label}</legend>
                   <label className="custom-theme-field"><span>Coins des cartes et jaquettes · {config.radii[target]} px</span><input type="range" min="0" max="32" value={config.radii[target]} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.radii[target] = Number(event.target.value); commit(next); }} /></label>
                   <label className="custom-theme-field"><span>Cadre de la jaquette</span><select value={card.imageFrame} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].imageFrame = event.target.value as "none" | "line" | "double"; commit(next); }}><option value="none">Sans cadre</option><option value="line">Trait simple</option><option value="double">Double trait</option></select></label>
-                  <ColorControl key={`${cardType}-${card.background}`} label="Fond de la carte" value={card.background} defaultValue={defaultProfileCustomTheme.cards[cardType].background} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].background = value; commit(next); }} />
+                  <ColorControl key={cardType} label="Fond de la carte" value={card.background} defaultValue={defaultProfileCustomTheme.cards[cardType].background} onPreview={(value) => previewMutation((next) => { next.cards[cardType].background = value; })} onChange={(value) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].background = value; commit(next); }} />
                   <label className="custom-theme-field"><span>Mouvement au survol</span><select value={card.hover} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].hover = event.target.value as "none" | "lift" | "zoom" | "glow"; commit(next); }}><option value="none">Aucun</option><option value="lift">Soulèvement</option><option value="zoom">Zoom léger</option><option value="glow">Halo</option></select></label>
                   <label className="custom-theme-field"><span>Inclinaison · {card.rotation.toFixed(1)}°</span><input type="range" min="-3" max="3" step="0.5" value={card.rotation} onChange={(event) => { const next = cloneProfileCustomTheme(config); next.cards[cardType].rotation = Number(event.target.value); commit(next); }} /></label>
                   <button type="button" className="custom-theme-editor__reset-property" onClick={() => { const next = cloneProfileCustomTheme(config); next.cards[cardType] = cloneProfileCustomTheme().cards[cardType]; next.radii[target] = cloneProfileCustomTheme().radii[target]; commit(next); }}>Réinitialiser ces cadres</button>
                 </fieldset>
               );
             })}
-          </EditorSection>
+          </EditorSection></div>
 
-          <EditorSection title="Mouvements">
+          <div data-tutorial-anchor="motion-controls"><EditorSection title="Mouvements">
             <CustomThemeMotion config={config} onCommit={commit} />
-          </EditorSection>
+          </EditorSection></div>
+            </div>
+          )}
         </aside>
 
-        <section ref={previewRef} className="custom-theme-editor__preview" data-mobile-visible={mobilePanel === "preview"} aria-label="Aperçu réel du profil">
+        <section ref={previewRef} className="custom-theme-editor__preview" data-mobile-visible={mobilePanel === "preview"} aria-label="Aperçu réel du profil" data-tutorial-anchor="preview">
           <div className="custom-theme-editor__preview-bar">
             <div role="group" aria-label="Largeur de l’aperçu">
               {(["desktop", "tablet", "mobile"] as const).map((size) => (
