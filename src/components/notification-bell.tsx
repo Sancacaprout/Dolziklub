@@ -7,7 +7,7 @@ import { createDeferredAuthSync } from "@/lib/supabase/deferred-auth-sync";
 
 type Notification = {
   id: string;
-  kind: "meme" | "album" | "review" | "draw" | "task" | "comment";
+  kind: string;
   title: string;
   body: string;
   href: string;
@@ -15,7 +15,16 @@ type Notification = {
   created_at: string;
 };
 
-const icons = { meme: "✦", album: "♫", review: "✎", draw: "◎", task: "!", comment: "#" } as const;
+const icons: Record<string, string> = {
+  meme: "✦",
+  album: "♫",
+  review: "✎",
+  draw: "◎",
+  task: "!",
+  comment: "#",
+  extra_request: "↗",
+  badge: "★",
+};
 
 function formatDate(date: string) {
   const difference = Date.now() - new Date(date).getTime();
@@ -56,8 +65,11 @@ export function NotificationBell() {
     void syncMember();
     const deferredSync = createDeferredAuthSync(syncMember);
     const { data: authListener } = supabase.auth.onAuthStateChange(deferredSync.schedule);
-    const channel = supabase.channel("member-notifications")
-      .on("postgres_changes", { event: "*", schema: "public", table: "member_notifications" }, () => void loadNotifications())
+    const channel = supabase
+      .channel("member-notifications")
+      .on("postgres_changes", { event: "*", schema: "public", table: "member_notifications" }, () => {
+        void loadNotifications().then(() => window.dispatchEvent(new Event("dol-badges-refresh")));
+      })
       .subscribe();
     return () => {
       deferredSync.cancel();
@@ -85,7 +97,9 @@ export function NotificationBell() {
     const unreadIds = notifications.filter((notification) => !notification.read_at).map((notification) => notification.id);
     if (!unreadIds.length || !configured) return;
     const readAt = new Date().toISOString();
-    setNotifications((current) => current.map((notification) => unreadIds.includes(notification.id) ? { ...notification, read_at: readAt } : notification));
+    setNotifications((current) => current.map((notification) =>
+      unreadIds.includes(notification.id) ? { ...notification, read_at: readAt } : notification,
+    ));
     await getSupabaseBrowserClient().from("member_notifications").update({ read_at: readAt }).in("id", unreadIds);
   }, [configured, notifications]);
 
@@ -102,20 +116,52 @@ export function NotificationBell() {
 
   const clear = async () => {
     setNotifications([]);
-    if (configured && memberId) await getSupabaseBrowserClient().from("member_notifications").delete().eq("recipient_id", memberId);
+    if (configured && memberId) {
+      await getSupabaseBrowserClient().from("member_notifications").delete().eq("recipient_id", memberId);
+    }
   };
 
   if (!configured || !memberId) return null;
   const unreadCount = notifications.filter((notification) => !notification.read_at).length;
 
-  return <aside className="notification-bell" ref={panelRef} aria-label="Notifications">
-    <button className="notification-bell__trigger" type="button" onClick={toggle} aria-label={`Notifications${unreadCount ? `, ${unreadCount} non lue${unreadCount > 1 ? "s" : ""}` : ""}`} aria-controls="notification-panel" aria-expanded={open} aria-haspopup="dialog">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
-      {unreadCount > 0 && <span className="notification-bell__count">{unreadCount > 9 ? "9+" : unreadCount}</span>}
-    </button>
-    {open && <><button className="notification-bell__backdrop" type="button" tabIndex={-1} aria-label="Fermer les notifications" onClick={() => setOpen(false)} /><div id="notification-panel" className="notification-bell__panel" role="dialog" aria-modal="true" aria-label="Bo�te de notifications" tabIndex={-1} onPointerDown={(event) => event.stopPropagation()}>
-      <header><div><span>BOÎTE DU KLUB</span><h2>Notifications</h2></div>{notifications.length > 0 && <button className="notification-bell__clear" type="button" onClick={() => void clear()} title="Vider la corbeille">Vider</button>}</header>
-      {notifications.length === 0 ? <div className="notification-bell__empty"><b>Rien de nouveau.</b><span>Ta boîte est parfaitement calme.</span></div> : <ul>{notifications.map((notification) => <li key={notification.id} className={notification.read_at ? "" : "is-unread"}><Link href={notification.href} onClick={() => setOpen(false)}><i aria-hidden="true">{icons[notification.kind]}</i><span><b>{notification.title}</b><small>{notification.body}</small><time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time></span></Link><button type="button" onClick={() => void remove(notification.id)} aria-label={`Supprimer : ${notification.title}`} title="Supprimer">×</button></li>)}</ul>}
-    </div></>}
-  </aside>;
+  return (
+    <aside className="notification-bell" ref={panelRef} aria-label="Notifications">
+      <button
+        className="notification-bell__trigger"
+        type="button"
+        onClick={toggle}
+        aria-label={`Notifications${unreadCount ? `, ${unreadCount} non lue${unreadCount > 1 ? "s" : ""}` : ""}`}
+        aria-controls="notification-panel"
+        aria-expanded={open}
+        aria-haspopup="dialog"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
+        {unreadCount > 0 && <span className="notification-bell__count">{unreadCount > 9 ? "9+" : unreadCount}</span>}
+      </button>
+      {open && (
+        <>
+          <button className="notification-bell__backdrop" type="button" tabIndex={-1} aria-label="Fermer les notifications" onClick={() => setOpen(false)} />
+          <div id="notification-panel" className="notification-bell__panel" role="dialog" aria-modal="true" aria-label="Boîte de notifications" tabIndex={-1} onPointerDown={(event) => event.stopPropagation()}>
+            <header>
+              <div><span>BOÎTE DU KLUB</span><h2>Notifications</h2></div>
+              {notifications.length > 0 && <button className="notification-bell__clear" type="button" onClick={() => void clear()} title="Vider la corbeille">Vider</button>}
+            </header>
+            {notifications.length === 0 ? (
+              <div className="notification-bell__empty"><b>Rien de nouveau.</b><span>Ta boîte est parfaitement calme.</span></div>
+            ) : (
+              <ul>{notifications.map((notification) => (
+                <li key={notification.id} className={notification.read_at ? "" : "is-unread"}>
+                  <Link href={notification.href} onClick={() => setOpen(false)}>
+                    <i aria-hidden="true">{icons[notification.kind] ?? "•"}</i>
+                    <span><b>{notification.title}</b><small>{notification.body}</small><time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time></span>
+                  </Link>
+                  <button type="button" onClick={() => void remove(notification.id)} aria-label={`Supprimer : ${notification.title}`} title="Supprimer">×</button>
+                </li>
+              ))}</ul>
+            )}
+          </div>
+        </>
+      )}
+    </aside>
+  );
 }

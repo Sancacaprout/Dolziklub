@@ -1,0 +1,10 @@
+[data-profile-theme="custom"] .profile-badge{
+  background:var(--profile-custom-badge-bg);
+  color:var(--profile-custom-badge-text);
+  border:var(--profile-custom-badge-border);
+  border-radius:var(--profile-custom-badge-radius);
+  box-shadow:var(--profile-custom-badge-shadow)
+}
+[data-profile-theme="custom"] .profile-badge .badge-art{border-color:var(--profile-custom-badge-text);background:color-mix(in srgb,var(--profile-custom-badge-bg) 78%,transparent)}
+[data-profile-theme="custom"] [data-profile-part="badges"]{font-family:var(--profile-custom-label-font)}
+[data-profile-theme="custom"] .profile-badge img{filter:none!important;mix-blend-mode:normal!important;opacity:1!important;transform:none!important}
