@@ -1,0 +1,24 @@
+/* Next/Image preserves portrait intrinsic dimensions. Pin the rendered element to
+   the square art frame so tall badges such as both Wheely rewards stay centered. */
+.badge-art > img {
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  max-width:none!important;
+  max-height:none!important;
+  object-fit:contain!important;
+  object-position:center center!important
+}
+
+.badge-shelf--secret > header {
+  background:repeating-linear-gradient(135deg,#111 0 12px,#252525 12px 24px);
+  border-color:#c59b31;
+  color:#fff
+}
+
+.badge-shelf--secret .badge-card {
+  border-color:#6f5920;
+  box-shadow:5px 5px 0 #c59b31
+}
