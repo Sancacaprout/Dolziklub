@@ -20,6 +20,26 @@ type Account = {
   displayName: string;
 };
 
+function CustomThemeCardArt() {
+  return (
+    <span className="theme-card__workbench">
+      <span className="theme-card__workbench-ruler theme-card__workbench-ruler--top" />
+      <span className="theme-card__workbench-ruler theme-card__workbench-ruler--side" />
+      <span className="theme-card__workbench-layer theme-card__workbench-layer--back" />
+      <span className="theme-card__workbench-layer theme-card__workbench-layer--front">
+        <span className="theme-card__workbench-title" />
+        <span className="theme-card__workbench-copy" />
+        <span className="theme-card__workbench-action" />
+      </span>
+      <span className="theme-card__workbench-pencil" />
+      <span className="theme-card__workbench-label">
+        <span>TON STYLE</span>
+        <span>EN CONSTRUCTION</span>
+      </span>
+    </span>
+  );
+}
+
 export function ProfilePersonalization({ customThemeEnabled = false }: { customThemeEnabled?: boolean }) {
   const configured = isSupabaseConfigured();
   const [account, setAccount] = useState<Account | null>(null);
@@ -222,7 +242,9 @@ export function ProfilePersonalization({ customThemeEnabled = false }: { customT
                 key={theme.id}
                 className={`theme-card profile-theme${
                   draftTheme === theme.id ? " is-selected" : ""
-                }${theme.id === "wheely" && wheelyLocked ? " is-locked" : ""}`}
+                }${theme.id === "wheely" && wheelyLocked ? " is-locked" : ""}${
+                  theme.id === "custom" ? " theme-card--custom" : ""
+                }`}
                 data-theme-locked={theme.id === "wheely" && wheelyLocked ? "true" : undefined}
                 data-profile-theme={theme.id}
                 data-preview-motif={theme.previewMotif ?? "classic"}
@@ -240,18 +262,27 @@ export function ProfilePersonalization({ customThemeEnabled = false }: { customT
                   disabled={theme.id === "wheely" && wheelyLocked}
                   aria-disabled={theme.id === "custom" ? "true" : undefined}
                 >
-                  <span className="theme-card__mini" aria-hidden="true">
-                    {theme.id === "wheely" && theme.previewVariant === "wheely" ? (
-                      <WheelyThemeArt variant="card" />
-                    ) : null}
-                    <i>{account.displayName.slice(0, 1).toUpperCase()}</i>
-                    <span>
-                      <b>{account.displayName}</b>
-                      <small>@{account.username}</small>
-                    </span>
-                    <em />
-                    <strong>12</strong>
-                    <u />
+                  <span
+                    className={`theme-card__mini${theme.id === "custom" ? " theme-card__mini--custom" : ""}`}
+                    aria-hidden="true"
+                  >
+                    {theme.id === "custom" ? (
+                      <CustomThemeCardArt />
+                    ) : (
+                      <>
+                        {theme.id === "wheely" && theme.previewVariant === "wheely" ? (
+                          <WheelyThemeArt variant="card" />
+                        ) : null}
+                        <i>{account.displayName.slice(0, 1).toUpperCase()}</i>
+                        <span>
+                          <b>{account.displayName}</b>
+                          <small>@{account.username}</small>
+                        </span>
+                        <em />
+                        <strong>12</strong>
+                        <u />
+                      </>
+                    )}
                   </span>
                   <span className="theme-card__colors">
                     {theme.previewColors.map((color) => (

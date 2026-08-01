@@ -93,7 +93,7 @@ begin
     select publication.revision into published_revision
     from public.profile_custom_theme_publications publication
     where publication.participant_id = caller_id;
-    next_revision := pg_catalog.coalesce(published_revision, 0) + 1;
+    next_revision := coalesce(published_revision, 0) + 1;
     insert into public.profile_custom_theme_drafts (
       participant_id, config, schema_version, revision, inspiration_source_theme_id,
       tutorial_completed_at, created_at, updated_at
@@ -109,7 +109,7 @@ begin
         schema_version = config_version,
         revision = next_revision,
         inspiration_source_theme_id = p_config ->> 'inspirationSourceThemeId',
-        tutorial_completed_at = case when p_tutorial_completed then pg_catalog.coalesce(tutorial_completed_at, saved_at) else tutorial_completed_at end,
+        tutorial_completed_at = case when p_tutorial_completed then coalesce(tutorial_completed_at, saved_at) else tutorial_completed_at end,
         updated_at = saved_at
     where participant_id = caller_id;
   end if;

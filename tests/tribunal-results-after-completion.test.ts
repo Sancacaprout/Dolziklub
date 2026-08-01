@@ -52,9 +52,10 @@ test("administrators retain edition controls and reversible moderation", () => {
 });
 
 test("minor fixes are bundled into a substantial update instead of standalone versions", () => {
-  assert.equal(siteUpdates[0].id, "tribunal-results-after-completion");
-  assert.equal(siteUpdates[0].version, "2.14");
-  assert.ok(siteUpdates[0].fixed.some((item) => item.text.includes("Noir Cinéma")));
+  const bundledUpdate = siteUpdates.find((update) => update.id === "tribunal-results-after-completion");
+  assert.ok(bundledUpdate);
+  assert.equal(bundledUpdate.version, "2.14");
+  assert.ok(bundledUpdate.fixed.some((item) => item.text.includes("Noir Cinéma")));
   const updateIds = new Set<string>(siteUpdates.map((item) => item.id));
   assert.equal(updateIds.has("noir-cinema-member-name-contrast"), false);
   assert.equal(updateIds.has("tribunal-validation-stamp-duration"), false);

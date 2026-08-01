@@ -15,6 +15,14 @@ const revisionMigration = readFileSync(
   new URL("../supabase/migrations/20260729203517_keep_custom_theme_revisions_monotonic.sql", import.meta.url),
   "utf8",
 );
+const sectionV2Migration = readFileSync(
+  new URL("../supabase/migrations/20260801112354_profile_custom_theme_sections_v2.sql", import.meta.url),
+  "utf8",
+);
+const v2CompatibilityMigration = readFileSync(
+  new URL("../supabase/migrations/20260801181430_profile_custom_theme_v2_publish_reset_compatibility.sql", import.meta.url),
+  "utf8",
+);
 const draftRoute = readFileSync(
   new URL("../src/app/api/profile-theme/draft/route.ts", import.meta.url),
   "utf8",
@@ -75,6 +83,19 @@ test("draft revisions remain monotonic after a direct draft deletion", () => {
   assert.match(revisionMigration, /published_revision bigint/);
   assert.match(revisionMigration, /next_revision := coalesce\(published_revision, 0\) \+ 1/);
   assert.match(revisionMigration, /p_config is null/);
+});
+
+test("V2 drafts keep their schema version through publication and reset", () => {
+  assert.match(sectionV2Migration, /schema_version in \(1, 2\)/);
+  assert.match(sectionV2Migration, /config_version := \(p_config ->> 'schemaVersion'\)::smallint/);
+  assert.match(v2CompatibilityMigration, /current_draft\.config, current_draft\.schema_version/);
+  assert.match(v2CompatibilityMigration, /current_publication\.config, current_publication\.schema_version/);
+  assert.match(v2CompatibilityMigration, /profile_custom_theme_config_is_valid\(current_draft\.config\)/);
+  assert.match(v2CompatibilityMigration, /pg_advisory_xact_lock/g);
+  assert.doesNotMatch(
+    v2CompatibilityMigration,
+    /current_(?:draft|publication)\.config, 1, current_(?:draft|publication)\.revision/,
+  );
 });
 
 

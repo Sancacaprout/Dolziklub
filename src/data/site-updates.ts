@@ -40,6 +40,29 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "custom-profile-theme-editor",
+    version: "2.15",
+    date: "2026-08-01",
+    title: "Ton profil devient un atelier de cr\u00e9ation",
+    summary: "Cr\u00e9e d\u00e9sormais ton propre th\u00e8me de profil, pr\u00e9visualise-le sur tes vraies donn\u00e9es, puis publie-le sans changer la structure du site.",
+    categories: ["Nouvelle fonctionnalit\u00e9", "Am\u00e9lioration", "Profil"],
+    added: [
+      { text: "Un \u00e9diteur complet permet de personnaliser couleurs, typographies, fonds, cadres, cartes, mouvements et images d\u00e9coratives dans des limites s\u00fbres." },
+      { text: "Le brouillon reste priv\u00e9, se recharge apr\u00e8s navigation et peut \u00eatre publi\u00e9 puis activ\u00e9 directement sur le profil public." },
+    ],
+    fixed: [
+      { text: "La publication et la r\u00e9initialisation conservent maintenant la bonne version du th\u00e8me : les r\u00e9glages r\u00e9cents ne restent plus bloqu\u00e9s sur un ancien \u00e9tat." },
+    ],
+    improved: [
+      { text: "La carte PERSONNALIS\u00c9 devient un v\u00e9ritable atelier visuel avec grille, calques, r\u00e8gle, crayon et action OUVRIR L\u2019\u00c9DITEUR clairement identifiable." },
+      { text: "La structure, l\u2019ordre des sections et les actions du profil restent enti\u00e8rement pilot\u00e9s par le site, sur ordinateur comme sur mobile." },
+    ],
+    links: [
+      { label: "Cr\u00e9er mon th\u00e8me", href: "/compte/theme-personnalise" },
+    ],
+  },
+
+  {
     id: "tribunal-results-after-completion",
     version: "2.14",
     date: "2026-08-01",

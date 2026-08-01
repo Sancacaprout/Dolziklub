@@ -83,3 +83,16 @@ test("every theme card uses the same compact and aligned profile preview action"
   assert.match(styles, /@media \(max-width:700px\)\{\.theme-picker__grid \.theme-card__preview\{[^}]*height:44px/);
   assert.doesNotMatch(styles, /theme-card\[data-profile-theme="(?:punk-poster|jazz-lounge|acid-rave)"\] \.theme-card__preview[^}]*min-height/);
 });
+
+test("the custom theme card is a responsive design workbench with one clear action", () => {
+  assert.match(editor, /function CustomThemeCardArt\(\)/);
+  assert.match(editor, /theme-card--custom/);
+  assert.match(editor, /theme-card__workbench-layer--front/);
+  assert.match(editor, /aria-disabled=\{theme\.id === "custom"/);
+  assert.match(editor, /href="\/compte\/theme-personnalise"/);
+  assert.match(styles, /theme-card--custom\{[^}]*background-image:linear-gradient/);
+  assert.match(styles, /theme-card__workbench-pencil/);
+  assert.match(styles, /theme-card--custom \.theme-card__preview\{[^}]*background:#ccf51d/);
+  assert.match(styles, /@media \(max-width:700px\)\{\.theme-card__mini--custom/);
+  assert.match(styles, /@media \(prefers-reduced-motion:reduce\)\{\.theme-card--custom/);
+});
