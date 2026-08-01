@@ -11,47 +11,55 @@ const steps = [
     title: "Tu changes le look, jamais le profil.",
     body: "Le site conserve l’ordre, les grilles, les boutons, les liens et toutes les sections. Aucun réglage de ce guide ne peut déplacer ou masquer un contenu.",
     tip: "Commence par une inspiration si tu veux une base rapide, puis personnalise ses tokens.",
+    anchor: "section-navigation",
   },
   {
     eyebrow: "02 · FOND ET COULEURS",
     title: "Construis d’abord l’ambiance générale.",
     body: "Choisis une couleur unie, un dégradé, un motif ou une image. Les couleurs détaillées contrôlent ensuite les surfaces, textes, liens, boutons, badges et séparateurs.",
-    tip: "La palette ne met à jour l’aperçu qu’une fois ton choix terminé : elle reste donc ouverte pendant que tu explores le dégradé.",
+    tip: "La palette met l’aperçu à jour pendant que tu explores le dégradé, puis ajoute un seul état à l’historique quand tu valides.",
+    anchor: "background-controls",
   },
   {
     eyebrow: "03 · IMAGES",
     title: "Fond et décoration sont deux usages différents.",
     body: "« Utiliser en fond » couvre la page derrière le profil. « Ajouter une déco » place plutôt un sticker ou un dessin dans un emplacement sûr prévu par le site.",
     tip: "Après l’import, choisis explicitement l’un des deux boutons. Une image reste privée tant que le thème n’est pas publié.",
+    anchor: "asset-controls",
   },
   {
     eyebrow: "04 · TYPOGRAPHIE",
     title: "Chaque rôle peut avoir sa propre voix.",
     body: "Les grands titres, le texte courant, les labels, les boutons et les statistiques ont des réglages séparés : famille, taille, graisse, casse, italique et espacement.",
     tip: "Garde le texte courant lisible et réserve les polices Affiche ou Machine à écrire aux titres et labels.",
+    anchor: "typography-controls",
   },
   {
     eyebrow: "05 · CARTES ET CADRES",
     title: "Arrondis les pochettes sans toucher aux grilles.",
     body: "Tu peux arrondir les coins des cartes et des jaquettes, choisir un trait simple, double ou aucun cadre, changer le fond et ajouter une inclinaison très légère.",
     tip: "Une valeur de 0 px garde des coins carrés ; 12 à 20 px donne un rendu nettement plus doux.",
+    anchor: "card-controls",
   },
   {
     eyebrow: "06 · MOUVEMENTS",
     title: "Ajoute du rythme, pas du bruit.",
     body: "Les préréglages Subtil, Dynamique et Halo combinent entrée des sections, survols et liens. La durée reste bornée pour ne pas rendre le profil pénible.",
     tip: "Les animations sont automatiquement neutralisées pour les visiteurs ayant activé la réduction des mouvements.",
+    anchor: "motion-controls",
   },
   {
     eyebrow: "07 · APERÇU",
     title: "Contrôle le vrai profil à trois largeurs.",
     body: "Ordinateur, tablette et mobile affichent la vraie page avec tes vraies données. Le bouton Plein écran agrandit uniquement l’aperçu pour inspecter les détails.",
     tip: "Vérifie surtout le contraste, les textes longs et les trois colonnes avant de publier.",
+    anchor: "preview",
   },
   {
     eyebrow: "08 · FILET DE SÉCURITÉ",
     title: "Tu peux expérimenter sans perdre ton chemin.",
     body: "Annuler et Rétablir conservent jusqu’à 50 états locaux. Tout réinitialiser revient à une base neutre proche du profil standard, sans ombres ou rotations imposées.",
+    anchor: "history-controls",
     tip: "Les micro-changements restent locaux : aucune écriture Supabase n’est envoyée pendant que tu déplaces un curseur.",
   },
 ] as const;
@@ -87,6 +95,7 @@ export function CustomThemeTutorial() {
     setForcedOpen(false);
     window.dispatchEvent(new Event(STORAGE_EVENT));
   };
+  const [spotlight, setSpotlight] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
 
   const relaunch = () => {
     window.localStorage.removeItem(STORAGE_KEY);
@@ -99,11 +108,38 @@ export function CustomThemeTutorial() {
     setStepIndex((current) => Math.min(steps.length - 1, Math.max(0, current + direction)));
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const target = document.querySelector<HTMLElement>(`[data-tutorial-anchor="${step.anchor}"]`);
+    if (!target) {
+      const missingFrame = window.requestAnimationFrame(() => setSpotlight(null));
+      return () => window.cancelAnimationFrame(missingFrame);
+    }
+    target.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+    const update = () => {
+      const bounds = target.getBoundingClientRect();
+      setSpotlight({
+        top: Math.max(8, bounds.top - 8), left: Math.max(8, bounds.left - 8),
+        width: Math.min(window.innerWidth - 16, bounds.width + 16),
+        height: Math.min(window.innerHeight - 16, bounds.height + 16),
+      });
+    };
+    const frame = window.requestAnimationFrame(update);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => { window.cancelAnimationFrame(frame); window.removeEventListener("resize", update); window.removeEventListener("scroll", update, true); };
+  }, [open, step.anchor]);
+
   return (
     <>
       <button type="button" onClick={relaunch}>Guide complet</button>
       {open ? (
         <div className="custom-theme-tutorial" role="presentation">
+
+          {spotlight ? <div className="custom-theme-tutorial__spotlight" style={spotlight} aria-hidden="true" /> : null}
           <div
             ref={dialogRef}
             className="custom-theme-tutorial__dialog"

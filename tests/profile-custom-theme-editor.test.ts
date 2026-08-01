@@ -103,7 +103,7 @@ test("phase two exposes the full color, typography and inspiration controls", ()
 });
 
 test("editor polish keeps color picking stable and adds safe visual controls", () => {
-  assert.match(editorSource, /onInput=\{\(event\) => setPickerDraft/);
+  assert.match(editorSource, /onInput=\{\(event\) => previewPicker/);
   assert.match(editorSource, /onBlur=\{applyPicker\}/);
   assert.match(editorSource, /requestFullscreen\(\)/);
   assert.match(editorSource, /Coins des cartes et jaquettes/);
@@ -111,6 +111,9 @@ test("editor polish keeps color picking stable and adds safe visual controls", (
   assert.match(customThemeStyles, /profile-custom-album-frame-line[\s\S]*box-shadow: none/);
 });
 
+  assert.match(tutorialSource, /scrollIntoView/);
+  assert.match(tutorialSource, /custom-theme-tutorial__spotlight/);
+  assert.match(customThemeStyles, /data-editor-selected="true"/);
 test("the complete tutorial is skippable, relaunchable and keyboard friendly", () => {
   assert.match(tutorialSource, /const steps = \[[\s\S]*08 · FILET DE SÉCURITÉ/);
   assert.match(tutorialSource, /useSyncExternalStore/);
