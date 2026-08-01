@@ -40,6 +40,29 @@ export type SiteUpdate = {
 
 export const siteUpdates = [
   {
+    id: "tribunal-results-after-completion",
+    version: "2.14",
+    date: "2026-08-01",
+    title: "Le Tribunal rend son verdict dès la dernière réponse",
+    summary: "Termine ton questionnaire et les résultats anonymes de tous les participants se dévoilent immédiatement dans une nouvelle séquence animée.",
+    categories: ["Nouvelle fonctionnalité", "Amélioration", "Administration", "Profil"],
+    added: [
+      { text: "Chaque membre ayant répondu à toutes les questions actives accède immédiatement aux résultats, sans attendre la clôture administrative de l’édition." },
+      { text: "Une séquence de déclassification animée accompagne la fin du questionnaire et l’arrivée progressive des résultats." },
+    ],
+    fixed: [
+      { text: "Les prénoms restent lisibles sur les cartes sombres du thème Noir Cinéma ; cette petite correction est désormais regroupée ici plutôt que publiée seule." },
+    ],
+    improved: [
+      { text: "Les administrateurs conservent la gestion des éditions, la prévisualisation et le masquage réversible des réponses libres." },
+      { text: "Le tampon de validation reste lisible avant la révélation finale, sans créer une micro-version séparée." },
+    ],
+    links: [
+      { label: "Entrer au Tribunal", href: "/tribunal" },
+    ],
+  },
+
+  {
     id: "tribunal-one-joker",
     version: "2.13",
     date: "2026-07-29",
@@ -53,24 +76,6 @@ export const siteUpdates = [
     fixed: [],
     improved: [
       { text: "La question passée compte dans la progression mais le joker est exclu des votes, pourcentages et classements." },
-    ],
-    links: [
-      { label: "Entrer au Tribunal", href: "/tribunal" },
-    ],
-  },
-
-  {
-    id: "tribunal-validation-stamp-duration",
-    version: "2.12",
-    date: "2026-07-29",
-    title: "Le verdict du Tribunal reste un peu plus longtemps",
-    summary: "Le tampon affiché après chaque réponse reste désormais assez longtemps à l’écran pour que son message soit parfaitement lisible.",
-    categories: ["Amélioration"],
-    added: [],
-    fixed: [],
-    improved: [
-      { text: "Le message de validation reste visible pendant 1,2 seconde avant l’arrivée de la question suivante." },
-      { text: "L’apparition du tampon est légèrement plus douce, tout en respectant la préférence de réduction des animations." },
     ],
     links: [
       { label: "Entrer au Tribunal", href: "/tribunal" },
@@ -114,22 +119,6 @@ export const siteUpdates = [
     improved: [],
     links: [
       { label: "Ouvrir le tableur", href: "/tableur" },
-    ],
-  },
-  {
-    id: "noir-cinema-member-name-contrast",
-    version: "2.9",
-    date: "2026-07-29",
-    title: "Les prénoms ressortent dans Noir Cinéma",
-    summary: "Les noms des membres associés aux albums restent maintenant parfaitement lisibles sur les cartes sombres du thème Noir Cinéma.",
-    categories: ["Correction", "Profil", "Albums"],
-    added: [],
-    fixed: [
-      { text: "Les prénoms affichés après « Proposé par » et « Écouté par » utilisent désormais la couleur claire du thème, dans les cartes classiques comme dans les listes." },
-    ],
-    improved: [],
-    links: [
-      { label: "Voir les membres", href: "/membres" },
     ],
   },
   {

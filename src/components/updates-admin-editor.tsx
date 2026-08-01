@@ -167,6 +167,7 @@ export function UpdatesAdminEditor({ updates }: { updates: readonly SiteUpdate[]
               <p className="eyebrow">MODE ÉDITION ADMIN</p>
               <h2>Modifier le journal.</h2>
               <p>Une ligne correspond à une entrée. Lien facultatif : texte | /page | libellé du lien.</p>
+              <p><strong>Règle éditoriale :</strong> une petite correction visuelle ou technique ne crée jamais une version seule. Garde-la et regroupe-la dans la prochaine mise à jour substantielle.</p>
             </div>
             <button className="button" type="button" onClick={addVersion}>Ajouter une version</button>
           </header>

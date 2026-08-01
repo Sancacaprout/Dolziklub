@@ -19,7 +19,7 @@ import {
 } from "@/lib/tribunal";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
-type Phase = "intro" | "question" | "complete" | "results";
+type Phase = "intro" | "question" | "reveal" | "complete" | "results";
 type DraftAnswer = {
   targetParticipantId: string;
   targetAlbumId: string;
@@ -143,6 +143,7 @@ export function TribunalBoard() {
   const currentIsJoker = isJokerAnswer(question?.answer ?? null);
   const answeredCount = completedCount - (jokerUsed ? 1 : 0);
   const progress = questions.length ? Math.round((completedCount / questions.length) * 100) : 0;
+  const viewerCompleted = questions.length > 0 && completedCount === questions.length;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -189,8 +190,12 @@ export function TribunalBoard() {
 
   const start = () => {
     const firstMissing = questions.findIndex((item) => !item.answer);
-    setQuestionIndex(firstMissing < 0 ? 0 : firstMissing);
-    setPhase(firstMissing < 0 ? "complete" : "question");
+    if (firstMissing < 0) {
+      void loadResults(true);
+      return;
+    }
+    setQuestionIndex(firstMissing);
+    setPhase("question");
   };
 
   const saveAnswer = async () => {
@@ -222,7 +227,7 @@ export function TribunalBoard() {
       });
       setStamp(tribunalStampMessages[(question.position - 1) % tribunalStampMessages.length]);
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      if (questionIndex >= questions.length - 1) setPhase("complete");
+      if (questionIndex >= questions.length - 1) await loadResults(true);
       else setQuestionIndex((index) => index + 1);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "La réponse n’a pas pu être enregistrée.");
@@ -257,7 +262,7 @@ export function TribunalBoard() {
       });
       setStamp("JOKER UTILISÉ · DOSSIER CLASSÉ SANS SUITE");
       await new Promise((resolve) => setTimeout(resolve, 1200));
-      if (questionIndex >= questions.length - 1) setPhase("complete");
+      if (questionIndex >= questions.length - 1) await loadResults(true);
       else setQuestionIndex((index) => index + 1);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Le joker n’a pas pu être utilisé.");
@@ -266,21 +271,28 @@ export function TribunalBoard() {
     }
   };
 
-  const loadResults = async () => {
+  async function loadResults(withReveal = false) {
     if (!context?.session) return;
+    const revealStartedAt = Date.now();
+    if (withReveal) setPhase("reveal");
     setLoading(true);
     setMessage("");
     try {
       const { data, error } = await getSupabaseBrowserClient().rpc("get_tribunal_results_v2", { p_session_id: context.session.id });
       if (error) throw error;
+      if (withReveal) {
+        const remainingRevealTime = Math.max(0, 1800 - (Date.now() - revealStartedAt));
+        await new Promise((resolve) => setTimeout(resolve, remainingRevealTime));
+      }
       setResults(data as TribunalResults);
       setPhase("results");
     } catch (error) {
+      if (withReveal) setPhase("complete");
       setMessage(error instanceof Error ? error.message : "Les dégâts ne sont pas encore consultables.");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const adminCreateEdition = async (event: FormEvent) => {
     event.preventDefault();
@@ -336,8 +348,8 @@ export function TribunalBoard() {
         <p className={styles.lede}>16 questions. Aucun goût musical ne sortira intact.</p>
         {context?.session ? <div className={styles.sessionLine}><span className={`${styles.status} ${styles[`status_${context.session.status}`]}`}>{tribunalStatusLabels[context.session.status]}</span><b>{context.session.title}</b></div> : null}
         {signedOut ? <Link href="/connexion" className={styles.primaryAction}>SE CONNECTER POUR ENTRER</Link> : null}
-        {!signedOut && context?.session?.status === "open" ? <button type="button" className={styles.primaryAction} onClick={start}>{completedCount ? `REPRENDRE LE TRIBUNAL · ${completedCount} / ${questions.length}` : "LANCER LE TRIBUNAL"}</button> : null}
-        {!signedOut && context?.session?.status === "closed" ? <p className={styles.waiting}>L’édition est close. Les dossiers restent scellés jusqu’à la révélation.</p> : null}
+        {!signedOut && context?.session?.status === "open" ? <button type="button" className={styles.primaryAction} onClick={start}>{viewerCompleted ? "VOIR LES RÉSULTATS" : completedCount ? `REPRENDRE LE TRIBUNAL · ${completedCount} / ${questions.length}` : "LANCER LE TRIBUNAL"}</button> : null}
+        {!signedOut && context?.session?.status === "closed" ? viewerCompleted ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults(true)}>VOIR LES RÉSULTATS</button> : <p className={styles.waiting}>L’édition est close. Termine tes réponses lors de la prochaine ouverture pour accéder aux résultats.</p> : null}
         {!signedOut && context?.session?.status === "results_revealed" ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults()}>AFFICHER LE CARNAGE</button> : null}
         {!signedOut && !context?.session ? <p className={styles.waiting}>Aucune édition n’est disponible pour le moment.</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
@@ -375,11 +387,13 @@ export function TribunalBoard() {
 
         {stamp ? <p className={styles.stamp} role="status">{stamp}</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
-        <footer className={styles.questionActions}>{questionIndex > 0 ? <button type="button" onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}{!jokerUsed && !question.answer ? <button type="button" className={styles.jokerAction} disabled={saving} onClick={() => void spendJoker()}>{saving ? "CLASSEMENT…" : "UTILISER MON JOKER · 1 FOIS"}</button> : null}{currentIsJoker ? <button type="button" className={styles.validate} onClick={() => { if (questionIndex >= questions.length - 1) setPhase("complete"); else setQuestionIndex((index) => index + 1); }}>{questionIndex >= questions.length - 1 ? "TERMINER" : "QUESTION SUIVANTE"}</button> : <button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>{saving ? "ENREGISTREMENT…" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}</button>}</footer>
+        <footer className={styles.questionActions}>{questionIndex > 0 ? <button type="button" onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}{!jokerUsed && !question.answer ? <button type="button" className={styles.jokerAction} disabled={saving} onClick={() => void spendJoker()}>{saving ? "CLASSEMENT…" : "UTILISER MON JOKER · 1 FOIS"}</button> : null}{currentIsJoker ? <button type="button" className={styles.validate} onClick={() => { if (questionIndex >= questions.length - 1) void loadResults(true); else setQuestionIndex((index) => index + 1); }}>{questionIndex >= questions.length - 1 ? "TERMINER ET VOIR LES RÉSULTATS" : "QUESTION SUIVANTE"}</button> : <button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>{saving ? "ENREGISTREMENT…" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}</button>}</footer>
       </div>
     </section> : null}
+    {phase === "reveal" ? <section className={styles.reveal} role="status" aria-live="polite"><div className={styles.revealDossier}><span>DOSSIER COMPLET</span><b>DÉCLASSIFICATION</b><i>RÉSULTATS ANONYMES EN COURS</i></div><div className={styles.revealBars} aria-hidden="true"><i /><i /><i /></div></section> : null}
 
-    {phase === "complete" && context?.session ? <section className={styles.complete}><p className={styles.kicker}>DOSSIER DÉPOSÉ</p><h2>Tu as livré<br /><em>tes seize balles perdues.</em></h2><div><b>{answeredCount}</b><span>RÉPONSES ENREGISTRÉES{jokerUsed ? " · 1 JOKER UTILISÉ" : ""}</span></div>{context.session.status === "results_revealed" ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults()}>VOIR LES DÉGÂTS</button> : <p>Les résultats apparaîtront quand l’administration aura fermé puis révélé l’édition.</p>}<button type="button" className={styles.textAction} onClick={() => { setQuestionIndex(0); setPhase("question"); }}>REVOIR MES RÉPONSES</button></section> : null}
+
+    {phase === "complete" && context?.session ? <section className={styles.complete}><p className={styles.kicker}>DOSSIER DÉPOSÉ</p><h2>Tu as livré<br /><em>tes seize balles perdues.</em></h2><div><b>{answeredCount}</b><span>RÉPONSES ENREGISTRÉES{jokerUsed ? " · 1 JOKER UTILISÉ" : ""}</span></div><button type="button" className={styles.primaryAction} onClick={() => void loadResults(true)}>RÉESSAYER LA DÉCLASSIFICATION</button>{message ? <p className={styles.error} role="alert">{message}</p> : null}<button type="button" className={styles.textAction} onClick={() => { setQuestionIndex(0); setPhase("question"); }}>REVOIR MES RÉPONSES</button></section> : null}
 
     {phase === "results" && results ? <ResultsView results={results} onBack={() => setPhase("intro")} /> : null}
 
