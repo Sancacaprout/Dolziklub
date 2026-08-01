@@ -5,6 +5,7 @@ import {
   type CustomThemeShadowToken,
   type ProfileCustomThemeConfigV1,
 } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeConfig } from "@/lib/profile-custom-theme/sections";
 
 function targetRecord<T>(factory: (target: CustomThemeBoxTarget) => T) {
   return Object.fromEntries(
@@ -81,9 +82,9 @@ export const defaultProfileCustomTheme: ProfileCustomThemeConfigV1 = {
   motion: { entrance: "none", hover: "none", link: "none", counter: "none", duration: 220 },
 };
 
-export function cloneProfileCustomTheme(
-  source: ProfileCustomThemeConfigV1 = defaultProfileCustomTheme,
-) {
+export function cloneProfileCustomTheme<T extends ProfileCustomThemeConfig = ProfileCustomThemeConfigV1>(
+  source: T = defaultProfileCustomTheme as T,
+): T {
   return structuredClone(source);
 }
 

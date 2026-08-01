@@ -10,6 +10,11 @@ import {
   type ProfileCustomThemeConfigV1,
   type ProfileCustomThemeValidation,
 } from "@/lib/profile-custom-theme/types";
+import {
+  customThemeSectionIds,
+  type ProfileCustomThemeConfig,
+  type ProfileCustomThemeConfigV2,
+} from "@/lib/profile-custom-theme/sections";
 
 const HEX_COLOR = /^#[0-9A-F]{6}$/i;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -269,7 +274,7 @@ export function profileCustomThemeByteLength(value: unknown) {
   }
 }
 
-export function validateProfileCustomThemeConfig(value: unknown): ProfileCustomThemeValidation {
+export function validateProfileCustomThemeConfigV1(value: unknown): ProfileCustomThemeValidation {
   const errors: string[] = [];
   if (!record(value) || !exactKeys(value, topLevelKeys)) return { ok: false, value: null, errors: ["config"] };
   addError(errors, value.schemaVersion === 1, "schemaVersion");
@@ -292,7 +297,82 @@ export function validateProfileCustomThemeConfig(value: unknown): ProfileCustomT
   return { ok: true, value: value as ProfileCustomThemeConfigV1, errors: [] };
 }
 
-export function safeProfileCustomThemeConfig(value: unknown, fallback: ProfileCustomThemeConfigV1) {
+function validateSectionText(value: unknown, path: string, errors: string[]) {
+  if (!record(value) || !exactKeys(value, ["family", "size", "weight", "color", "transform", "italic"])) {
+    errors.push(path);
+    return;
+  }
+  addError(errors, enumeration(value.family, customThemeFontFamilies), `${path}.family`);
+  addError(errors, numberIn(value.size, 10, 96), `${path}.size`);
+  addError(errors, [400, 500, 600, 700, 800].includes(Number(value.weight)), `${path}.weight`);
+  addError(errors, typeof value.color === "string" && HEX_COLOR.test(value.color), `${path}.color`);
+  addError(errors, enumeration(value.transform, ["none", "uppercase", "lowercase"]), `${path}.transform`);
+  addError(errors, typeof value.italic === "boolean", `${path}.italic`);
+}
+
+function validateSectionBox(value: unknown, path: string, errors: string[]) {
+  if (!record(value) || !exactKeys(value, ["background", "border", "radius", "shadow", "padding"])) {
+    errors.push(path);
+    return;
+  }
+  addError(errors, typeof value.background === "string" && HEX_COLOR.test(value.background), `${path}.background`);
+  addError(errors, integerIn(value.radius, 0, 48), `${path}.radius`);
+  addError(errors, integerIn(value.padding, 0, 48), `${path}.padding`);
+  const border = value.border;
+  if (!record(border) || !exactKeys(border, ["width", "style", "color"])) errors.push(`${path}.border`);
+  else {
+    addError(errors, integerIn(border.width, 0, 6), `${path}.border.width`);
+    addError(errors, enumeration(border.style, ["none", "solid", "double", "dashed"]), `${path}.border.style`);
+    addError(errors, typeof border.color === "string" && HEX_COLOR.test(border.color), `${path}.border.color`);
+  }
+  const shadow = value.shadow;
+  if (!record(shadow) || !exactKeys(shadow, ["kind", "x", "y", "blur", "spread", "color"])) errors.push(`${path}.shadow`);
+  else {
+    addError(errors, enumeration(shadow.kind, ["none", "soft", "hard", "glow"]), `${path}.shadow.kind`);
+    addError(errors, integerIn(shadow.x, -16, 16), `${path}.shadow.x`);
+    addError(errors, integerIn(shadow.y, -16, 16), `${path}.shadow.y`);
+    addError(errors, integerIn(shadow.blur, 0, 40), `${path}.shadow.blur`);
+    addError(errors, integerIn(shadow.spread, -4, 12), `${path}.shadow.spread`);
+    addError(errors, typeof shadow.color === "string" && HEX_COLOR.test(shadow.color), `${path}.shadow.color`);
+  }
+}
+
+function validateProfileCustomThemeConfigV2(value: Record<string, unknown>): ProfileCustomThemeValidation<ProfileCustomThemeConfigV2> {
+  const errors: string[] = [];
+  if (!exactKeys(value, [...topLevelKeys, "sections"]) || value.schemaVersion !== 2) {
+    return { ok: false, value: null, errors: ["config"] };
+  }
+  const legacyShape = Object.fromEntries(topLevelKeys.map((key) => [key, key === "schemaVersion" ? 1 : value[key]]));
+  const legacyValidation = validateProfileCustomThemeConfigV1(legacyShape);
+  if (!legacyValidation.ok) errors.push(...legacyValidation.errors.filter((error) => error !== "config.size"));
+  const sections = value.sections;
+  if (!record(sections) || !exactKeys(sections, customThemeSectionIds)) errors.push("sections");
+  else for (const sectionId of customThemeSectionIds) {
+    const section = sections[sectionId];
+    const path = `sections.${sectionId}`;
+    if (!record(section) || !exactKeys(section, ["surface", "heading", "card", "cover", "copy", "titleText", "secondaryText"])) {
+      errors.push(path);
+      continue;
+    }
+    validateSectionBox(section.surface, `${path}.surface`, errors);
+    validateSectionBox(section.card, `${path}.card`, errors);
+    validateSectionBox(section.cover, `${path}.cover`, errors);
+    validateSectionBox(section.copy, `${path}.copy`, errors);
+    validateSectionText(section.heading, `${path}.heading`, errors);
+    validateSectionText(section.titleText, `${path}.titleText`, errors);
+    validateSectionText(section.secondaryText, `${path}.secondaryText`, errors);
+  }
+  addError(errors, profileCustomThemeByteLength(value) <= CUSTOM_THEME_MAX_BYTES, "config.size");
+  if (errors.length) return { ok: false, value: null, errors: [...new Set(errors)] };
+  return { ok: true, value: value as unknown as ProfileCustomThemeConfigV2, errors: [] };
+}
+
+export function validateProfileCustomThemeConfig(value: unknown): ProfileCustomThemeValidation<ProfileCustomThemeConfig> {
+  if (record(value) && value.schemaVersion === 2) return validateProfileCustomThemeConfigV2(value);
+  return validateProfileCustomThemeConfigV1(value);
+}
+
+export function safeProfileCustomThemeConfig(value: unknown, fallback: ProfileCustomThemeConfig) {
   const validation = validateProfileCustomThemeConfig(value);
   return validation.ok ? validation.value : fallback;
 }

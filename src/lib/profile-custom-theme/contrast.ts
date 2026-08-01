@@ -1,4 +1,4 @@
-import type { ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeConfig } from "@/lib/profile-custom-theme/sections";
 
 function channel(value: number) {
   const normalized = value / 255;
@@ -18,7 +18,7 @@ export function customThemeContrastRatio(foreground: string, background: string)
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-export function getCustomThemeContrastWarnings(config: ProfileCustomThemeConfigV1) {
+export function getCustomThemeContrastWarnings(config: ProfileCustomThemeConfig) {
   const pairs = [
     ["Texte principal", config.colors.text, config.colors.page, 4.5],
     ["Texte secondaire", config.colors.mutedText, config.colors.page, 4.5],
@@ -33,7 +33,7 @@ export function getCustomThemeContrastWarnings(config: ProfileCustomThemeConfigV
   });
 }
 
-export function autoFixCustomThemeContrast(config: ProfileCustomThemeConfigV1) {
+export function autoFixCustomThemeContrast<T extends ProfileCustomThemeConfig>(config: T): T {
   const next = structuredClone(config);
   const bestText = (background: string) =>
     customThemeContrastRatio("#111111", background) >= customThemeContrastRatio("#FFFFFF", background)

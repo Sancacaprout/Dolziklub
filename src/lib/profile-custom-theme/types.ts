@@ -234,6 +234,6 @@ export type ProfileCustomThemeConfigV1 = {
 
 export type ProfileCustomThemeAssetMap = Record<string, string>;
 
-export type ProfileCustomThemeValidation =
-  | { ok: true; value: ProfileCustomThemeConfigV1; errors: [] }
+export type ProfileCustomThemeValidation<T = ProfileCustomThemeConfigV1> =
+  | { ok: true; value: T; errors: [] }
   | { ok: false; value: null; errors: string[] };

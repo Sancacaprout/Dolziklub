@@ -3,8 +3,8 @@ import type {
   CustomThemeFontFamily,
   CustomThemeInspirationId,
   CustomThemePatternKind,
-  ProfileCustomThemeConfigV1,
 } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeConfig } from "@/lib/profile-custom-theme/sections";
 
 export type CustomThemeInspiration = {
   id: CustomThemeInspirationId;
@@ -49,9 +49,9 @@ export const customThemeInspirations: readonly CustomThemeInspiration[] = [
   inspiration("museum-white", "Museum White", "Galerie blanche et cartels fins.", ["#F8F6F0", "#FFFFFF", "#171717", "#9B2B27", "#B7B4AC"], "none", "system-serif", "system-sans", 0, "none"),
 ] as const;
 
-export function applyCustomThemeInspiration(
+export function applyCustomThemeInspiration<T extends ProfileCustomThemeConfig = ProfileCustomThemeConfig>(
   inspirationId: CustomThemeInspirationId,
-  source: ProfileCustomThemeConfigV1 = defaultProfileCustomTheme,
+  source: T = defaultProfileCustomTheme as T,
 ) {
   const selected = customThemeInspirations.find((item) => item.id === inspirationId);
   if (!selected) return cloneProfileCustomTheme(source);

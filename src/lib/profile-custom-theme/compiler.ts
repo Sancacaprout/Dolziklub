@@ -1,7 +1,14 @@
 import type { CSSProperties } from "react";
-import type { CustomThemeBoxTarget, CustomThemeShadowToken, ProfileCustomThemeAssetMap, ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
+import type { CustomThemeBoxTarget, CustomThemeShadowToken, ProfileCustomThemeAssetMap } from "@/lib/profile-custom-theme/types";
+import {
+  customThemeSectionIds,
+  type CustomThemeSectionBoxToken,
+  type CustomThemeSectionTextToken,
+  type ProfileCustomThemeConfig,
+  type ProfileCustomThemeSectionId,
+} from "@/lib/profile-custom-theme/sections";
 
-type CustomThemeStyle = CSSProperties & Record<`--${string}`, string | number>;
+type CustomThemeStyle = CSSProperties & Record<string, string | number>;
 const fontStacks = {
   "space-grotesk": "var(--font-display), Arial, sans-serif",
   "dm-mono": "var(--font-mono), Consolas, monospace",
@@ -14,6 +21,16 @@ const fontStacks = {
   typewriter: "'Courier New', Courier, monospace",
   poster: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
 } as const;
+const sectionNames = {
+  identity: "identity", quiz: "quiz", favoriteAlbums: "favorite-albums",
+  favoriteTracks: "favorite-tracks", favoriteArtists: "favorite-artists",
+  favoriteClip: "favorite-clip", stats: "stats", listened: "listened",
+  proposed: "proposed", bonus: "bonus",
+} as const;
+
+function borderValue(token: CustomThemeSectionBoxToken["border"]) {
+  return token.style === "none" || token.width === 0 ? "none" : `${token.width}px ${token.style} ${token.color}`;
+}
 const targetNames: Record<CustomThemeBoxTarget, string> = { header: "header", quiz: "quiz", albumCard: "album-card", trackCard: "track-card", podium: "podium", video: "video", stats: "stats", listened: "listened", proposed: "proposed", bonus: "bonus", button: "button", badge: "badge" };
 
 function shadowValue(token: CustomThemeShadowToken) {
@@ -27,14 +44,15 @@ function safeAssetImage(assetId: string | null, assets: ProfileCustomThemeAssetM
   return `url(${JSON.stringify(assets[assetId])})`;
 }
 
-function avatarShadowValue(config: ProfileCustomThemeConfigV1) {
+function avatarShadowValue(config: ProfileCustomThemeConfig) {
   if (config.avatar.shadow === "none") return "none";
   if (config.avatar.shadow === "glow") return `0 0 24px ${config.colors.accent}`;
   if (config.avatar.shadow === "hard") return `6px 6px 0 ${config.avatar.borderColor}`;
   return `0 10px 24px ${config.colors.border}33`;
 }
 
-export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, assets: ProfileCustomThemeAssetMap = {}) {
+export function compileProfileCustomTheme(config: ProfileCustomThemeConfig, assets: ProfileCustomThemeAssetMap = {}) {
+  const sectionStyles: Partial<Record<ProfileCustomThemeSectionId, CustomThemeStyle>> = {};
   const style: CustomThemeStyle = {
     "--profile-custom-page": config.colors.page, "--profile-custom-surface": config.colors.surface, "--profile-custom-surface-alt": config.colors.surfaceAlt,
     "--profile-custom-text": config.colors.text, "--profile-custom-muted": config.colors.mutedText, "--profile-custom-accent": config.colors.accent,
@@ -73,6 +91,45 @@ export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, as
     style[`--profile-custom-${name}-border`] = border.style === "none" || border.width === 0 ? "none" : `${border.width}px ${border.style} ${border.color}`;
     style[`--profile-custom-${name}-radius`] = `${config.radii[target]}px`; style[`--profile-custom-${name}-shadow`] = shadowValue(config.shadows[target]);
   }
+  if (config.schemaVersion === 2) {
+    const boxKinds = ["surface", "card", "cover", "copy"] as const;
+    const textKinds = ["heading", "titleText", "secondaryText"] as const;
+    for (const sectionId of customThemeSectionIds) {
+      const sectionStyle: CustomThemeStyle = {};
+      const section = config.sections[sectionId];
+      const prefix = `--profile-custom-section-${sectionNames[sectionId]}`;
+      for (const boxKind of boxKinds) {
+        const token: CustomThemeSectionBoxToken = section[boxKind];
+        style[`${prefix}-${boxKind}-background`] = token.background;
+        style[`${prefix}-${boxKind}-border`] = borderValue(token.border);
+        style[`${prefix}-${boxKind}-radius`] = `${token.radius}px`;
+        style[`${prefix}-${boxKind}-shadow`] = shadowValue(token.shadow);
+        sectionStyle[`--profile-section-${boxKind}-background`] = token.background;
+        sectionStyle[`--profile-section-${boxKind}-border`] = borderValue(token.border);
+        sectionStyle[`--profile-section-${boxKind}-radius`] = `${token.radius}px`;
+        sectionStyle[`--profile-section-${boxKind}-shadow`] = shadowValue(token.shadow);
+        sectionStyle[`--profile-section-${boxKind}-padding`] = `${token.padding}px`;
+        style[`${prefix}-${boxKind}-padding`] = `${token.padding}px`;
+      }
+      for (const textKind of textKinds) {
+        const token: CustomThemeSectionTextToken = section[textKind];
+        const textName = textKind === "titleText" ? "title" : textKind === "secondaryText" ? "secondary" : "heading";
+        style[`${prefix}-${textName}-font`] = fontStacks[token.family];
+        style[`${prefix}-${textName}-size`] = `${token.size}px`;
+        style[`${prefix}-${textName}-weight`] = token.weight;
+        style[`${prefix}-${textName}-color`] = token.color;
+        style[`${prefix}-${textName}-transform`] = token.transform;
+        style[`${prefix}-${textName}-style`] = token.italic ? "italic" : "normal";
+        sectionStyle[`--profile-section-${textName}-font`] = fontStacks[token.family];
+        sectionStyle[`--profile-section-${textName}-size`] = `${token.size}px`;
+        sectionStyle[`--profile-section-${textName}-weight`] = token.weight;
+        sectionStyle[`--profile-section-${textName}-color`] = token.color;
+        sectionStyle[`--profile-section-${textName}-transform`] = token.transform;
+        sectionStyle[`--profile-section-${textName}-style`] = token.italic ? "italic" : "normal";
+      }
+      sectionStyles[sectionId] = sectionStyle;
+    }
+  }
   return { style, classes: [
     `profile-custom-bg-${config.backgrounds.mode}`, `profile-custom-pattern-${config.backgrounds.pattern.kind}`,
     `profile-custom-heading-${config.headings.separator}`, `profile-custom-heading-align-${config.headings.align}`,
@@ -85,5 +142,5 @@ export function compileProfileCustomTheme(config: ProfileCustomThemeConfigV1, as
     `profile-custom-album-badge-${config.cards.album.badgeStyle}`, `profile-custom-track-badge-${config.cards.track.badgeStyle}`,
     `profile-custom-album-hover-${config.cards.album.hover}`, `profile-custom-track-hover-${config.cards.track.hover}`,
     `profile-custom-heading-shadow-${config.headings.shadow}`,
-  ] };
+  ], sectionStyles };
 }

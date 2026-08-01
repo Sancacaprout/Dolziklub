@@ -11,7 +11,8 @@ import {
 import {
   validateProfileCustomThemeConfig,
 } from "@/lib/profile-custom-theme/validator";
-import type { ProfileCustomThemeAssetMap, ProfileCustomThemeConfigV1 } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeAssetMap } from "@/lib/profile-custom-theme/types";
+import type { ProfileCustomThemeConfig } from "@/lib/profile-custom-theme/sections";
 import {
   isProfileThemeId,
   type ProfileThemeId,
@@ -20,7 +21,7 @@ import { getOptionalSupabaseServerReader } from "@/lib/supabase/server-reader";
 
 export type PublishedProfileTheme = {
   id: Exclude<ProfileThemeId, "dol-ziklub"> | null;
-  customConfig: ProfileCustomThemeConfigV1 | null;
+  customConfig: ProfileCustomThemeConfig | null;
   customAssets: ProfileCustomThemeAssetMap;
 };
 
