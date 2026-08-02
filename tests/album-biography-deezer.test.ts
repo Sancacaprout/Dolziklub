@@ -4,12 +4,14 @@ import test from "node:test";
 
 const albumPage = readFileSync("src/app/albums/[slug]/page.tsx", "utf8");
 const albumLayout = readFileSync("src/app/albums/[slug]/layout.tsx", "utf8");
+const albumVerdict = readFileSync("src/components/album-verdict.tsx", "utf8");
 
 const liveDraws = readFileSync("src/components/live-draws.tsx", "utf8");
 test("best and worst tracks expose the Deezer player with album-aware matching", () => {
-  assert.match(albumPage, /MusicTrackChoiceButton/);
-  assert.equal((albumPage.match(/albumTitle=\{album\.title\}/g) ?? []).length, 2);
-  assert.equal((albumPage.match(/\\u00C9couter sur YouTube Music/g) ?? []).length, 2);
+  assert.match(albumPage, /AlbumVerdict/);
+  assert.match(albumVerdict, /MusicTrackChoiceButton/);
+  assert.match(albumVerdict, /albumTitle=\{albumTitle\}/);
+  assert.match(albumVerdict, /YouTube Music/);
   assert.match(albumPage, /getArchivedReviewOverride/);
   assert.match(albumPage, /archivedReview\?\.is_modified/);
   assert.doesNotMatch(albumLayout, /ArchiveReviewSynchronizer/);

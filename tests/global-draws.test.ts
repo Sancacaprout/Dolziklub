@@ -33,8 +33,8 @@ const globalAlbum: Album = {
   drawNumber: 7,
   liveEntryId: "entry-dod",
   globalReviews: [
-    { entryId: "entry-dod", listenedBy: "Dod", rating: 4, shortReview: "Bien", detailedReview: null, bestTrack: { title: "A", url: null }, worstTrack: { title: "B", url: null } },
-    { entryId: "entry-pep", listenedBy: "Pep", rating: null, shortReview: null, detailedReview: null, bestTrack: { title: null, url: null }, worstTrack: { title: null, url: null } },
+    { entryId: "entry-dod", listenedBy: "Dod", reviewerId: "id-dod", reviewerDisplayName: "Dod", reviewerAvatarPath: null, submittedAt: "2026-08-01T12:00:00Z", rating: 4, shortReview: "Bien", detailedReview: null, bestTrack: { title: "A", url: null }, worstTrack: { title: "B", url: null } },
+    { entryId: "entry-pep", listenedBy: "Pep", reviewerId: "id-pep", reviewerDisplayName: "Pep", reviewerAvatarPath: null, submittedAt: null, rating: null, shortReview: null, detailedReview: null, bestTrack: { title: null, url: null }, worstTrack: { title: null, url: null } },
   ],
 };
 
