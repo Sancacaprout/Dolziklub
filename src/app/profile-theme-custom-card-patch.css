@@ -1,0 +1,93 @@
+/* Targeted visual layer for the custom-theme card. The shared card grid remains untouched. */
+.theme-card--custom .theme-card__studio{
+  background-image:
+    linear-gradient(#f4e9d80b 1px,transparent 1px),
+    linear-gradient(90deg,#f4e9d80b 1px,transparent 1px),
+    radial-gradient(circle at 18% 20%,#d94b363d 0,transparent 28%),
+    radial-gradient(circle at 84% 76%,#7a5cff30 0,transparent 32%),
+    linear-gradient(135deg,#171a29,#090a10);
+  background-size:12px 12px,12px 12px,auto,auto,auto;
+}
+
+.theme-card--custom .theme-card__studio-canvas::before{
+  position:absolute;
+  z-index:2;
+  top:2px;
+  right:4px;
+  left:4px;
+  height:3px;
+  background:repeating-linear-gradient(90deg,#11131d 0 1px,transparent 1px 6px);
+  content:"";
+  opacity:.45;
+}
+
+.theme-card--custom .theme-card__studio-layers::after{
+  position:absolute;
+  right:1px;
+  bottom:-12px;
+  width:42px;
+  height:7px;
+  border:1px solid #a79884;
+  background:
+    repeating-linear-gradient(90deg,#11131d 0 1px,transparent 1px 5px),
+    #f4e9d8;
+  box-shadow:0 4px 9px #0007;
+  content:"";
+  transform:rotate(3deg);
+  transition:transform .22s ease;
+}
+
+.theme-card--custom .theme-card__studio-palette::before{
+  position:absolute;
+  right:-1px;
+  bottom:31px;
+  width:27px;
+  height:5px;
+  border:1px solid #f4e9d8;
+  background:linear-gradient(90deg,#d94b36 0 5px,#f4e9d8 5px 20px,#7a5cff 20px);
+  box-shadow:0 3px 8px #0008;
+  content:"";
+  transform:rotate(-31deg);
+  transform-origin:right center;
+  transition:transform .22s ease;
+}
+
+.theme-card--custom .theme-card__studio-palette::after{
+  position:absolute;
+  right:31px;
+  bottom:17px;
+  width:11px;
+  height:14px;
+  background:#f4e9d8;
+  clip-path:polygon(0 0,100% 68%,58% 72%,78% 100%,61% 100%,43% 75%,0 100%);
+  content:"";
+  filter:drop-shadow(1px 2px 0 #11131d);
+  transform:rotate(-8deg);
+  transition:transform .22s ease;
+}
+
+.theme-card--custom:hover .theme-card__studio-layers::after{
+  transform:translate(-2px,1px) rotate(-1deg);
+}
+
+.theme-card--custom:hover .theme-card__studio-palette::before{
+  transform:translate(-2px,2px) rotate(-20deg);
+}
+
+.theme-card--custom:hover .theme-card__studio-palette::after{
+  transform:translate(3px,-3px) rotate(-2deg);
+}
+
+@media (max-width:700px){
+  .theme-card--custom .theme-card__studio-palette::before{width:31px}
+  .theme-card--custom .theme-card__studio-palette::after{right:35px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .theme-card--custom .theme-card__studio-layers::after,
+  .theme-card--custom .theme-card__studio-palette::before,
+  .theme-card--custom .theme-card__studio-palette::after{transition:none}
+  .theme-card--custom:hover .theme-card__studio-layers::after{transform:rotate(3deg)}
+  .theme-card--custom:hover .theme-card__studio-palette::before{transform:rotate(-31deg)}
+  .theme-card--custom:hover .theme-card__studio-palette::after{transform:rotate(-8deg)}
+}
