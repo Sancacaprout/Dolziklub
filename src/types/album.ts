@@ -3,6 +3,10 @@ export type AlbumStatus = "pending" | "rated" | "archived";
 export type GlobalAlbumReview = {
   entryId: string;
   listenedBy: string | null;
+  reviewerId: string | null;
+  reviewerDisplayName: string | null;
+  reviewerAvatarPath: string | null;
+  submittedAt: string | null;
   rating: number | null;
   shortReview: string | null;
   detailedReview: string | null;
@@ -34,6 +38,7 @@ export interface Album {
   status: AlbumStatus;
   drawNumber?: number | null;
   drawStatus?: "draft" | "published" | "locked" | null;
+  drawType?: "standard" | "global" | null;
   drawUpdatedAt?: string | null;
   archiveNumber?: number | null;
   liveEntryId?: string | null;
