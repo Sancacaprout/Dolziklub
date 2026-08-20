@@ -5,6 +5,8 @@ import { getClubStats, getMemberStats } from "../src/lib/statistics";
 import type { Album } from "../src/types/album";
 
 const migration = readFileSync("supabase/migrations/20260716192909_add_global_club_draws.sql", "utf8");
+const proposerReviewPatch = readFileSync("supabase/migrations/20260820123025_allow_global_proposer_reviews_and_fix_wesleys_theory.sql", "utf8");
+const reviewCards = readFileSync("src/components/music-selection-cards.tsx", "utf8");
 const tableur = readFileSync("src/components/tableur-board.tsx", "utf8");
 const liveAlbums = readFileSync("src/lib/live-albums.ts", "utf8");
 
@@ -38,12 +40,37 @@ const globalAlbum: Album = {
   ],
 };
 
-test("creates a global draw with one proposer and one row per other participant", () => {
+test("creates a global draw with one review row per participant, including the proposer", () => {
   assert.match(migration, /draw_type in \('standard', 'global'\)/);
-  assert.match(migration, /listener\.id <> global_proposer\.id/);
-  assert.match(migration, /cardinality\(draw\.participant_usernames\) - 1/);
+  assert.doesNotMatch(proposerReviewPatch, /listener\.id <> global_proposer\.id/);
+  assert.match(proposerReviewPatch, /row_count <> cardinality\(draw\.participant_usernames\)/);
+  assert.match(proposerReviewPatch, /self_assignment_count <> 1/);
+  assert.match(proposerReviewPatch, /listened_by = proposer\.id/);
+  assert.match(proposerReviewPatch, /A member cannot propose and listen to the same album in a classic draw/);
   assert.match(migration, /club_draw_entries_sync_global_proposal/);
   assert.match(migration, /Choisis l’album du club/);
+});
+
+test("keeps one verdict per member and offers explicit track suggestions", () => {
+  assert.match(proposerReviewPatch, /not exists \([\s\S]*existing\.listened_by = proposer\.id/);
+  assert.match(proposerReviewPatch, /Wesley''s Theory/);
+  assert.match(proposerReviewPatch, /weasley s theory/);
+  assert.doesNotMatch(proposerReviewPatch, /set worst_track = 'Wesley/);
+  assert.match(reviewCards, /<TrackLookup[\s\S]*label="Best track"/);
+  assert.match(reviewCards, /<TrackLookup[\s\S]*label="Worst track"/);
+});
+
+test("counts the global proposer once as proposer and once as listener", () => {
+  const albumWithSelfReview: Album = {
+    ...globalAlbum,
+    globalReviews: [
+      ...(globalAlbum.globalReviews ?? []),
+      { entryId: "entry-toma", listenedBy: "Toma", reviewerId: "id-toma", reviewerDisplayName: "Toma", reviewerAvatarPath: null, submittedAt: "2026-08-01T13:00:00Z", rating: 4.5, shortReview: "Mon verdict", detailedReview: null, bestTrack: { title: "A", url: null }, worstTrack: { title: "B", url: null } },
+    ],
+  };
+  const proposer = getMemberStats([albumWithSelfReview], "toma");
+  assert.equal(proposer.proposed.length, 1);
+  assert.equal(proposer.listened.length, 1);
 });
 
 test("offers the global draw type and designated proposer in the tableur", () => {

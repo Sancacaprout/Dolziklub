@@ -7,7 +7,9 @@ import {
   isLikelyCatalogAlbumResult,
   isLikelyAlbumResult,
   musicUrls,
+  normalizeMusicText,
   scoreMusicCandidate,
+  trackTitleSimilarity,
   type MusicCandidate,
   type MusicResourceType,
 } from "@/lib/music-matching";
@@ -109,6 +111,21 @@ function cleanAlbumTitle(value: string) {
     .replace(/\s*\(\d{4}\)\s*$/i, "")
     .replace(/\s+full\s+album\b.*$/i, "")
     .trim();
+}
+
+function cleanTrackTitle(value: string, artist: string) {
+  const cleaned = cleanAlbumTitle(value)
+    .replace(/\s*\[(?:official\s+)?(?:audio|video|visualizer|lyrics).*?\]\s*/gi, "")
+    .replace(/\s*\((?:official\s+)?(?:audio|video|visualizer|lyrics).*?\)\s*/gi, "")
+    .trim();
+  const parts = cleaned.split(/\s+[-–—]\s+/, 2).map((part) => part.trim());
+  if (
+    parts.length === 2 &&
+    normalizeMusicText(parts[0]) === normalizeMusicText(artist)
+  ) {
+    return parts[1];
+  }
+  return cleaned;
 }
 
 function albumIntent(title: string, artist: string): AlbumSearchIntent {
@@ -275,7 +292,9 @@ export async function searchYouTubeMusic(
       const candidateTitle =
         searchType === "album" && intent.title
           ? intent.title
-          : cleanAlbumTitle(rawTitle);
+          : searchType === "track"
+            ? cleanTrackTitle(rawTitle, intent.artist)
+            : cleanAlbumTitle(rawTitle);
       if (
         searchType === "album" &&
         !isLikelyAlbumResult({
@@ -301,6 +320,9 @@ export async function searchYouTubeMusic(
       const score = Math.min(
         100,
         baseScore +
+          (searchType === "track"
+            ? Math.round(trackTitleSimilarity(intent.title, candidateTitle) * 12)
+            : 0) +
           (searchType === "album" && resourceType === "video" ? 10 : 0) +
           (searchType === "album" && albumVideoMarker(rawTitle) ? 12 : 0) +
           (searchType === "album" && /\b(?:topic|official|vevo|records|music)\b/i.test(channelTitle) ? 8 : 0),

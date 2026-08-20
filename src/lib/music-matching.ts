@@ -29,9 +29,10 @@ export function normalizeMusicText(input: string) {
   return input
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\u200B-\u200D\u2060\uFEFF]/g, "")
     .toLocaleLowerCase()
     .replace(/&/g, " and ")
-    .replace(/[’'`]/g, " ")
+    .replace(/[’‘ʼ´'`]/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -54,7 +55,7 @@ function includesExact(left: string, right: string) {
   return Boolean(a && b && (a === b || a.includes(b) || b.includes(a)));
 }
 
-function textSimilarity(left: string, right: string) {
+export function textSimilarity(left: string, right: string) {
   const a = normalizeMusicText(left);
   const b = normalizeMusicText(right);
   if (!a || !b) return 0;
@@ -74,6 +75,18 @@ function textSimilarity(left: string, right: string) {
   return 1 - previous[b.length] / Math.max(a.length, b.length);
 }
 
+export function trackTitleSimilarity(left: string, right: string) {
+  const leftTerms = terms(left);
+  const rightTerms = terms(right);
+  if (!leftTerms.length || !rightTerms.length) return 0;
+
+  const leftSet = new Set(leftTerms);
+  const rightSet = new Set(rightTerms);
+  const shared = [...leftSet].filter((term) => rightSet.has(term)).length;
+  const tokenScore = (2 * shared) / (leftSet.size + rightSet.size);
+  return Math.max(textSimilarity(left, right), tokenScore);
+}
+
 export function classifyConfidence(score: number): MatchConfidence {
   if (score >= 78) return "high";
   if (score >= 48) return "medium";
@@ -84,7 +97,7 @@ export function scoreMusicCandidate(input: { title: string; artist: string; reso
   const searchable = `${input.candidateTitle} ${input.candidateArtist ?? ""} ${input.channelTitle ?? ""}`;
   let score = overlap(input.title, input.candidateTitle) * 45;
   score += overlap(input.artist, searchable) * 30;
-  score += textSimilarity(input.title, input.candidateTitle) * 15;
+  score += trackTitleSimilarity(input.title, input.candidateTitle) * 15;
   score += textSimilarity(input.artist, input.candidateArtist ?? input.channelTitle ?? "") * 10;
   if (includesExact(input.title, input.candidateTitle)) score += 12;
   if (includesExact(input.artist, searchable)) score += 8;
@@ -170,5 +183,5 @@ export function musicUrls(resourceType: MusicResourceType, resourceId: string | 
 }
 
 export function cacheKey(searchType: "album" | "track", ...parts: string[]) {
-  return `${searchType}:v5:${parts.map(normalizeMusicText).join("|")}`;
+  return `${searchType}:v6:${parts.map(normalizeMusicText).join("|")}`;
 }

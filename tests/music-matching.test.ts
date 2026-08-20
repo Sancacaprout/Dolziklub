@@ -1,10 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cacheKey, classifyConfidence, isLikelyAlbumResult, isLikelyCatalogAlbumResult, musicUrls, normalizeMusicText, scoreMusicCandidate } from "../src/lib/music-matching";
+import { cacheKey, classifyConfidence, isLikelyAlbumResult, isLikelyCatalogAlbumResult, musicUrls, normalizeMusicText, scoreMusicCandidate, trackTitleSimilarity } from "../src/lib/music-matching";
 
 test("normalise accents, apostrophes et ponctuation sans effacer le texte utile", () => {
   assert.equal(normalizeMusicText("L’École du micro d'argent — Vol. 1"), "l ecole du micro d argent vol 1");
-  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v5:joya|tayc");
+  assert.equal(cacheKey("album", "JOŸA", "Tayc"), "album:v6:joya|tayc");
+});
+
+test("rapproche les variantes d’apostrophes, de casse et un petit mot en trop", () => {
+  assert.equal(normalizeMusicText("  WESLEY’S   THEORY  "), "wesley s theory");
+  assert.equal(normalizeMusicText("Wesleyʼs Theory"), "wesley s theory");
+  assert.ok(trackTitleSimilarity("Wesley’s A Theory", "Wesley's Theory") >= 0.85);
 });
 
 test("favorise un album officiel plutôt qu'une réaction hors sujet", () => {
