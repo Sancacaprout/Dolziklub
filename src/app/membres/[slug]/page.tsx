@@ -104,8 +104,8 @@ export default async function MemberPage({
                   key={album.id}
                   album={album}
                   sourceLabel={album.drawNumber
-                    ? `Tirage classique · Tirage ${String(album.drawNumber).padStart(2, "0")}`
-                    : "Tirage classique"}
+                    ? `${album.drawType === "global" ? "Tirage global" : "Tirage classique"} · Tirage ${String(album.drawNumber).padStart(2, "0")}${album.drawType === "global" ? " (Global)" : ""}`
+                    : album.drawType === "global" ? "Tirage global" : "Tirage classique"}
                 />
               ))}
             </div>
@@ -136,8 +136,8 @@ export default async function MemberPage({
                   key={album.id}
                   album={album}
                   sourceLabel={album.drawNumber
-                    ? `Tirage classique · Tirage ${String(album.drawNumber).padStart(2, "0")}`
-                    : "Tirage classique"}
+                    ? `${album.drawType === "global" ? "Tirage global" : "Tirage classique"} · Tirage ${String(album.drawNumber).padStart(2, "0")}${album.drawType === "global" ? " (Global)" : ""}`
+                    : album.drawType === "global" ? "Tirage global" : "Tirage classique"}
                 />
               ))}
             </div>

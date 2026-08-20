@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { type FormEvent, useState } from "react";
-import { AlbumLookup } from "@/components/music-assist";
+import { AlbumLookup, TrackLookup } from "@/components/music-assist";
 import { ImageUploadField } from "@/components/image-upload-field";
 import { type MusicCandidate } from "@/lib/music-matching";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
@@ -208,6 +208,8 @@ export function ReviewAssistantCard({
   const [rating, setRating] = useState(String(existing?.rating ?? ""));
   const [bestTrack, setBestTrack] = useState(existing?.best_track ?? "");
   const [worstTrack, setWorstTrack] = useState(existing?.worst_track ?? "");
+  const [bestMatch, setBestMatch] = useState<MusicCandidate | null>(null);
+  const [worstMatch, setWorstMatch] = useState<MusicCandidate | null>(null);
 
 
 
@@ -220,6 +222,8 @@ export function ReviewAssistantCard({
       rating: Number(rating),
       bestTrack,
       worstTrack,
+      bestMatch,
+      worstMatch,
     });
   };
   const reset = () => {
@@ -298,24 +302,26 @@ export function ReviewAssistantCard({
           </select>
         </label>
         <div className="review-form__tracks">
-          <label>
-            <span>Best track</span>
-            <input
-              maxLength={160}
-              value={bestTrack}
-              onChange={(event) => setBestTrack(event.target.value)}
-              placeholder="Ton meilleur morceau"
-            />
-          </label>
-          <label>
-            <span>Worst track</span>
-            <input
-              maxLength={160}
-              value={worstTrack}
-              onChange={(event) => setWorstTrack(event.target.value)}
-              placeholder="Le morceau le moins convaincant"
-            />
-          </label>
+          <TrackLookup
+            label="Best track"
+            title={bestTrack}
+            artist={entry.album_artist ?? ""}
+            albumTitle={entry.album_title ?? ""}
+            selected={bestMatch}
+            onTitleChange={setBestTrack}
+            onSelect={setBestMatch}
+            disabled={saving}
+          />
+          <TrackLookup
+            label="Worst track"
+            title={worstTrack}
+            artist={entry.album_artist ?? ""}
+            albumTitle={entry.album_title ?? ""}
+            selected={worstMatch}
+            onTitleChange={setWorstTrack}
+            onSelect={setWorstMatch}
+            disabled={saving}
+          />
         </div>
         <div className="review-form__actions">
           <button type="submit" className="button" disabled={saving}>

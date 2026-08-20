@@ -35,7 +35,7 @@ type LiveReview = {
   worst_track_youtube_music_url?: string | null;
 };
 
-type PublicLiveReview = LiveReview & { album_id: string };
+type PublicLiveReview = LiveReview & { album_id: string; reviewer_id?: string | null; reviewer_username?: string | null; reviewer_display_name?: string | null; reviewer_avatar_path?: string | null; created_at?: string | null; updated_at?: string | null };
 
 type ArchivedReviewOverride = {
   album_id: string;
@@ -133,6 +133,7 @@ function materializeLiveAlbum(
   editorial: EditorialMetadata | undefined,
   supabase: SupabaseClient,
   drawStatus: DrawStatus | null = null,
+  drawType: "standard" | "global" | null = null,
 ): Album {
   const title = entry.album_title!.trim();
   const artist = entry.album_artist!.trim();
@@ -170,6 +171,7 @@ function materializeLiveAlbum(
       status: rating === null ? "pending" : "rated",
       drawNumber: entry.draw_number,
       drawStatus,
+      drawType,
       drawUpdatedAt: entry.updated_at,
       archiveNumber: entry.archive_number,
       liveEntryId: entry.id,
@@ -200,6 +202,7 @@ function materializeLiveAlbum(
     status: rating === null ? "pending" : "rated",
     drawNumber: entry.draw_number,
     drawStatus,
+    drawType,
     drawUpdatedAt: entry.updated_at,
     archiveNumber: entry.archive_number,
     liveEntryId: entry.id,
@@ -232,11 +235,15 @@ function collapseGlobalDrawAlbums(albums: Album[], globalDrawNumbers: Set<number
       globalReviews: group.map((candidate) => ({
         entryId: candidate.liveEntryId!,
         listenedBy: candidate.listenedBy,
+        reviewerId: (candidate as Album & { reviewerId?: string | null }).reviewerId ?? null,
+        reviewerDisplayName: (candidate as Album & { reviewerDisplayName?: string | null }).reviewerDisplayName ?? null,
+        reviewerAvatarPath: (candidate as Album & { reviewerAvatarPath?: string | null }).reviewerAvatarPath ?? null,
         rating: candidate.rating,
         shortReview: candidate.shortReview,
         detailedReview: candidate.detailedReview,
         bestTrack: candidate.bestTrack,
         worstTrack: candidate.worstTrack,
+        submittedAt: (candidate as Album & { submittedAt?: string | null }).submittedAt ?? null,
       })),
     });
   }
@@ -261,15 +268,23 @@ async function materializeEntries(
   const editorialMap = new Map(
     ((editorialData ?? []) as unknown as EditorialMetadata[]).map((item) => [item.draw_entry_id, item]),
   );
-  const albums = entries.map((entry) =>
-    materializeLiveAlbum(
+  const albums = entries.map((entry) => {
+    const review = reviewMap.get(entry.id);
+    return {
+      ...materializeLiveAlbum(
       entry,
-      reviewMap.get(entry.id),
+      review,
       editorialMap.get(entry.id),
       supabase,
       drawStatusByNumber.get(entry.draw_number) ?? null,
-    ),
-  );
+      globalDrawNumbers.has(entry.draw_number) ? "global" : "standard",
+      ),
+      reviewerId: review?.reviewer_id ?? null,
+      reviewerDisplayName: review?.reviewer_display_name ?? review?.reviewer_username ?? null,
+      reviewerAvatarPath: review?.reviewer_avatar_path ?? null,
+      submittedAt: review?.created_at ?? null,
+    };
+  });
   return applyArchiveCoverOverrides(
     collapseGlobalDrawAlbums(albums, globalDrawNumbers), await getArchiveCoverOverrides(supabase), supabase,
   );
@@ -280,51 +295,40 @@ export async function getLiveAlbum(slug: string): Promise<Album | null> {
 
   const supabase = getOptionalSupabaseServerReader();
   if (!supabase) return null;
-  const [{ data: entryData }, { data: reviewData }, { data: editorialData }, { data: trackData }] = await Promise.all([
-    supabase
-      .from("club_draw_entries")
-      .select(LIVE_ENTRY_FIELDS)
-      .eq("id", match[1])
-      .maybeSingle(),
-    supabase
-      .from("member_album_reviews")
-      .select("review_title, review, rating, best_track, worst_track")
-      .eq("album_id", match[1])
-      .maybeSingle(),
-    supabase
-      .from("album_editorial_metadata")
-      .select(EDITORIAL_FIELDS)
-      .eq("draw_entry_id", match[1])
-      .maybeSingle(),
+  const { data: entryData, error: entryError } = await supabase
+    .from("club_draw_entries")
+    .select(LIVE_ENTRY_FIELDS)
+    .eq("id", match[1])
+    .maybeSingle();
+  const entry = entryData as unknown as LiveEntry | null;
+  if (entryError || !entry?.album_title?.trim() || !entry.album_artist?.trim()) return null;
+
+  const [{ data: drawData, error: drawError }, { data: reviewData, error: reviewError }] = await Promise.all([
+    supabase.from("club_draws").select("draw_number, draw_type, status").eq("draw_number", entry.draw_number).maybeSingle(),
     supabase.rpc("get_public_draw_reviews"),
   ]);
-  const entry = entryData as unknown as LiveEntry | null;
-  const review = reviewData as unknown as LiveReview | null;
-  const trackReview = ((trackData ?? []) as unknown as PublicLiveReview[])
-    .find((candidate) => candidate.album_id === match[1]);
-  const linkedReview = review ? { ...review,
-    best_track_youtube_music_url: trackReview?.best_track_youtube_music_url ?? null,
-    worst_track_youtube_music_url: trackReview?.worst_track_youtube_music_url ?? null,
-  } : undefined;
-  const editorial = editorialData as unknown as EditorialMetadata | null;
-
-  if (!entry?.album_title?.trim() || !entry.album_artist?.trim()) return null;
-  const { data: drawData } = await supabase
-    .from("club_draws")
-    .select("status")
-    .eq("draw_number", entry.draw_number)
-    .maybeSingle();
-  return applyArchiveCoverOverrides(
-    [materializeLiveAlbum(
-      entry,
-      linkedReview,
-      editorial ?? undefined,
-      supabase,
-      (drawData?.status as DrawStatus | undefined) ?? null,
-    )],
-    await getArchiveCoverOverrides(supabase),
+  if (drawError || reviewError || !drawData) return null;
+  const isGlobal = drawData.draw_type === "global";
+  let entries = [entry];
+  if (isGlobal) {
+    const { data: globalEntries, error: globalEntriesError } = await supabase
+      .from("club_draw_entries")
+      .select(LIVE_ENTRY_FIELDS)
+      .eq("draw_number", entry.draw_number)
+      .not("album_title", "is", null)
+      .not("album_artist", "is", null)
+      .order("position", { ascending: true });
+    if (globalEntriesError) return null;
+    entries = (globalEntries ?? []) as unknown as LiveEntry[];
+  }
+  const albums = await materializeEntries(
+    entries,
+    (reviewData ?? []) as PublicLiveReview[],
     supabase,
-  )[0] ?? null;
+    isGlobal ? new Set([entry.draw_number]) : new Set(),
+    new Map([[entry.draw_number, drawData.status as DrawStatus]]),
+  );
+  return albums.find((album) => album.liveEntryId === entry.id || album.globalReviews?.some((review) => review.entryId === entry.id)) ?? albums[0] ?? null;
 }
 
 export async function getLatestLiveAlbums(limit = 6): Promise<Album[]> {

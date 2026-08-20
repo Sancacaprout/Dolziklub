@@ -9,7 +9,8 @@ import { albums } from "@/data/albums";
 import { getMemberDisplayName } from "@/data/members";
 import { getSynchronizedAlbums } from "@/lib/live-albums";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
-import { MusicChoiceButton, MusicTrackChoiceButton } from "@/components/music-player";
+import { MusicChoiceButton } from "@/components/music-player";
+import { AlbumVerdict } from "@/components/album-verdict";
 import { getArchivedReviewOverride } from "@/lib/archived-reviews";
 import { AlbumEditorialEditor } from "@/components/album-editorial-editor";
 import { LiveClubRefresh } from "@/components/live-club-refresh";
@@ -88,8 +89,9 @@ export default async function AlbumPage({
   const description = cleanDescription(album.albumDescription);
   const artistDescription = cleanDescription(album.artistDescription);
   const reviewer = getMemberDisplayName(album.listenedBy);
-  const trackLink = (track: string | null, storedUrl: string | null = null) =>
-    track ? storedUrl ?? youtubeMusicSearchUrl(track, album.artist, album.title) : null;
+  const isGlobal = album.drawType === "global" && Boolean(album.globalReviews?.length);
+  const globalListeners = album.globalReviews?.map((review) => getMemberDisplayName(review.reviewerDisplayName ?? review.listenedBy)) ?? [];
+  const drawLabel = album.drawNumber == null ? null : `Tirage ${album.drawNumber}${isGlobal ? " (Global)" : ""}`;
 
   return (
     <main className="page album-page">
@@ -134,8 +136,12 @@ export default async function AlbumPage({
             </div>
             <div>
               <dt>Écouté par</dt>
-              <dd>{reviewer}</dd>
+              <dd>{isGlobal ? globalListeners.join(", ") : reviewer}</dd>
             </div>
+            {drawLabel && <div>
+              <dt>Tirage</dt>
+              <dd>{drawLabel}</dd>
+            </div>}
             <div>
               <dt>Statut</dt>
               <dd>{status}</dd>
@@ -176,43 +182,28 @@ export default async function AlbumPage({
         </section>
       )}
 
-      <section className="review-sheet">
-        <div className="review-quote">
-          <p className="eyebrow">VERDICT DE {reviewer.toUpperCase()}</p>
-          <blockquote>{album.shortReview ?? "Le compte rendu est encore sous scellés."}</blockquote>
-          {album.detailedReview && <p className="review-detail">{album.detailedReview}</p>}
-        </div>
-        <div className="track-box">
-          <div className="track-card track-card--best">
-            <span>Best track</span>
-            {album.bestTrack.title && trackLink(album.bestTrack.title, album.bestTrack.url) ? (
-              <MusicTrackChoiceButton
-                title={album.bestTrack.title}
-                artist={album.artist}
-                albumTitle={album.title}
-                youtubeMusicUrl={trackLink(album.bestTrack.title, album.bestTrack.url)!}
-              >
-                {album.bestTrack.title}
-                <small>{"\u00C9couter sur YouTube Music \u2197"}</small>
-              </MusicTrackChoiceButton>
-            ) : <p>Pas encore renseigné</p>}
-          </div>
-          <div className="track-card track-card--worst">
-            <span>Worst track</span>
-            {album.worstTrack.title && trackLink(album.worstTrack.title, album.worstTrack.url) ? (
-              <MusicTrackChoiceButton
-                title={album.worstTrack.title}
-                artist={album.artist}
-                albumTitle={album.title}
-                youtubeMusicUrl={trackLink(album.worstTrack.title, album.worstTrack.url)!}
-              >
-                {album.worstTrack.title}
-                <small>{"\u00C9couter sur YouTube Music \u2197"}</small>
-              </MusicTrackChoiceButton>
-            ) : <p>Pas encore renseigné</p>}
-          </div>
-        </div>
-      </section>
+      {album.globalReviews?.length ? album.globalReviews.map((globalReview) => <AlbumVerdict
+        key={globalReview.entryId}
+        reviewer={getMemberDisplayName(globalReview.reviewerDisplayName ?? globalReview.listenedBy)}
+        avatarPath={globalReview.reviewerAvatarPath}
+        rating={globalReview.rating}
+        reviewTitle={globalReview.shortReview}
+        reviewDetail={globalReview.detailedReview}
+        bestTrack={globalReview.bestTrack}
+        worstTrack={globalReview.worstTrack}
+        artist={album.artist}
+        albumTitle={album.title}
+        submittedAt={globalReview.submittedAt}
+      />) : <AlbumVerdict
+        reviewer={reviewer}
+        rating={album.rating}
+        reviewTitle={album.shortReview}
+        reviewDetail={album.detailedReview}
+        bestTrack={album.bestTrack}
+        worstTrack={album.worstTrack}
+        artist={album.artist}
+        albumTitle={album.title}
+      />}
 
       {(album.liveEntryId || album.id.startsWith("archive-")) && (
         <AlbumEditorialEditor album={album} drawEntryId={album.liveEntryId ?? null} archiveAlbumId={album.id.startsWith("archive-") ? album.id : null} />
