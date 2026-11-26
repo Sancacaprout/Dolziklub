@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import styles from "@/app/tribunal/tribunal.module.css";
 import {
   tribunalStampMessages,
@@ -76,8 +76,13 @@ function resultHeading(result: TribunalQuestionResult) {
 function statusAction(status: TribunalStatus) {
   if (status === "draft") return { next: "open" as const, label: "OUVRIR L’ÉDITION" };
   if (status === "open") return { next: "closed" as const, label: "FERMER L’ÉDITION" };
-  if (status === "closed") return { next: "results_revealed" as const, label: "RÉVÉLER LES RÉSULTATS" };
   return null;
+}
+
+function describeError(error: unknown, fallback: string) {
+  return typeof error === "object" && error !== null && "message" in error && typeof error.message === "string"
+    ? error.message
+    : fallback;
 }
 
 export function TribunalBoard() {
@@ -93,10 +98,12 @@ export function TribunalBoard() {
   const [message, setMessage] = useState("");
   const [stamp, setStamp] = useState("");
   const [results, setResults] = useState<TribunalResults | null>(null);
+  const resultsRequest = useRef<AbortController | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [editionTitle, setEditionTitle] = useState("Le Tribunal — Nouvelle édition");
 
   const loadContext = useCallback(async (sessionId: number | null = null) => {
+    resultsRequest.current?.abort();
     if (!configured) {
       setLoading(false);
       return;
@@ -112,7 +119,7 @@ export function TribunalBoard() {
         return;
       }
       setSignedOut(false);
-      const { data, error } = await supabase.rpc("get_tribunal_context_v2", { p_session_id: sessionId });
+      const { data, error } = await supabase.rpc("get_tribunal_context_v3", { p_session_id: sessionId });
       if (error) throw error;
       const next = data as TribunalContext;
       setContext(next);
@@ -122,7 +129,7 @@ export function TribunalBoard() {
       setPhase("intro");
       setResults(null);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Le dossier n’a pas pu être chargé.");
+      setMessage(describeError(error, "Le dossier n’a pas pu être chargé."));
     } finally {
       setLoading(false);
     }
@@ -130,7 +137,10 @@ export function TribunalBoard() {
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => void loadContext(), 0);
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      resultsRequest.current?.abort();
+    };
   }, [loadContext]);
 
   const questions = useMemo(
@@ -187,6 +197,44 @@ export function TribunalBoard() {
         : question.type === "album" ? draft.targetAlbumId
           : draft.targetReviewId
   ));
+  const resultSessionId = context?.session?.id ?? null;
+  const finishesQuestionnaire = questions.every((item) => item.id === question?.id || item.answer);
+
+  const loadResults = useCallback(async (withReveal = false) => {
+    if (resultSessionId === null) return;
+    resultsRequest.current?.abort();
+    const request = new AbortController();
+    resultsRequest.current = request;
+    const revealStartedAt = Date.now();
+    if (withReveal) setPhase("reveal");
+    setLoading(true);
+    setMessage("");
+    try {
+      const { data, error } = await getSupabaseBrowserClient().rpc("get_tribunal_results_v3", {
+        p_session_id: resultSessionId,
+      }).abortSignal(request.signal);
+      if (error) throw error;
+      if (withReveal) {
+        const remainingRevealTime = Math.max(0, 1800 - (Date.now() - revealStartedAt));
+        await new Promise((resolve) => setTimeout(resolve, remainingRevealTime));
+      }
+      if (request.signal.aborted) return;
+      setResults(data as TribunalResults);
+      setPhase("results");
+    } catch (error) {
+      if (request.signal.aborted) return;
+      if (withReveal) setPhase("complete");
+      setMessage(describeError(error, "Impossible de charger les résultats. Réessaie sans perdre tes réponses."));
+    } finally {
+      if (!request.signal.aborted) setLoading(false);
+    }
+  }, [resultSessionId]);
+
+  useEffect(() => {
+    if (phase !== "results" || !results || results.progress.isComplete) return;
+    const intervalId = window.setInterval(() => void loadResults(), 30_000);
+    return () => window.clearInterval(intervalId);
+  }, [loadResults, phase, results]);
 
   const start = () => {
     const firstMissing = questions.findIndex((item) => !item.answer);
@@ -196,6 +244,27 @@ export function TribunalBoard() {
     }
     setQuestionIndex(firstMissing);
     setPhase("question");
+  };
+
+  const advanceAfterSave = async (answer: TribunalAnswer, stampMessage: string) => {
+    if (!question) return;
+    const nextMissing = questions.findIndex((item) => item.id !== question.id && !item.answer);
+    setContext((current) => {
+      if (!current?.session || current.session.id !== resultSessionId) return current;
+      const nextQuestions = current.questions.map((item) => item.id === question.id ? { ...item, answer } : item);
+      return {
+        ...current,
+        questions: nextQuestions,
+        session: {
+          ...current.session,
+          completedCount: nextQuestions.filter((item) => item.isActive && item.answer).length,
+        },
+      };
+    });
+    setStamp(stampMessage);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    if (nextMissing === -1) await loadResults(true);
+    else setQuestionIndex(nextMissing);
   };
 
   const saveAnswer = async () => {
@@ -212,25 +281,9 @@ export function TribunalBoard() {
         p_free_text: draft.freeText.trim() || null,
       });
       if (error) throw error;
-      const saved = data as TribunalAnswer;
-      setContext((current) => {
-        if (!current?.session) return current;
-        const nextQuestions = current.questions.map((item) => item.id === question.id ? { ...item, answer: saved } : item);
-        return {
-          ...current,
-          questions: nextQuestions,
-          session: {
-            ...current.session,
-            completedCount: nextQuestions.filter((item) => item.isActive && item.answer).length,
-          },
-        };
-      });
-      setStamp(tribunalStampMessages[(question.position - 1) % tribunalStampMessages.length]);
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      if (questionIndex >= questions.length - 1) await loadResults(true);
-      else setQuestionIndex((index) => index + 1);
+      await advanceAfterSave(data as TribunalAnswer, tribunalStampMessages[(question.position - 1) % tribunalStampMessages.length]);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "La réponse n’a pas pu être enregistrée.");
+      setMessage(describeError(error, "La réponse n’a pas pu être enregistrée."));
     } finally {
       setSaving(false);
     }
@@ -247,52 +300,13 @@ export function TribunalBoard() {
         p_question_id: question.id,
       });
       if (error) throw error;
-      const saved = data as TribunalAnswer;
-      setContext((current) => {
-        if (!current?.session) return current;
-        const nextQuestions = current.questions.map((item) => item.id === question.id ? { ...item, answer: saved } : item);
-        return {
-          ...current,
-          questions: nextQuestions,
-          session: {
-            ...current.session,
-            completedCount: nextQuestions.filter((item) => item.isActive && item.answer).length,
-          },
-        };
-      });
-      setStamp("JOKER UTILISÉ · DOSSIER CLASSÉ SANS SUITE");
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-      if (questionIndex >= questions.length - 1) await loadResults(true);
-      else setQuestionIndex((index) => index + 1);
+      await advanceAfterSave(data as TribunalAnswer, "JOKER UTILISÉ · DOSSIER CLASSÉ SANS SUITE");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Le joker n’a pas pu être utilisé.");
+      setMessage(describeError(error, "Le joker n’a pas pu être utilisé."));
     } finally {
       setSaving(false);
     }
   };
-
-  async function loadResults(withReveal = false) {
-    if (!context?.session) return;
-    const revealStartedAt = Date.now();
-    if (withReveal) setPhase("reveal");
-    setLoading(true);
-    setMessage("");
-    try {
-      const { data, error } = await getSupabaseBrowserClient().rpc("get_tribunal_results_v2", { p_session_id: context.session.id });
-      if (error) throw error;
-      if (withReveal) {
-        const remainingRevealTime = Math.max(0, 1800 - (Date.now() - revealStartedAt));
-        await new Promise((resolve) => setTimeout(resolve, remainingRevealTime));
-      }
-      setResults(data as TribunalResults);
-      setPhase("results");
-    } catch (error) {
-      if (withReveal) setPhase("complete");
-      setMessage(error instanceof Error ? error.message : "Les dégâts ne sont pas encore consultables.");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const adminCreateEdition = async (event: FormEvent) => {
     event.preventDefault();
@@ -307,8 +321,8 @@ export function TribunalBoard() {
     else await loadContext(Number(data));
   };
 
-  const adminSetStatus = async (status: "open" | "closed" | "results_revealed") => {
-    if (!context?.session || !confirm(`Confirmer : ${status === "open" ? "ouvrir" : status === "closed" ? "fermer" : "révéler les résultats de"} « ${context.session.title} » ?`)) return;
+  const adminSetStatus = async (status: "open" | "closed") => {
+    if (!context?.session || !confirm(`Confirmer : ${status === "open" ? "ouvrir" : "fermer"} « ${context.session.title} » ?`)) return;
     setSaving(true);
     const { error } = await getSupabaseBrowserClient().rpc("admin_set_tribunal_session_status", {
       p_session_id: context.session.id,
@@ -348,9 +362,10 @@ export function TribunalBoard() {
         <p className={styles.lede}>16 questions. Aucun goût musical ne sortira intact.</p>
         {context?.session ? <div className={styles.sessionLine}><span className={`${styles.status} ${styles[`status_${context.session.status}`]}`}>{tribunalStatusLabels[context.session.status]}</span><b>{context.session.title}</b></div> : null}
         {signedOut ? <Link href="/connexion" className={styles.primaryAction}>SE CONNECTER POUR ENTRER</Link> : null}
-        {!signedOut && context?.session?.status === "open" ? <button type="button" className={styles.primaryAction} onClick={start}>{viewerCompleted ? "VOIR LES RÉSULTATS" : completedCount ? `REPRENDRE LE TRIBUNAL · ${completedCount} / ${questions.length}` : "LANCER LE TRIBUNAL"}</button> : null}
-        {!signedOut && context?.session?.status === "closed" ? viewerCompleted ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults(true)}>VOIR LES RÉSULTATS</button> : <p className={styles.waiting}>L’édition est close. Termine tes réponses lors de la prochaine ouverture pour accéder aux résultats.</p> : null}
-        {!signedOut && context?.session?.status === "results_revealed" ? <button type="button" className={styles.primaryAction} onClick={() => void loadResults()}>AFFICHER LE CARNAGE</button> : null}
+        {context?.session && viewerCompleted && context.session.status !== "draft" ? <button type="button" className={styles.primaryAction} disabled={loading} onClick={() => void loadResults(true)}>VOIR LES RÉSULTATS</button> : null}
+        {context?.session?.status === "open" && !viewerCompleted && questions.length > 0 ? <button type="button" className={styles.primaryAction} disabled={loading} onClick={start}>{completedCount ? `REPRENDRE LE TRIBUNAL · ${completedCount} / ${questions.length}` : "LANCER LE TRIBUNAL"}</button> : null}
+        {context?.session && !viewerCompleted && (context.session.status === "closed" || context.session.status === "results_revealed") ? <p className={styles.waiting}>L’édition est close. Seuls les participants qui ont terminé peuvent consulter les résultats.</p> : null}
+        {context && !context.isAdmin && context.session && context.sessions.length > 1 ? <label className={styles.search}><span>Historique des éditions</span><select value={context.session.id} disabled={loading} onChange={(event) => void loadContext(Number(event.target.value))}>{context.sessions.map((session) => <option key={session.id} value={session.id}>{session.title}</option>)}</select></label> : null}
         {!signedOut && !context?.session ? <p className={styles.waiting}>Aucune édition n’est disponible pour le moment.</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
       </div>
@@ -387,7 +402,19 @@ export function TribunalBoard() {
 
         {stamp ? <p className={styles.stamp} role="status">{stamp}</p> : null}
         {message ? <p className={styles.error} role="alert">{message}</p> : null}
-        <footer className={styles.questionActions}>{questionIndex > 0 ? <button type="button" onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}{!jokerUsed && !question.answer ? <button type="button" className={styles.jokerAction} disabled={saving} onClick={() => void spendJoker()}>{saving ? "CLASSEMENT…" : "UTILISER MON JOKER · 1 FOIS"}</button> : null}{currentIsJoker ? <button type="button" className={styles.validate} onClick={() => { if (questionIndex >= questions.length - 1) void loadResults(true); else setQuestionIndex((index) => index + 1); }}>{questionIndex >= questions.length - 1 ? "TERMINER ET VOIR LES RÉSULTATS" : "QUESTION SUIVANTE"}</button> : <button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>{saving ? "ENREGISTREMENT…" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}</button>}</footer>
+        <footer className={styles.questionActions}>
+          {questionIndex > 0 ? <button type="button" disabled={saving} onClick={() => setQuestionIndex((index) => index - 1)}>QUESTION PRÉCÉDENTE</button> : <button type="button" disabled={saving} onClick={() => setPhase("intro")}>QUITTER LE DOSSIER</button>}
+          {!jokerUsed && !question.answer ? <button type="button" className={styles.jokerAction} disabled={saving} onClick={() => void spendJoker()}>{saving ? "CLASSEMENT…" : "UTILISER MON JOKER · 1 FOIS"}</button> : null}
+          {currentIsJoker ? (
+            <button type="button" className={styles.validate} disabled={loading || saving} onClick={start}>
+              {viewerCompleted ? "TERMINER ET VOIR LES RÉSULTATS" : "REPRENDRE LES QUESTIONS"}
+            </button>
+          ) : (
+            <button type="button" className={styles.validate} disabled={!canSave || saving} onClick={() => void saveAnswer()}>
+              {saving ? "ENREGISTREMENT…" : finishesQuestionnaire ? "TERMINER ET VOIR LES RÉSULTATS" : question.answer ? "METTRE À JOUR ET CONTINUER" : "VALIDER ET CONTINUER"}
+            </button>
+          )}
+        </footer>
       </div>
     </section> : null}
     {phase === "reveal" ? <section className={styles.reveal} role="status" aria-live="polite"><div className={styles.revealDossier}><span>DOSSIER COMPLET</span><b>DÉCLASSIFICATION</b><i>RÉSULTATS ANONYMES EN COURS</i></div><div className={styles.revealBars} aria-hidden="true"><i /><i /><i /></div></section> : null}
@@ -395,7 +422,7 @@ export function TribunalBoard() {
 
     {phase === "complete" && context?.session ? <section className={styles.complete}><p className={styles.kicker}>DOSSIER DÉPOSÉ</p><h2>Tu as livré<br /><em>tes seize balles perdues.</em></h2><div><b>{answeredCount}</b><span>RÉPONSES ENREGISTRÉES{jokerUsed ? " · 1 JOKER UTILISÉ" : ""}</span></div><button type="button" className={styles.primaryAction} onClick={() => void loadResults(true)}>RÉESSAYER LA DÉCLASSIFICATION</button>{message ? <p className={styles.error} role="alert">{message}</p> : null}<button type="button" className={styles.textAction} onClick={() => { setQuestionIndex(0); setPhase("question"); }}>REVOIR MES RÉPONSES</button></section> : null}
 
-    {phase === "results" && results ? <ResultsView results={results} onBack={() => setPhase("intro")} /> : null}
+    {phase === "results" && results ? <ResultsView results={results} refreshing={loading} error={message} onRefresh={() => void loadResults()} onBack={() => { resultsRequest.current?.abort(); setLoading(false); setPhase("intro"); }} /> : null}
 
     {context?.isAdmin ? <AdminPanel context={context} open={adminOpen} saving={saving} editionTitle={editionTitle} onOpen={() => setAdminOpen((value) => !value)} onEditionTitle={setEditionTitle} onCreate={adminCreateEdition} onSelectSession={(id) => void loadContext(id)} onSetStatus={(status) => void adminSetStatus(status)} onToggleQuestion={(target) => void adminToggleQuestion(target)} onToggleResponse={(id, hidden) => void adminToggleResponse(id, hidden)} onPreview={() => void loadResults()} /> : null}
   </div>;
@@ -413,11 +440,23 @@ function ReviewChoice({ review, cover, selected, onSelect }: { review: TribunalR
   return <button type="button" className={`${styles.reviewChoice} ${selected ? styles.selected : ""}`} aria-pressed={selected} onClick={onSelect}>{cover ? <img src={cover} alt={`Pochette de ${review.albumTitle}`} /> : <span className={styles.reviewCoverFallback}>DOL<br />ZIKLUB</span>}<span><small>TIRAGE {drawLabel(review.drawNumber)} · {review.memberName}</small><b>{review.albumTitle}</b><em>{review.artist}</em></span><strong>{String(review.rating).replace(".", ",")} / 5</strong>{review.reviewTitle ? <h3>{review.reviewTitle}</h3> : null}<p>{review.reviewExcerpt}</p>{selected ? <i>NOTE SUSPECTE RETENUE</i> : null}</button>;
 }
 
-function ResultsView({ results, onBack }: { results: TribunalResults; onBack: () => void }) {
-  return <section className={styles.results}><header><p className={styles.kicker}>RÉSULTATS ANONYMES · DOSSIERS DÉCLASSIFIÉS</p><h1>AFFICHER<br /><em>LE CARNAGE</em></h1><p>{results.session.title}</p></header>{results.globalRanking.length ? <section className={styles.globalRanking}><span>CLASSEMENT GLOBAL</span><h2>LA PLUS GROSSE VICTIME DU TRIBUNAL</h2><ol>{results.globalRanking.slice(0, 5).map((item, index) => <li key={item.id}><b>{index + 1}</b><span>{item.label}<small>@{item.username}</small></span><strong>{item.citations} citations</strong></li>)}</ol></section> : null}<div className={styles.resultList}>{results.questions.map((result) => <article key={result.id} className={styles.resultCard}><header><span>{resultHeading(result)}</span><b>{result.totalVotes} VOTE{result.totalVotes > 1 ? "S" : ""}</b></header><h2>{result.prompt}</h2>{result.ranking.length ? <ol>{result.ranking.map((item, index) => <li key={item.id}><strong>{index + 1}</strong><div><b>{item.label}</b>{item.artist ? <small>{item.artist}</small> : null}{item.memberName ? <small>{item.memberName} · {String(item.rating).replace(".", ",")} / 5</small> : null}</div><span>{item.votes} · {item.percentage}%</span></li>)}</ol> : <p className={styles.empty}>Aucune preuve déposée.</p>}{result.freeAnswers.length ? <div className={styles.freeAnswers}>{result.freeAnswers.map((answer, index) => <blockquote key={`${result.id}-${index}`}>{result.position === 13 ? <>Les goûts de <b>{answer.targetDisplayName}</b> ressemblent à {answer.text}</> : <><b>{answer.targetDisplayName}</b> — {answer.text}</>}</blockquote>)}</div> : null}</article>)}</div><button type="button" className={styles.textAction} onClick={onBack}>REVENIR À L’ACCUEIL DU TRIBUNAL</button></section>;
+function ResultsView({ results, refreshing, error, onRefresh, onBack }: { results: TribunalResults; refreshing: boolean; error: string; onRefresh: () => void; onBack: () => void }) {
+  const { completedParticipants, totalParticipants, isComplete } = results.progress;
+  const completedLabel = `${completedParticipants} participant${totalParticipants === 1 ? "" : "s"} sur ${totalParticipants} ${totalParticipants === 1 ? "a" : "ont"} terminé`;
+  return <section className={styles.results}>
+    <header><p className={styles.kicker}>RÉSULTATS ANONYMES · DOSSIERS DÉCLASSIFIÉS</p><h1>AFFICHER<br /><em>LE CARNAGE</em></h1><p>{results.session.title}</p></header>
+    <section className={`${styles.resultsProgress} ${results.progress.isComplete ? styles.resultsProgressComplete : ""}`} aria-live="polite">
+      <div><strong>{isComplete ? "RÉSULTATS COMPLETS" : "RÉSULTATS PROVISOIRES"}</strong><span>{completedLabel}.</span>{!isComplete ? <small>Le dossier se met à jour automatiquement lorsque de nouvelles réponses arrivent.</small> : null}</div>
+      <button type="button" disabled={refreshing} onClick={onRefresh}>{refreshing ? "ACTUALISATION…" : "ACTUALISER"}</button>
+    </section>
+    {error ? <p className={styles.error} role="alert">{error}</p> : null}
+    {results.globalRanking.length ? <section className={styles.globalRanking}><span>CLASSEMENT GLOBAL</span><h2>LA PLUS GROSSE VICTIME DU TRIBUNAL</h2><ol>{results.globalRanking.slice(0, 5).map((item) => <li key={item.id}><b>{results.globalRanking.findIndex((entry) => entry.citations === item.citations) + 1}</b><span>{item.label}<small>@{item.username}</small></span><strong>{item.citations} citations</strong></li>)}</ol></section> : null}
+    <div className={styles.resultList}>{results.questions.map((result) => <article key={result.id} className={styles.resultCard}><header><span>{resultHeading(result)}</span><b>{result.totalVotes} VOTE{result.totalVotes > 1 ? "S" : ""}</b></header><h2>{result.prompt}</h2>{result.ranking.length ? <ol>{result.ranking.map((item) => <li key={item.id}><strong>{result.ranking.findIndex((entry) => entry.votes === item.votes) + 1}</strong><div><b>{item.label}</b>{item.artist ? <small>{item.artist}</small> : null}{item.memberName ? <small>{item.memberName} · {String(item.rating).replace(".", ",")} / 5</small> : null}</div><span>{item.votes} · {item.percentage}%</span></li>)}</ol> : <p className={styles.empty}>Aucune preuve déposée.</p>}</article>)}</div>
+    <button type="button" className={styles.textAction} onClick={onBack}>REVENIR À L’ACCUEIL DU TRIBUNAL</button>
+  </section>;
 }
 
-function AdminPanel({ context, open, saving, editionTitle, onOpen, onEditionTitle, onCreate, onSelectSession, onSetStatus, onToggleQuestion, onToggleResponse, onPreview }: { context: TribunalContext; open: boolean; saving: boolean; editionTitle: string; onOpen: () => void; onEditionTitle: (value: string) => void; onCreate: (event: FormEvent) => void; onSelectSession: (id: number) => void; onSetStatus: (status: "open" | "closed" | "results_revealed") => void; onToggleQuestion: (question: TribunalQuestion) => void; onToggleResponse: (id: number, hidden: boolean) => void; onPreview: () => void }) {
+function AdminPanel({ context, open, saving, editionTitle, onOpen, onEditionTitle, onCreate, onSelectSession, onSetStatus, onToggleQuestion, onToggleResponse, onPreview }: { context: TribunalContext; open: boolean; saving: boolean; editionTitle: string; onOpen: () => void; onEditionTitle: (value: string) => void; onCreate: (event: FormEvent) => void; onSelectSession: (id: number) => void; onSetStatus: (status: "open" | "closed") => void; onToggleQuestion: (question: TribunalQuestion) => void; onToggleResponse: (id: number, hidden: boolean) => void; onPreview: () => void }) {
   const action = context.session ? statusAction(context.session.status) : null;
   return <aside className={styles.admin}><button type="button" className={styles.adminToggle} aria-expanded={open} onClick={onOpen}>ADMINISTRATION DU TRIBUNAL · {context.session?.participationCount ?? 0} PARTICIPATION(S)</button>{open ? <div className={styles.adminBody}><section><h2>ÉDITIONS</h2>{context.sessions.length ? <label>Édition active<select value={context.session?.id ?? ""} onChange={(event) => onSelectSession(Number(event.target.value))}>{context.sessions.map((session) => <option key={session.id} value={session.id}>{session.title} · {tribunalStatusLabels[session.status]}</option>)}</select></label> : null}<form onSubmit={onCreate}><label>Titre de la nouvelle édition<input value={editionTitle} maxLength={120} onChange={(event) => onEditionTitle(event.target.value)} /></label><button type="submit" disabled={saving}>CRÉER LE BROUILLON</button></form>{action ? <button type="button" className={styles.dangerAction} disabled={saving} onClick={() => onSetStatus(action.next)}>{action.label}</button> : null}{context.session && context.session.status !== "draft" ? <button type="button" onClick={onPreview}>PRÉVISUALISER LES DÉGÂTS</button> : null}</section><section><h2>QUESTIONS</h2><ol className={styles.adminQuestions}>{context.questions.map((question) => <li key={question.id}><span><b>{question.position}</b>{question.prompt}</span><button type="button" onClick={() => onToggleQuestion(question)}>{question.isActive ? "DÉSACTIVER" : "RÉACTIVER"}</button></li>)}</ol></section><section><h2>MODÉRATION DES RÉPONSES LIBRES</h2>{context.moderation.length ? <ol className={styles.moderation}>{context.moderation.map((item) => <li key={item.id} className={item.isHidden ? styles.hiddenResponse : ""}><small>QUESTION {item.questionPosition} · {item.targetDisplayName ?? "SANS CIBLE"}</small><p>{item.freeText}</p><button type="button" onClick={() => onToggleResponse(item.id, !item.isHidden)}>{item.isHidden ? "RÉAFFICHER" : "MASQUER SANS SUPPRIMER"}</button></li>)}</ol> : <p>Aucune réponse libre à modérer.</p>}</section></div> : null}</aside>;
 }

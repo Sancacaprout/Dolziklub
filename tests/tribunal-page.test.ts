@@ -100,9 +100,9 @@ test("offers every historical album and review with covers and durable archive a
   assert.match(completeArchiveMigrationSource, /get_tribunal_context_v2/);
   assert.match(completeArchiveMigrationSource, /get_tribunal_results_v2/);
   assert.match(completeArchiveMigrationSource, /coverSourceUrl/);
-  assert.match(boardSource, /get_tribunal_context_v2/);
+  assert.match(boardSource, /get_tribunal_context_v3/);
   assert.match(boardSource, /save_my_tribunal_response_v2/);
-  assert.match(boardSource, /get_tribunal_results_v2/);
+  assert.match(boardSource, /get_tribunal_results_v3/);
   assert.match(boardSource, /cover=\{evidenceCover\(review\)\}/);
   assert.match(boardSource, /Pochette de \$\{review\.albumTitle\}/);
   assert.match(stylesSource, /\.reviewCoverFallback/);

@@ -33,9 +33,7 @@ export type TribunalSession = {
   participationCount: number;
 };
 
-export type TribunalSessionSummary = Pick<TribunalSession, "id" | "title" | "status" | "participationCount"> & {
-  createdAt: string;
-};
+export type TribunalSessionSummary = Pick<TribunalSession, "id" | "title" | "status">;
 
 export type TribunalParticipant = {
   id: string;
@@ -115,11 +113,15 @@ export type TribunalQuestionResult = {
   type: TribunalQuestionType;
   totalVotes: number;
   ranking: TribunalRankingItem[];
-  freeAnswers: Array<{ targetDisplayName: string | null; text: string }>;
 };
 
 export type TribunalResults = {
   session: Pick<TribunalSession, "id" | "title" | "status" | "resultsRevealedAt">;
+  progress: {
+    completedParticipants: number;
+    totalParticipants: number;
+    isComplete: boolean;
+  };
   questions: TribunalQuestionResult[];
   globalRanking: Array<{ id: string; label: string; username: string; citations: number }>;
 };
