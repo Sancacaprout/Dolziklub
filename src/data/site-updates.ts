@@ -431,7 +431,6 @@ export const siteUpdates = [
     ],
     links: [
       { label: "Lancer depuis l’accueil", href: "/" },
-      { label: "Découvrir le concept", href: "/concept" },
     ],
   },
 ] as const satisfies readonly SiteUpdate[];

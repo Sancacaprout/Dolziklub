@@ -22,13 +22,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function isAvailableLink(href: unknown): href is `/${string}` {
+  return typeof href === "string" && href.startsWith("/") && !/^\/concept(?:[/?#]|$)/.test(href);
+}
+
 function readChanges(value: unknown): UpdateChange[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!isRecord(item) || typeof item.text !== "string" || !item.text.trim()) return [];
     const change: UpdateChange = { text: item.text.trim() };
-    if (typeof item.href === "string" && item.href.startsWith("/")) {
-      change.href = item.href as `/${string}`;
+    if (isAvailableLink(item.href)) {
+      change.href = item.href;
       if (typeof item.linkLabel === "string" && item.linkLabel.trim()) {
         change.linkLabel = item.linkLabel.trim();
       }
@@ -44,10 +48,9 @@ function readLinks(value: unknown): UpdateLink[] {
       !isRecord(item) ||
       typeof item.label !== "string" ||
       !item.label.trim() ||
-      typeof item.href !== "string" ||
-      !item.href.startsWith("/")
+      !isAvailableLink(item.href)
     ) return [];
-    return [{ label: item.label.trim(), href: item.href as `/${string}` }];
+    return [{ label: item.label.trim(), href: item.href }];
   });
 }
 
