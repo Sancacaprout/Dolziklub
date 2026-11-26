@@ -1,5 +1,6 @@
 "use client";
 
+import type { AuthChangeEvent } from "@supabase/supabase-js";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -37,7 +38,7 @@ export function SiteHeader() {
       }
     };
     const deferredSync = createDeferredAuthSync(sync);
-    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === "SIGNED_OUT") {
         request?.abort();
         verifiedActor = null;
