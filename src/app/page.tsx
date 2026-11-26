@@ -1,23 +1,17 @@
-import Image from "next/image";
 import Link from "next/link";
 import { AlbumCard } from "@/components/album-card";
 import { ClubLiveMetrics } from "@/components/club-live-metrics";
 import { HeroVinylGame } from "@/components/hero-vinyl-game";
-import { HomeActivityFeed } from "@/components/home-activity-feed";
 import { LiveClubRefresh } from "@/components/live-club-refresh";
+import { getRecentMemes, RecentMemes } from "@/components/recent-memes";
 import { getLatestAlbums } from "@/data/albums";
-import { memes } from "@/data/memes";
 import { albumIdentityKey } from "@/lib/album-live-sync";
 import { getClubSnapshot } from "@/lib/club-snapshot";
-import { getHomeActivity } from "@/lib/home-activity";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [snapshot, activity] = await Promise.all([
-    getClubSnapshot(),
-    getHomeActivity(),
-  ]);
+  const [snapshot, recentMemes] = await Promise.all([getClubSnapshot(), getRecentMemes()]);
   const { currentAlbums, members, stats } = snapshot;
   const seenAlbums = new Set<string>();
   const recentAlbums = [...currentAlbums, ...getLatestAlbums(18)].filter((album) => {
@@ -31,7 +25,7 @@ export default async function Home() {
 
   return (
     <main>
-      <LiveClubRefresh />
+      <LiveClubRefresh watchMemes />
       <section className="hero">
         <p className="stamp">ARCHIVES PRIVÉES · ÉDITION 01</p>
         <h1>DOL<br /><em>ZIKLUB</em><HeroVinylGame wallAlbums={wallAlbums} /></h1>
@@ -56,7 +50,7 @@ export default async function Home() {
         </div>
         <div className="album-grid">{latestAlbums.map((album) => <AlbumCard key={album.id} album={album} />)}</div>
       </section>
-      <HomeActivityFeed activity={activity} />
+      <RecentMemes {...recentMemes} />
       <section className="split-section">
         <div>
           <p className="eyebrow">Le club en chiffres</p>
@@ -71,15 +65,6 @@ export default async function Home() {
               <span>{String(index + 1).padStart(2, "0")}</span>{member.displayName}
             </Link>
           ))}
-        </div>
-      </section>
-      <section className="section meme-preview">
-        <div className="section-heading">
-          <div><p className="eyebrow">Musée des dossiers</p><h2>Mèmes du Dol Ziklub</h2></div>
-          <Link href="/memes">Ouvrir les archives →</Link>
-        </div>
-        <div className="meme-strip">
-          {memes.slice(0, 4).map((meme) => <Image src={meme.src} alt={meme.alt} key={meme.id} width={500} height={500} sizes="(max-width: 700px) 45vw, 25vw" />)}
         </div>
       </section>
     </main>

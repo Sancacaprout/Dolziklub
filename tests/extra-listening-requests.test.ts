@@ -26,6 +26,27 @@ const bonusWorkspace = readFileSync(
   "utf8",
 );
 const updates = readFileSync("src/data/site-updates.ts", "utf8");
+const proposalMigration = readFileSync("supabase/migrations/20261126143338_improve_proposals_wheely_and_recent_memes.sql", "utf8");
+const disclosure = readFileSync("src/components/persistent-disclosure.tsx", "utf8");
+
+test("keeps drafts alive through failed or repeated sends and targets the saved row", () => {
+  assert.match(workspace, /if \(!configured \|\| submittingProposal\.current\) return/);
+  assert.match(workspace, /if \(error\) throw error;[\s\S]*?await onProposed\(payload\.entryId\)/);
+  assert.match(workspace, /key=\{request\.id\}/);
+  assert.doesNotMatch(workspace, /key=\{[^\n]*request\.updated_at/);
+  assert.match(workspace, /extra-listening-row-/);
+  assert.match(proposalMigration, /for update/);
+  assert.match(proposalMigration, /coalesce\(next_cover_path, request\.cover_path\)/);
+  assert.match(tableur, /await loadExtraRequests\(\);[\s\S]*?returnToDraw\(requestId\)/);
+});
+
+test("stores disclosure state under a versioned account and block key", () => {
+  assert.match(disclosure, /dolziklub:disclosure:v1:\$\{memberId \?\? "guest"\}:\$\{scope\}/);
+  assert.match(disclosure, /useSyncExternalStore/);
+  assert.match(disclosure, /aria-expanded=\{open\}/);
+  assert.match(workspace, /useStoredDisclosure\(`extra-listenings:/);
+  assert.match(bonusWorkspace, /useStoredDisclosure\("bonus-review-workspace", member\.id\)/);
+});
 
 test("extra listening requests own their complete lifecycle outside official draw entries", () => {
   assert.match(migration, /create table if not exists public\.extra_listening_requests/);

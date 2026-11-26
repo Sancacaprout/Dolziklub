@@ -194,8 +194,6 @@ body.profile-theme-page .account-kouize-editor { background:var(--profile-kouize
 .favorite-albums-panel .button { background:var(--profile-button-background); color:var(--profile-button-text); border-color:var(--profile-border); }
 
 /* Accueil : un fil éditorial, vivant sans devenir un tableau de bord. */
-.home-activity { width:min(1380px,calc(100% - 2rem)); margin:4rem auto clamp(4rem,7vw,7rem); padding:clamp(1.5rem,4vw,3rem); background:var(--blue); color:var(--paper); border:var(--line); box-shadow:8px 8px 0 var(--ink); }.home-activity__heading { display:flex; align-items:end; justify-content:space-between; gap:1rem; padding-bottom:1.5rem; }.home-activity__heading .eyebrow { color:var(--acid); }.home-activity__heading h2 { margin:0; color:var(--paper); }.home-activity__heading>a { color:var(--acid); font:500 .7rem var(--font-mono),monospace; text-transform:uppercase; text-decoration:none; }.home-activity__heading>a:hover { color:#fff; text-decoration:underline; }.activity-list { margin:0; padding:0; list-style:none; border-top:1px solid #fff6; }.activity-item { display:grid; grid-template-columns:42px minmax(0,1fr) auto; gap:1rem; align-items:center; padding:1rem 0; border-bottom:1px solid #fff4; }.activity-item__symbol { display:grid; width:34px; aspect-ratio:1; place-items:center; border:1px solid currentColor; color:var(--acid); font:1.25rem var(--font-display),sans-serif; }.activity-item--verdict .activity-item__symbol { color:#fff; background:var(--red); border-color:var(--red); }.activity-item--meme .activity-item__symbol { color:var(--ink); background:var(--acid); border-color:var(--acid); }.activity-item--draw .activity-item__symbol { color:var(--blue); background:var(--paper); border-color:var(--paper); }.activity-item__type { display:block; margin-bottom:.28rem; color:var(--acid); font:500 .62rem var(--font-mono),monospace; letter-spacing:.08em; }.activity-item a { color:inherit; text-decoration:none; }.activity-item a:hover b { color:var(--acid); text-decoration:underline; text-underline-offset:.12em; }.activity-item b { display:block; font:600 1.4rem/.95 var(--font-display),sans-serif; letter-spacing:-.025em; }.activity-item p { margin:.3rem 0 0; color:#fff9; font-size:.88rem; }.activity-item time { color:#fff9; font:500 .62rem var(--font-mono),monospace; text-transform:uppercase; white-space:nowrap; }.activity-empty { padding:2rem 0 0; border-top:1px solid #fff6; }.activity-empty b { color:var(--acid); font:1.25rem var(--font-display),sans-serif; }.activity-empty p { margin:.5rem 0 0; color:#fff9; }
-@media (max-width:700px) { .home-activity { margin-top:3rem; padding:1.25rem; box-shadow:5px 5px 0 var(--ink); }.home-activity__heading { align-items:start; flex-direction:column; }.activity-item { grid-template-columns:34px minmax(0,1fr); gap:.7rem; }.activity-item time { grid-column:2; }.activity-item b { font-size:1.2rem; }.activity-item p { font-size:.8rem; } }
 
 /* Soutien : PayPal reste une destination externe, sans formulaire ou donnée de paiement sur le site. */
 .footer .footer-support { grid-column:1/-1; display:grid; justify-items:end; gap:.75rem; padding-top:1.25rem; font:inherit; text-transform:none; }.coffee-button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:.7rem .9rem; border:1px solid var(--ink); background:var(--red); color:#fff; box-shadow:4px 4px 0 var(--ink); font:600 .7rem var(--font-mono),monospace; letter-spacing:.04em; text-decoration:none; text-transform:uppercase; cursor:pointer; transition:transform .16s ease,box-shadow .16s ease,background .16s ease; }.coffee-button:hover { background:var(--blue); transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
@@ -657,21 +655,20 @@ body.profile-theme-page .favorite-albums-panel .music-manual { color:var(--profi
 .album-editorial-admin__reset { border:0; background:transparent; color:var(--ink); font:500 .68rem var(--font-mono),monospace; text-decoration:underline; text-underline-offset:4px; text-transform:uppercase; }
 .album-editorial-admin__message { margin:1.25rem 0 0; padding:.75rem 1rem; border-left:5px solid var(--red); background:#fff9; font:500 .7rem/1.45 var(--font-mono),monospace; text-transform:uppercase; }
 @media (max-width:700px) { .album-editorial-admin { box-shadow:5px 5px 0 var(--ink); }.album-editorial-admin__header { display:grid; }.album-editorial-admin__header .button { justify-self:start; }.album-editorial-admin__grid { grid-template-columns:1fr; } }
-/* Chargement Wheely : le sprite Animation traverse le disque avant l’ouverture du runner. */
+/* Wheely reste visible pendant le chargement audio. */
 .wheely-launch-loader { position:fixed; z-index:100; inset:0; display:grid; place-items:center; overflow:hidden; pointer-events:none; background:radial-gradient(circle at center,#202026 0 5%,#09090b 32%,#020203 72%); color:var(--paper); isolation:isolate; }
-.wheely-launch-loader__disc { position:relative; width:min(68vmin,720px); aspect-ratio:1; border-radius:50%; will-change:transform,filter; animation:wheely-loader-disc-expand 1.2s cubic-bezier(.12,.72,.12,1) 6s both; }
+.wheely-launch-loader__disc { position:relative; width:min(68vmin,720px); aspect-ratio:1; border-radius:50%; will-change:transform,filter;  }
 .wheely-launch-loader__disc::before { content:""; position:absolute; inset:0; border-radius:inherit; background:radial-gradient(circle,var(--paper) 0 1.5%,var(--red) 1.8% 7%,#0c0c0e 7.4% 17%,transparent 17.4%),repeating-radial-gradient(circle,#08080a 0 4px,#303036 5px 6px,#09090b 7px 11px); box-shadow:0 0 80px #e13f2a33,inset 0 0 0 8px #020203; animation:wheely-loader-disc 1.1s linear infinite; }
 .wheely-launch-loader__track { position:absolute; inset:0; overflow:hidden; }
-.wheely-launch-loader__rider { position:absolute; z-index:2; left:0; top:50%; width:clamp(120px,22vmin,260px); height:auto; object-fit:contain; filter:drop-shadow(0 14px 9px #000a); transform:translate(-115%,-50%); animation:wheely-loader-cross 6s cubic-bezier(.2,.72,.12,1) both; }
+.wheely-launch-loader__rider { position:absolute; z-index:2; left:0; top:50%; width:clamp(120px,22vmin,260px); height:auto; object-fit:contain; filter:drop-shadow(0 14px 9px #000a); transform:translate(-115%,-50%); animation:wheely-loader-cross 1s cubic-bezier(.2,.72,.12,1) both; }
 .wheely-launch-loader__label { position:absolute; left:50%; bottom:max(2rem,env(safe-area-inset-bottom)); transform:translateX(-50%); padding:.5rem .7rem; border:1px solid var(--paper); background:#09090bd9; color:var(--acid); font:700 clamp(.58rem,1.5vw,.78rem) var(--font-mono),monospace; letter-spacing:.12em; white-space:nowrap; }
 @keyframes wheely-loader-disc { to { transform:rotate(360deg); } }
 @keyframes wheely-loader-cross { 0% { transform:translate(-115%,-50%) rotate(-7deg) scale(.82); } 55% { transform:translate(43vw,-58%) rotate(2deg) scale(1.08); } 88%,100% { transform:translate(82vw,-50%) rotate(7deg) scale(.9); } }
-@keyframes wheely-loader-disc-expand { from { transform:scale(1); filter:brightness(1); } to { transform:scale(18); filter:brightness(.38) contrast(1.35); } }
 @media (max-width:700px) { .wheely-launch-loader__rider { width:clamp(110px,34vmin,190px); }.wheely-launch-loader__disc { width:82vmin; } }
 @media (prefers-reduced-motion:reduce) { .wheely-launch-loader__disc,.wheely-launch-loader__disc::before { animation:none; }.wheely-launch-loader__rider { animation:none; left:50%; transform:translate(-50%,-50%); } }
-/* Résultat Wheely : score et distance restent lisibles, même sur les petits écrans. */
+/* Résultats et classement de Wheely. */
 .vinyl-runner__panel--small>h2 { max-width:12ch; margin-inline:auto; }
-.vinyl-runner__summary { width:min(100%,430px); display:grid; grid-template-columns:1fr 1fr; gap:1px; margin:1.5rem auto 2rem; border:2px solid var(--ink); background:var(--ink); }
+.vinyl-runner__summary { width:min(100%,430px); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; margin:1.5rem auto 2rem; border:2px solid var(--ink); background:var(--ink); }
 .vinyl-runner__summary>div { min-width:0; display:grid; justify-items:center; align-content:center; gap:.25rem; min-height:118px; padding:1rem; background:var(--paper); }
 .vinyl-runner__summary span,.vinyl-runner__summary small { display:block; color:var(--ink); font:700 .62rem/1.1 var(--font-mono),monospace!important; letter-spacing:.08em; text-transform:uppercase; }
 .vinyl-runner__summary b { display:block; max-width:100%; color:var(--red)!important; font:600 clamp(2.5rem,8vw,4.4rem)/.78 var(--font-display),sans-serif!important; overflow-wrap:anywhere; }
@@ -679,6 +676,19 @@ body.profile-theme-page .favorite-albums-panel .music-manual { color:var(--profi
 .vinyl-runner__panel--victory .vinyl-runner__summary>div { background:var(--acid); }
 .vinyl-runner__panel--victory .vinyl-runner__summary b { color:var(--blue)!important; }
 @media (max-width:520px) { .vinyl-runner__summary { margin-block:1.1rem 1.5rem; }.vinyl-runner__summary>div { min-height:92px; padding:.75rem .45rem; }.vinyl-runner__summary b { font-size:clamp(2.1rem,15vw,3.35rem)!important; }.vinyl-runner__panel--small>h2 { font-size:clamp(2.15rem,12vw,3.2rem); } }
+
+.vinyl-runner__results .vinyl-runner__summary b { font-size:clamp(1.5rem,7vw,3.4rem)!important; }
+.vinyl-runner__club-results { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.8rem; margin:1rem 0; text-align:left; }
+.vinyl-runner__club-results section { min-width:0; border:1px solid currentColor; padding:.65rem; }
+.vinyl-runner__club-results h3 { margin:0 0 .5rem; font-size:.95rem; }
+.vinyl-runner__club-results ol,.vinyl-runner__club-results ul { padding:0; list-style:none; margin:0; }
+.vinyl-runner__club-results li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.25rem; border-top:1px solid #7776; padding:.35rem 0; font-size:.78rem; }
+.vinyl-runner__rider { font:700 .73rem/1.35 var(--font-mono),monospace; }
+.meme-comment-count { display:inline-flex; align-items:center; gap:.35rem; min-height:44px; border:0; background:transparent; color:inherit; text-align:left; text-decoration:underline; text-underline-offset:.2em; font:700 .72rem/1.3 var(--font-mono),monospace; cursor:pointer; }
+.meme-comment-count:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+#meme-dialog-comments { scroll-margin-block:1rem; }
+#meme-dialog-comments h2 { font-size:1rem; margin:.75rem 0; }
+@media (max-width:420px) { .vinyl-runner__club-results { grid-template-columns:1fr; } }
 
 /* Global draw reveal: a shared result, replayed once for each member. */
 .global-wheel-overlay { position:fixed; z-index:120; inset:0; display:grid; place-items:center; padding:1.25rem; background:rgba(8,8,8,.82); backdrop-filter:blur(10px); }

@@ -76,12 +76,10 @@ test("uses Animation only during loading and removes passed obstacles early", ()
   assert.match(styles, /wheely-loader-cross/);
   assert.equal(GAME.albumDespawnDepth, 0.83);
   assert.equal(GAME.obstacleDespawnDepth, 0.85);
-  assert.match(game, /const WHEELY_CROSSING_MS = 6_000/);
-  assert.match(game, /const VINYL_EXPANSION_MS = 1_200/);
-  assert.match(game, /const LAUNCH_LOADING_MS = WHEELY_CROSSING_MS \+ VINYL_EXPANSION_MS/);
-  assert.match(game, /const ENTRY_TRANSITION_MS = 450/);
-  assert.match(styles, /wheely-loader-cross 6s/);
-  assert.match(styles, /wheely-loader-disc-expand 1\.2s[^;]+6s both/);
+  assert.match(game, /preload="none" onEnded=\{win\}/);
+  assert.match(game, /await playAudio\(\);[\s\S]*?updatePhase\("playing"\)/);
+  assert.doesNotMatch(game, /LAUNCH_LOADING_MS|ENTRY_TRANSITION_MS/);
+  assert.match(styles, /wheely-loader-cross 1s/);
   assert.match(styles, /\.vinyl-runner__entry::before \{ display:none; \}/);
 });
 

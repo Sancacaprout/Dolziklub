@@ -26,7 +26,13 @@ import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/c
 import finishStyles from "./hero-vinyl-game.module.css";
 
 type GamePhase = "entering" | "playing" | "paused" | "resuming" | "finishing" | "game-over" | "victory";
-type WheelyUnlockState = "idle" | "running" | "guest" | "saving" | "unlocked" | "error";
+type WheelyClubResults = {
+  leaders: Array<{ name: string; score: number; rank: number }>;
+  personal: { score: number; rank: number; recordAt: string } | null;
+  successes: Array<{ name: string; completedAt: string; score: number | null }>;
+  rider: boolean | null;
+};
+type RankedRun = { kind: "guest" } | { kind: "member"; token: string } | { kind: "unavailable" };
 type Runtime = {
   lane: Lane;
   lanePosition: number;
@@ -55,13 +61,7 @@ const BEST_SCORE_KEY = "dol-ziklub-vinyl-runner-best";
 const TARGET_FRAME_MS = 1000 / 60;
 const FRAME_TOLERANCE_MS = 1.25;
 const MAX_CANVAS_PIXELS = 2_200_000;
-const WHEELY_CROSSING_MS = 6_000;
-const VINYL_EXPANSION_MS = 1_200;
-const LAUNCH_LOADING_MS = WHEELY_CROSSING_MS + VINYL_EXPANSION_MS;
-const ENTRY_TRANSITION_MS = 450;
-const FINISH_TRANSITION_MS = 2_600;
-const UNLOCK_REQUEST_ATTEMPTS = 3;
-const UNLOCK_RETRY_MS = 450;
+const FINISH_TRANSITION_MS = 850;
 
 function readBestScore() {
   try {
@@ -81,28 +81,6 @@ function persistBestScore(score: number) {
   return best;
 }
 
-async function postWheelyUnlock(accessToken: string, payload: Record<string, unknown>) {
-  let lastError = "unlock_request_failed";
-  for (let attempt = 0; attempt < UNLOCK_REQUEST_ATTEMPTS; attempt += 1) {
-    try {
-      const response = await fetch("/api/wheely/unlock", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        cache: "no-store",
-      });
-      const result = await response.json().catch(() => ({})) as { unlocked?: boolean; runToken?: string; message?: string; error?: string };
-      if (response.ok || response.status < 500) return { response, result };
-      lastError = result.error || `unlock_http_${response.status}`;
-    } catch (requestError) {
-      lastError = requestError instanceof Error ? requestError.message : "unlock_network_failed";
-    }
-    if (attempt + 1 < UNLOCK_REQUEST_ATTEMPTS) {
-      await new Promise((resolve) => window.setTimeout(resolve, UNLOCK_RETRY_MS * (attempt + 1)));
-    }
-  }
-  throw new Error(lastError);
-}
 const OBSTACLE_ASSET_PATHS: Record<ObstacleVariant, string> = {
   "blocker-a": "/game/obstacles/blocker-a.png",
   "blocker-b": "/game/obstacles/blocker-b.png",
@@ -375,8 +353,9 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const [resumeCountdown, setResumeCountdown] = useState(3);
   const [muted, setMuted] = useState(false);
   const [soundNeedsGesture, setSoundNeedsGesture] = useState(false);
-  const [unlockState, setUnlockState] = useState<WheelyUnlockState>("idle");
-  const [unlockMessage, setUnlockMessage] = useState("");
+  const [clubResults, setClubResults] = useState<WheelyClubResults | null>(null);
+  const [resultsMessage, setResultsMessage] = useState("");
+  const [resultsPending, setResultsPending] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const characterRef = useRef<HTMLImageElement | null>(null);
@@ -387,8 +366,8 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   const frameRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
-  const runTokenRef = useRef<string | null>(null);
-  const themeUnlockedRef = useRef(false);
+  const rankedRun = useRef<Promise<RankedRun> | null>(null);
+  const pendingPublication = useRef<Promise<void> | null>(null);
 
   const updatePhase = useCallback((next: GamePhase) => { phaseRef.current = next; setPhase(next); }, []);
   const clearTimer = useCallback(() => { if (timerRef.current !== null) { window.clearInterval(timerRef.current); timerRef.current = null; } }, []);
@@ -444,77 +423,83 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     if (kind === "jump") runtime.fastFallCooldownUntil = now + GAME.fastFallInputDelay;
   }, []);
 
-  const startUnlockRun = useCallback(async () => {
-    runTokenRef.current = null;
-    setUnlockMessage("");
-    if (!isSupabaseConfigured()) {
-      setUnlockState("guest");
-      return;
-    }
-
+  const startRankedRun = useCallback(async (): Promise<RankedRun> => {
+    if (!isSupabaseConfigured()) return { kind: "guest" };
     try {
+      await pendingPublication.current;
       const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      if (!accessToken) {
-        setUnlockState("guest");
-        return;
-      }
-      const { response, result } = await postWheelyUnlock(accessToken, { action: "start" });
-      if (!response.ok) throw new Error(result.error || "unlock_start_failed");
-      themeUnlockedRef.current = result.unlocked === true;
-      runTokenRef.current = typeof result.runToken === "string" ? result.runToken : null;
-      setUnlockState(result.unlocked ? "unlocked" : "running");
+      const { data, error } = await supabase.auth.getSession();
+      if (error) return { kind: "unavailable" };
+      if (!data.session) return { kind: "guest" };
+      const started = await supabase.rpc("start_wheely_ranked_run").abortSignal(AbortSignal.timeout(8000));
+      return typeof started.data === "string" && !started.error
+        ? { kind: "member", token: started.data }
+        : { kind: "unavailable" };
     } catch {
-      setUnlockState("error");
-      setUnlockMessage("Le suivi du déblocage est indisponible pour cette partie.");
+      return { kind: "unavailable" };
     }
   }, []);
 
-  const completeThemeUnlock = useCallback(async (score: number, distance: number) => {
-    if (themeUnlockedRef.current) {
-      setUnlockState("unlocked");
-      setUnlockMessage("THÈME WHEELY DÉBLOQUÉ");
-      return;
+  const publishResult = useCallback(async (run: Promise<RankedRun>, score: number, distance: number, avoided: number, completed: boolean) => {
+    const session = await run;
+    let results: WheelyClubResults | null = null;
+    let saved = false;
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        if (session.kind === "member") {
+          const submit = () => supabase.rpc("finish_wheely_ranked_run", {
+            p_run_id: session.token, p_distance: distance, p_avoided: avoided, p_completed: completed,
+          }).abortSignal(AbortSignal.timeout(8000));
+          let response = await submit();
+          if (response.status === 0 || response.status >= 500) response = await submit();
+          if (!response.error && response.data) {
+            results = response.data as WheelyClubResults;
+            saved = true;
+          }
+        }
+        if (!results) {
+          const board = await supabase.rpc("get_wheely_club_results").abortSignal(AbortSignal.timeout(8000));
+          if (!board.error) results = board.data as WheelyClubResults;
+        }
+      } catch {}
     }
-    const runToken = runTokenRef.current;
-    if (!runToken || !isSupabaseConfigured()) return;
-
-    setUnlockState("saving");
-    setUnlockMessage("Déblocage du thème en cours…");
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { data } = await supabase.auth.getSession();
-      const accessToken = data.session?.access_token;
-      if (!accessToken) {
-        setUnlockState("guest");
-        setUnlockMessage("Connecte-toi pour conserver le thème Wheely.");
-        return;
-      }
-      const { response, result } = await postWheelyUnlock(accessToken, { action: "complete", runToken, score, distance });
-      if (!response.ok || !result.unlocked) throw new Error(result.error || "unlock_complete_failed");
-      themeUnlockedRef.current = true;
-      runTokenRef.current = null;
-      setUnlockState("unlocked");
-      setUnlockMessage(result.message || "THÈME WHEELY DÉBLOQUÉ");
-      window.dispatchEvent(new CustomEvent("wheely-theme-unlocked"));
-    } catch {
-      setUnlockState("error");
-      setUnlockMessage("Le thème n’a pas pu être débloqué. Rejoue la face complète.");
-    }
+    const deviceBest = session.kind === "guest" ? persistBestScore(score) : score;
+    if (rankedRun.current !== run) return;
+    setClubResults(results);
+    setResultsPending(false);
+    setHud((current) => ({ ...current, best: results?.personal?.score ?? deviceBest }));
+    setResultsMessage(session.kind === "guest"
+      ? "Record sur cet appareil. Connecte-toi pour rejoindre le classement."
+      : saved ? completed ? "FACE TERMINÉE · THÈME WHEELY DÉBLOQUÉ" : ""
+      : "Le score de cette partie n’a pas pu être enregistré dans le classement.");
+    if (saved && completed) window.dispatchEvent(new CustomEvent("wheely-theme-unlocked"));
   }, []);
 
-  const startCountdown = useCallback(() => {
+  const startRun = useCallback(async () => {
     clearTimer();
-    void startUnlockRun();
+    const run = startRankedRun();
+    rankedRun.current = run;
+    setClubResults(null);
+    setResultsPending(false);
+    setResultsMessage("");
+    setLaunching(true);
+    updatePhase("entering");
     runtimeRef.current = emptyRuntime();
-    setHud((current) => ({ score: 0, distance: 0, best: current.best, speed: 1 }));
+    setHud({ score: 0, distance: 0, best: 0, speed: 1 });
     const audio = audioRef.current;
     if (audio) audio.currentTime = 0;
-    void playAudio();
+    await playAudio();
+    if (rankedRun.current !== run) return;
     runtimeRef.current.lastFrame = performance.now();
+    setLaunching(false);
     updatePhase("playing");
-  }, [clearTimer, playAudio, startUnlockRun, updatePhase]);
+    void run.then((session) => {
+      if (rankedRun.current === run && session.kind === "guest" && phaseRef.current === "playing") {
+        setHud((current) => ({ ...current, best: readBestScore() }));
+      }
+    });
+  }, [clearTimer, playAudio, startRankedRun, updatePhase]);
 
   const finishRun = useCallback((outcome: "game-over" | "victory") => {
     const expectedPhase = outcome === "victory" ? "finishing" : "playing";
@@ -523,12 +508,15 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     if (outcome === "game-over") runtime.playerState = "hit";
     const distance = Math.floor(runtime.distance * 10);
     const score = distance + runtime.avoided * GAME.avoidedObstacleBonus;
-    const best = persistBestScore(score);
     audioRef.current?.pause();
-    setHud((current) => ({ ...current, score, distance, best }));
-    if (outcome === "victory") void completeThemeUnlock(score, distance);
+    setHud((current) => ({ ...current, score, distance, best: Math.max(current.best, score) }));
     updatePhase(outcome);
-  }, [completeThemeUnlock, updatePhase]);
+    if (rankedRun.current) {
+      setResultsPending(true);
+      setResultsMessage("Mise à jour du classement…");
+      pendingPublication.current = publishResult(rankedRun.current, score, distance, runtime.avoided, outcome === "victory");
+    }
+  }, [publishResult, updatePhase]);
 
   const crash = useCallback(() => finishRun("game-over"), [finishRun]);
   const win = useCallback(() => {
@@ -549,7 +537,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     setOpen(false);
     setLaunching(false);
     runtimeRef.current = emptyRuntime();
-    runTokenRef.current = null;
+    rankedRun.current = null;
   }, [clearTimer, stopAudio]);
 
   const pause = useCallback(() => {
@@ -579,15 +567,10 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   }, [clearTimer, playAudio, updatePhase]);
 
   const openGame = useCallback(() => {
-    if (launching) return;
-    audioRef.current?.load();
-    setLaunching(true);
-    window.setTimeout(() => {
-      setOpen(true);
-      updatePhase("entering");
-      window.setTimeout(() => { startCountdown(); setLaunching(false); }, ENTRY_TRANSITION_MS);
-    }, LAUNCH_LOADING_MS);
-  }, [launching, startCountdown, updatePhase]);
+    if (rankedRun.current) return;
+    setOpen(true);
+    void startRun();
+  }, [startRun]);
 
   useEffect(() => {
     const image = new Image();
@@ -597,15 +580,16 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   }, []);
 
   useEffect(() => {
+    if (!open) return;
     wallImagesRef.current = wallAlbums.map((album) => {
       const image = new Image();
       if (album.cover) image.src = album.cover;
       return image;
     });
-  }, [wallAlbums]);
+  }, [open, wallAlbums]);
 
   useEffect(() => {
-    if (!launching && !open) return;
+    if (!open) return;
     const images: Partial<Record<ObstacleVariant, HTMLImageElement>> = {};
     for (const variant of OBSTACLE_VARIANTS) {
       const image = new Image();
@@ -614,7 +598,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
     }
     obstacleImagesRef.current = images;
     return () => { obstacleImagesRef.current = {}; };
-  }, [launching, open]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -706,7 +690,7 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
           runtime.lastHud = now;
           const distance = Math.floor(runtime.distance * 10);
           const score = distance + runtime.avoided * GAME.avoidedObstacleBonus;
-          setHud((current) => ({ score, distance, best: Math.max(current.best, readBestScore()), speed: Number((runtime.speed / GAME.startSpeed).toFixed(1)) }));
+          setHud((current) => ({ score, distance, best: current.best, speed: Number((runtime.speed / GAME.startSpeed).toFixed(1)) }));
         }
         if (isFinishing && now - runtime.finishStartedAt >= FINISH_TRANSITION_MS) finishRun("victory");
       }
@@ -747,14 +731,14 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
   };
 
   return <>
-    <audio ref={audioRef} src="/game/music/wheely-opening.m4a" preload="auto" onEnded={win} onPlay={() => setSoundNeedsGesture(false)} />
+    <audio ref={audioRef} src="/game/music/wheely-opening.m4a" preload="none" onEnded={win} onPlay={() => setSoundNeedsGesture(false)} />
     <button className={`hero-vinyl-button${launching ? " is-launching" : ""}`} type="button" onClick={openGame} aria-label="Ouvrir le mini-jeu Wheely">
       <span className="hero-vinyl-button__disc" aria-hidden="true" />
     </button>
-    {launching && !open ? <div className="wheely-launch-loader" role="status" aria-live="polite" aria-label="Chargement du mini-jeu Wheely">
+    {launching ? <div className="wheely-launch-loader" role="status" aria-live="polite" aria-label="Chargement du mini-jeu Wheely">
       <span className="wheely-launch-loader__disc" aria-hidden="true" />
       <span className="wheely-launch-loader__track" aria-hidden="true">
-        <NextImage className="wheely-launch-loader__rider" src="/game/transition/wheely-loading.png" alt="" width={512} height={512} priority />
+        <NextImage className="wheely-launch-loader__rider" src="/game/transition/wheely-loading.png" alt="" width={512} height={512} />
       </span>
       <span className="wheely-launch-loader__label">WHEELY SE MET EN PISTE…</span>
     </div> : null}    {open ? <section className={`vinyl-runner vinyl-runner--${phase}`} aria-label="Wheely sur le vinyle">
@@ -767,8 +751,23 @@ export function HeroVinylGame({ wallAlbums }: { wallAlbums: WallAlbum[] }) {
       {phase === "finishing" ? <div className={finishStyles.finish} role="status" aria-live="assertive"><span className={finishStyles.disc} aria-hidden="true" /><p className={finishStyles.caption}>DERNIER SILLON <span className={finishStyles.captionAccent}>FACE TERMINÉE</span></p></div> : null}
       {phase === "resuming" ? <div className="vinyl-runner__countdown" aria-live="assertive">{resumeCountdown}</div> : null}
       {phase === "paused" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">SILLON EN PAUSE</p><h2>On reprend<br /><em>quand tu veux.</em></h2><button type="button" className="vinyl-runner__primary" onClick={resume}>Reprendre →</button></div> : null}
-      {phase === "game-over" ? <div className="vinyl-runner__panel vinyl-runner__panel--small"><p className="eyebrow">FIN DE PISTE</p><h2>Le disque t’a rayé.</h2><div className="vinyl-runner__summary" aria-label={`Score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
-      {phase === "victory" ? <div className="vinyl-runner__panel vinyl-runner__panel--small vinyl-runner__panel--victory"><p className="eyebrow">DISQUE TERMINÉ</p><h2>Tu as bouclé<br /><em>la face entière.</em></h2><div className="vinyl-runner__summary" aria-label={`Victoire, score ${hud.score} points, distance ${hud.distance} mètres`}><div><span>SCORE FINAL</span><b>{hud.score}</b><small>POINTS</small></div><div><span>DISTANCE</span><b>{hud.distance}</b><small>MÈTRES</small></div></div><p className={`vinyl-runner__unlock-status vinyl-runner__unlock-status--${unlockState}`} role="status">{unlockMessage || (unlockState === "guest" ? "CONNECTE-TOI POUR DÉBLOQUER LE THÈME WHEELY" : "VALIDATION DE LA FACE…")}</p><button type="button" className="vinyl-runner__primary" onClick={startCountdown}>Rejouer →</button><button type="button" className="vinyl-runner__return" onClick={close}>Retour au Ziklub</button></div> : null}
+      {phase === "game-over" || phase === "victory" ? <div className={`vinyl-runner__panel vinyl-runner__panel--small vinyl-runner__results${phase === "victory" ? " vinyl-runner__panel--victory" : ""}`}>
+        <p className="eyebrow">{phase === "victory" ? "DISQUE TERMINÉ" : "FIN DE PISTE"}</p>
+        <h2>{phase === "victory" ? "Tu as bouclé la face entière." : "Le disque t’a rayé."}</h2>
+        <div className="vinyl-runner__summary">
+          <div><span>SCORE</span><b>{hud.score}</b></div>
+          <div><span>RECORD PERSONNEL</span><b>{resultsPending ? "…" : clubResults?.personal?.score ?? hud.best}</b></div>
+          <div><span>RANG CLUB</span><b>{clubResults?.personal?.rank ?? "—"}</b></div>
+        </div>
+        {resultsMessage ? <p className="vinyl-runner__unlock-status" role="status">{resultsMessage}</p> : null}
+        {clubResults?.rider != null ? <p className="vinyl-runner__rider">Wheely Rider · {clubResults.rider ? "1 / 1 · débloqué" : "0 / 1 · termine la face"}</p> : null}
+        {clubResults ? <div className="vinyl-runner__club-results">
+          <section><h3>Meilleurs scores du club</h3>{clubResults.leaders.length ? <ol>{clubResults.leaders.map((leader) => <li key={`${leader.name}:${leader.rank}`}><span>{leader.rank}. {leader.name}</span><b>{leader.score} pts</b></li>)}</ol> : <p>Aucun score enregistré.</p>}</section>
+          <section><h3>Face terminée</h3>{clubResults.successes.length ? <ul>{clubResults.successes.map((success) => <li key={`${success.name}:${success.completedAt}`}><span>{success.name} · {new Date(success.completedAt).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" })}</span><b>{success.score == null ? "Réussi" : `${success.score} pts`}</b></li>)}</ul> : <p>Aucune réussite enregistrée.</p>}</section>
+        </div> : null}
+        <button type="button" className="vinyl-runner__primary" disabled={resultsPending} onClick={() => void startRun()}>Rejouer →</button>
+        <button type="button" className="vinyl-runner__return" onClick={close}>Quitter</button>
+      </div> : null}
     </section> : null}
   </>;
 }

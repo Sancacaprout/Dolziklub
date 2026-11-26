@@ -73,6 +73,7 @@ export function ProposalAssistantCard({
   const previewTitle = match?.title ?? (filled ? entry.album_title : null);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     onSave({ entryId: entry.id, title, artist, file, match });
   };
   return (
@@ -105,6 +106,7 @@ export function ProposalAssistantCard({
             required
             maxLength={180}
             value={title}
+            disabled={saving}
             onChange={(event) => {
               setTitle(event.target.value);
               setMatch(undefined);
@@ -131,6 +133,7 @@ export function ProposalAssistantCard({
             required
             maxLength={180}
             value={artist}
+            disabled={saving}
             onChange={(event) => {
               setArtist(event.target.value);
               setMatch(undefined);

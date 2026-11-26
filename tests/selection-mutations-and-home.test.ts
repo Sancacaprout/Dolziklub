@@ -16,6 +16,7 @@ const archiveNumberMigration = readFileSync(
 const tableur = readFileSync(resolve("src/components/tableur-board.tsx"), "utf8");
 const home = readFileSync(resolve("src/app/page.tsx"), "utf8");
 const liveAlbums = readFileSync(resolve("src/lib/live-albums.ts"), "utf8");
+const recentMemes = readFileSync(resolve("src/components/recent-memes.tsx"), "utf8");
 const game = readFileSync(resolve("src/components/hero-vinyl-game.tsx"), "utf8");
 
 const explorer = readFileSync(resolve("src/components/album-explorer.tsx"), "utf8");
@@ -44,6 +45,14 @@ test("loads newly proposed live albums on the dynamic home page", () => {
   assert.match(liveAlbums, /\.from\("club_draw_entries"\)/);
   assert.match(liveAlbums, /\.order\("updated_at", \{ ascending: false \}\)/);
   assert.match(liveAlbums, /supabase\.rpc\("get_public_draw_reviews"\)/);
+});
+
+test("home replaces the activity feed with live posts and direct comment links", () => {
+  assert.doesNotMatch(home, /getHomeActivity|HomeActivityFeed/);
+  assert.match(home, /<RecentMemes \{\.\.\.recentMemes\} \/>/);
+  assert.match(recentMemes, /rpc\("recent_published_memes"\)/);
+  assert.match(recentMemes, /cache: "no-store"/);
+  assert.match(recentMemes, /comments=1/);
 });
 
 test("renders the vinyl mini-game at a 60 FPS target", () => {

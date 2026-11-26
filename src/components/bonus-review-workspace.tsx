@@ -9,6 +9,7 @@ import {
 } from "@/lib/supabase/client";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
 import type { Album } from "@/types/album";
+import { DisclosureButton, DisclosureContent, useStoredDisclosure } from "./persistent-disclosure";
 import collapseStyles from "./collapsible-workspace.module.css";
 
 type Entry = {
@@ -296,7 +297,8 @@ export function BonusReviewWorkspace({
   const [reviews, setReviews] = useState<BonusReview[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
+  const { open, setOpen } = useStoredDisclosure("bonus-review-workspace", member.id);
+  const collapsed = !open;
 
   const candidates = useMemo(() => {
     const reviewed = new Set(
@@ -551,22 +553,10 @@ export function BonusReviewWorkspace({
           </h2>
           {!collapsed ? <p>{"Choisis un album d\u00e9j\u00e0 pr\u00e9sent dans un tirage et ajoute ton propre avis, m\u00eame s\u2019il n\u2019a pas encore de note officielle."}</p> : null}
         </div>
-        <button
-          type="button"
-          className={collapseStyles.collapseButton}
-          aria-expanded={!collapsed}
-          aria-controls="bonus-review-workspace-content"
-          onClick={() => setCollapsed((current) => !current)}
-        >
-          {collapsed ? "Déplier" : "Réduire"}
-        </button>
+        <DisclosureButton id="bonus-review-workspace-content" title="les avis bonus" open={open} onToggle={() => setOpen(!open)} />
       </div>
 
-      <div
-        id="bonus-review-workspace-content"
-        className={collapseStyles.content}
-        hidden={collapsed}
-      >
+      <DisclosureContent id="bonus-review-workspace-content" open={open}>
       {message ? (
         <p
           className={`selection-message bonus-review-message${message === "Avis bonus enregistré." ? " is-success" : ""}`}
@@ -652,7 +642,7 @@ export function BonusReviewWorkspace({
           <p>{"Aucun album n\u2019est encore renseign\u00e9 dans les tirages."}</p>
         </div>
       )}
-      </div>
+      </DisclosureContent>
     </section>
   );
 }

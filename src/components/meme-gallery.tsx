@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { Meme } from "@/types/meme";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { MemeCommentCount, notifyMemeChanged } from "@/components/meme-comment-count";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type MemePost = { id: string; image_path: string; caption: string | null; created_by: string; created_at: string };
@@ -50,7 +51,7 @@ function VoterList({ likeVoters, dislikeVoters, compact = false }: { likeVoters:
   </div>;
 }
 
-export function MemeGallery({ memes }: { memes: Meme[] }) {
+export function MemeGallery({ memes, initialId, openComments }: { memes: Meme[]; initialId?: string; openComments?: boolean }) {
   const configured = isSupabaseConfigured();
   const [memberId, setMemberId] = useState<string | null>(null);
   const [visitorId, setVisitorId] = useState<string | null>(null);
@@ -59,7 +60,8 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   const [memberReactions, setMemberReactions] = useState<MemberReaction[]>([]);
   const [guestReactions, setGuestReactions] = useState<GuestReaction[]>([]);
   const [comments, setComments] = useState<MemeComment[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(initialId ?? null);
+  const [focusComments, setFocusComments] = useState(Boolean(openComments));
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [memeFile, setMemeFile] = useState<File | null>(null);
@@ -88,6 +90,21 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
   }, [configured, memeAuthors, memes, uploadedMemes]);
 
   const activeMeme = displayedMemes.find((meme) => meme.id === activeId) ?? null;
+  const commentCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const comment of comments) counts.set(comment.meme_id, (counts.get(comment.meme_id) ?? 0) + 1);
+    return counts;
+  }, [comments]);
+  useEffect(() => {
+    if (!focusComments || !activeMeme) return;
+    const frame = requestAnimationFrame(() => {
+      const comments = document.getElementById("meme-dialog-comments");
+      comments?.focus({ preventScroll: true });
+      comments?.scrollIntoView({ block: "nearest" });
+      setFocusComments(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeMeme, focusComments]);
   const reactionSummary = (memeId: string) => {
     const reactions = [...memberReactions, ...guestReactions].filter((reaction) => reaction.meme_id === memeId);
     const voters = (value: 1 | -1) => reactions.filter((reaction) => reaction.value === value).map((reaction) => "visitor_id" in reaction ? guestVoterName(reaction.visitor_id) : reaction.author_name || "Membre du club");
@@ -162,7 +179,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
     if (!memberId || !activeMeme || !commentText.trim()) return;
     const { error } = await getSupabaseBrowserClient().from("meme_comments").insert({ meme_id: activeMeme.id, author_id: memberId, body: commentText.trim(), is_anonymous: isAnonymous });
     if (error) setMessage("Le commentaire n'a pas pu être ajouté.");
-    else { setCommentText(""); setMessage(""); await loadSocial(); }
+    else { setCommentText(""); setMessage(""); notifyMemeChanged(); await loadSocial(); }
   };
 
   const deleteComment = async (commentId: string) => {
@@ -170,7 +187,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
     setDeletingId(commentId);
     const { error } = await getSupabaseBrowserClient().from("meme_comments").delete().eq("id", commentId);
     if (error) setMessage("Le commentaire n'a pas pu être supprimé.");
-    else { setMessage("Commentaire supprimé."); await loadSocial(); }
+    else { setMessage("Commentaire supprimé."); notifyMemeChanged(); await loadSocial(); }
     setDeletingId(null);
   };
 
@@ -185,6 +202,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
       if (meme.imagePath) await supabase.storage.from("meme-uploads").remove([meme.imagePath]);
       setActiveId(null);
       setMessage("Mème et commentaires supprimés.");
+      notifyMemeChanged();
       await Promise.all([loadUploadedMemes(), loadSocial()]);
     }
     setDeletingId(null);
@@ -208,7 +226,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
       if (storageError) throw storageError;
       const { error: postError } = await supabase.from("meme_posts").insert({ image_path: path, caption, created_by: memberId });
       if (postError) { await supabase.storage.from("meme-uploads").remove([path]); throw postError; }
-      form.reset(); setMemeFile(null); setIsUploadOpen(false); setMessage("Mème ajouté au musée."); await loadUploadedMemes();
+      form.reset(); setMemeFile(null); setIsUploadOpen(false); setMessage("Mème ajouté au musée."); notifyMemeChanged(); await loadUploadedMemes();
     } catch { setMessage("L'ajout du mème n'a pas abouti. Réessaie dans un instant."); }
     finally { setUploading(false); }
   };
@@ -250,6 +268,9 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
           <button className="meme-tile__image" onClick={() => { setActiveId(meme.id); setMessage(""); }} aria-label={meme.title}><Image src={meme.src} alt={meme.alt} width={600} height={600} sizes="(max-width: 700px) 100vw, 33vw" /></button>
           {meme.createdByName && <p className="meme-author">CRÉÉ PAR <b>{meme.createdByName}</b></p>}
           <ReactionButtons compact likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(meme.id, value)} />
+          <button type="button" className="meme-comment-count" onClick={() => { setActiveId(meme.id); setFocusComments(true); setMessage(""); }}>
+            <MemeCommentCount count={commentCounts.get(meme.id) ?? 0} />
+          </button>
           <VoterList compact likeVoters={summary.likeVoters} dislikeVoters={summary.dislikeVoters} />
         </div>;
       })}
@@ -268,6 +289,8 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
           <div className="meme-social">
             <ReactionButtons likes={summary.likes} dislikes={summary.dislikes} ownReaction={summary.own} onReact={(value) => void reactToMeme(activeMeme.id, value)} />
             <VoterList likeVoters={summary.likeVoters} dislikeVoters={summary.dislikeVoters} />
+            <section id="meme-dialog-comments" tabIndex={-1} aria-label="Commentaires">
+            <h2><MemeCommentCount count={activeComments.length} /></h2>
             {memberId ? <form className="meme-comment-form" onSubmit={addComment}>
               <label>Ajouter un mot au dossier<textarea value={commentText} onChange={(event) => setCommentText(event.target.value)} maxLength={280} placeholder="Ton commentaire, en une phrase bien sentie…" required /></label>
               <label className="meme-anonymous-control"><input type="checkbox" checked={isAnonymous} onChange={(event) => setIsAnonymous(event.target.checked)} />Mode anonyme</label>
@@ -279,6 +302,7 @@ export function MemeGallery({ memes }: { memes: Meme[] }) {
                 {comment.author_id === memberId && <button className="meme-comment__delete" onClick={() => void deleteComment(comment.id)} disabled={deletingId === comment.id}>{deletingId === comment.id ? "Suppression…" : "Supprimer"}</button>}
               </div>)}
             </div>}
+            </section>
           </div>
         </div>
       </div>;

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ProposalAssistantCard, ReviewAssistantCard, type AssistedProposalPayload, type AssistedReviewPayload } from "@/components/music-selection-cards";
 import { MusicTrackChoiceButton } from "@/components/music-player";
 import { RatingDisplay } from "@/components/rating-display";
@@ -17,6 +17,7 @@ import {
 } from "@/lib/extra-listenings";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { youtubeMusicSearchUrl } from "@/lib/youtube-music";
+import { DisclosureButton, DisclosureContent, useStoredDisclosure } from "./persistent-disclosure";
 import collapseStyles from "./collapsible-workspace.module.css";
 import styles from "./extra-listenings.module.css";
 
@@ -74,11 +75,36 @@ function StatusBadge({ status }: { status: ExtraListeningRequest["status"] }) {
   );
 }
 
+function ExtraRequestCard({ request, memberId, focused, action, summary, children }: {
+  request: ExtraListeningRequest;
+  memberId: string;
+  focused: boolean;
+  action?: string;
+  summary: ReactNode;
+  children: ReactNode;
+}) {
+  const { open, setOpen } = useStoredDisclosure(`extra-request:${request.id}`, memberId);
+  const contentId = `extra-request-details-${request.id}`;
+  useEffect(() => { if (focused) setOpen(true); }, [focused, setOpen]);
+  return <article id={`extra-request-${request.id}`} className={styles.taskCard} tabIndex={-1}>
+    <div className={collapseStyles.headingRow}>
+      <div className={styles.taskMeta}>
+        {summary}
+        <StatusBadge status={request.status} />
+        {!open && action ? <small>{action}</small> : null}
+      </div>
+      <DisclosureButton id={contentId} title={`la demande de ${request.requester_display_name}`} open={open} onToggle={() => setOpen(!open)} />
+    </div>
+    <DisclosureContent id={contentId} open={open}>{children}</DisclosureContent>
+  </article>;
+}
+
 export function ExtraListeningTable({
   drawNumber,
   requests,
   member,
   isAdmin,
+  focusRequestId,
   onOpen,
   onDelete,
 }: {
@@ -86,12 +112,31 @@ export function ExtraListeningTable({
   requests: ExtraListeningRequest[];
   member: SignedMember | null;
   isAdmin: boolean;
+  focusRequestId?: string | null;
   onOpen: (requestId: string, mode: "propose" | "listen" | "view") => void;
   onDelete: (requestId: string) => void;
 }) {
   const rows = requests
     .filter((request) => request.draw_number === drawNumber)
     .sort((first, second) => second.requested_at.localeCompare(first.requested_at));
+  const contentId = `extra-listenings-content-${drawNumber}`;
+  const { open, setOpen } = useStoredDisclosure(`extra-listenings:${drawNumber}`, member?.id);
+  const focused = rows.some((row) => row.id === focusRequestId) ? focusRequestId : null;
+  const pending = rows.some((row) => member && (
+    row.status === "pending_proposal" && isSameMember(row.proposer_username, member.username)
+    || ["album_proposed", "listening"].includes(row.status) && isSameMember(row.requester_username, member.username)
+  ));
+
+  useEffect(() => {
+    if (!focused) return;
+    setOpen(true);
+    const frame = requestAnimationFrame(() => {
+      const row = document.getElementById(`extra-listening-row-${focused}`);
+      row?.focus({ preventScroll: true });
+      row?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [focused, setOpen]);
 
   return (
     <section className={styles.attachedTable} aria-labelledby={`extra-listenings-title-${drawNumber}`}>
@@ -102,8 +147,13 @@ export function ExtraListeningTable({
             Écoutes supplémentaires du tirage {formatDraw(drawNumber)}
           </h3>
         </div>
-        <span>{rows.length} demande{rows.length > 1 ? "s" : ""}</span>
+        <div className={collapseStyles.headingRow}>
+          <span>{rows.length} demande{rows.length > 1 ? "s" : ""}{pending ? " · Action attendue" : ""}</span>
+          <DisclosureButton id={contentId} title="les écoutes supplémentaires" open={open} onToggle={() => setOpen(!open)} />
+        </div>
       </div>
+      {!open && rows.length > 0 ? <p className={styles.emptyAttached}>{rows.map((row) => row.requester_display_name).join(" · ")}</p> : null}
+      <DisclosureContent id={contentId} open={open || Boolean(focused)}>
       {rows.length ? (
         <div className={styles.tableScroll}>
           <table className={styles.table}>
@@ -134,7 +184,7 @@ export function ExtraListeningTable({
                   ?? (request.album_title ? youtubeMusicSearchUrl(request.album_title, request.album_artist) : null);
                 const hasParticipantAction = Boolean(member && (requester || proposer));
                 return (
-                  <tr key={request.id}>
+                  <tr key={request.id} id={`extra-listening-row-${request.id}`} tabIndex={-1} className={request.id === focused ? "sheet-row--focused" : undefined}>
                     <td><MemberLink username={request.requester_username} displayName={request.requester_display_name} /></td>
                     <td><MemberLink username={request.proposer_username} displayName={request.proposer_display_name} /></td>
                     <td>
@@ -210,6 +260,7 @@ export function ExtraListeningTable({
       ) : (
         <p className={styles.emptyAttached}>Aucune écoute supplémentaire pour ce tirage.</p>
       )}
+      </DisclosureContent>
     </section>
   );
 }
@@ -219,20 +270,24 @@ export function ExtraListeningWorkspace({
   member,
   focusedRequestId,
   onChanged,
+  onProposed,
 }: {
   draws: DrawOption[];
   member: SignedMember;
   focusedRequestId: string | null;
   onChanged?: () => void;
+  onProposed: (requestId: string) => Promise<void>;
 }) {
   const configured = isSupabaseConfigured();
   const consumedFocus = useRef<string | null>(null);
+  const submittingProposal = useRef(false);
   const [requests, setRequests] = useState<ExtraListeningRequest[]>([]);
   const [proposerUsername, setProposerUsername] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
-  const [collapsed, setCollapsed] = useState(false);
+  const { open, setOpen } = useStoredDisclosure("extra-listening-workspace", member.id);
+  const collapsed = !open;
 
   const currentDraw = useMemo(
     () => draws
@@ -270,6 +325,7 @@ export function ExtraListeningWorkspace({
 
   useEffect(() => {
     if (!focusedRequestId || consumedFocus.current === focusedRequestId || !requests.some((request) => request.id === focusedRequestId)) return;
+    setOpen(true);
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById(`extra-request-${focusedRequestId}`);
       if (!target) return;
@@ -278,7 +334,7 @@ export function ExtraListeningWorkspace({
       target.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [focusedRequestId, requests]);
+  }, [focusedRequestId, requests, setOpen]);
 
   const refresh = async () => {
     await loadRequests();
@@ -307,7 +363,8 @@ export function ExtraListeningWorkspace({
   };
 
   const saveProposal = async (payload: AssistedProposalPayload) => {
-    if (!configured) return;
+    if (!configured || submittingProposal.current) return;
+    submittingProposal.current = true;
     setSavingId(payload.entryId);
     setNotice("");
     let coverPath: string | null = null;
@@ -316,14 +373,14 @@ export function ExtraListeningWorkspace({
         if (!["image/jpeg", "image/png", "image/webp"].includes(payload.file.type) || payload.file.size > 5 * 1024 * 1024) {
           throw new Error("Choisis une image JPG, PNG ou WebP de 5 Mo maximum.");
         }
-        const extension = payload.file.name.split(".").pop()?.toLocaleLowerCase() || "jpg";
+        const extension = payload.file.type === "image/jpeg" ? "jpg" : payload.file.type.slice("image/".length);
         coverPath = `${member.id}/extra/${payload.entryId}.${extension}`;
         const { error } = await getSupabaseBrowserClient().storage
           .from("album-covers")
           .upload(coverPath, payload.file, {
             upsert: true,
             contentType: payload.file.type,
-            cacheControl: "31536000",
+            cacheControl: "60",
           });
         if (error) throw error;
       }
@@ -339,10 +396,11 @@ export function ExtraListeningWorkspace({
       });
       if (error) throw error;
       setNotice("Album proposé : le demandeur vient d’être prévenu.");
-      await refresh();
+      await onProposed(payload.entryId);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "L’album n’a pas pu être proposé.");
+      setNotice(error && typeof error === "object" && "message" in error ? String(error.message) : "L’album n’a pas pu être proposé.");
     } finally {
+      submittingProposal.current = false;
       setSavingId(null);
     }
   };
@@ -420,25 +478,13 @@ export function ExtraListeningWorkspace({
           <div>
             <p className="eyebrow">ÉCOUTE SUPPLÉMENTAIRE SUR DEMANDE</p>
             <h2>Ma prochaine écoute <em>choisie par un membre.</em></h2>
-            {!collapsed ? <p>Choisis un membre du tirage actuel : il pourra te proposer un album spécialement pour cette écoute, sans modifier le tirage classique.</p> : null}
+            {!collapsed ? <p>Choisis un membre du tirage actuel pour te proposer un album.</p> : <small>{member.displayName} · {ownRequests.length} demande(s){assignedRequests.some((request) => request.status === "pending_proposal") ? " · Une proposition est attendue" : ""}</small>}
           </div>
-          <button
-            type="button"
-            className={collapseStyles.collapseButton}
-            aria-expanded={!collapsed}
-            aria-controls="extra-listening-workspace-content"
-            onClick={() => setCollapsed((current) => !current)}
-          >
-            {collapsed ? "Déplier" : "Réduire"}
-          </button>
+          <DisclosureButton id="extra-listening-workspace-content" title="les demandes d’écoute" open={open} onToggle={() => setOpen(!open)} />
         </div>
       </header>
 
-      <div
-        id="extra-listening-workspace-content"
-        className={collapseStyles.content}
-        hidden={collapsed}
-      >
+      <DisclosureContent id="extra-listening-workspace-content" open={open}>
       {notice ? <p className={styles.notice} role="status" aria-live="polite">{notice}</p> : null}
 
       <form className={styles.requestForm} onSubmit={submitRequest}>
@@ -475,12 +521,12 @@ export function ExtraListeningWorkspace({
         </div>
         <div className={styles.queue}>
           {assignedRequests.length ? assignedRequests.map((request) => (
-            <article id={`extra-request-${request.id}`} className={styles.taskCard} key={`${request.id}:${request.updated_at}`} tabIndex={-1}>
+            <ExtraRequestCard key={request.id} request={request} memberId={member.id} focused={focusedRequestId === request.id}
+              action={request.status === "pending_proposal" ? "Album à proposer" : undefined}
+              summary={<p><strong>{request.requester_display_name}</strong> te demande un album pour le tirage {formatDraw(request.draw_number)}.</p>}>
               <div className={styles.taskMeta}>
-                <p><strong>{request.requester_display_name}</strong> te demande un album supplémentaire pour le tirage {formatDraw(request.draw_number)}.</p>
                 <small>Demandé le {formatDate(request.requested_at)} · Cette proposition reste séparée du tirage classique.</small>
                 {request.message ? <blockquote>« {request.message} »</blockquote> : null}
-                <StatusBadge status={request.status} />
               </div>
               <ProposalAssistantCard
                 entry={{
@@ -497,7 +543,7 @@ export function ExtraListeningWorkspace({
                 onDelete={(requestId) => void clearProposal(requestId)}
                 submitLabel="Proposer cet album"
               />
-            </article>
+            </ExtraRequestCard>
           )) : <p className={styles.empty}>Aucune demande d’album ne t’attend.</p>}
         </div>
       </section>
@@ -512,10 +558,10 @@ export function ExtraListeningWorkspace({
         </div>
         <div className={styles.queue}>
           {ownRequests.length ? ownRequests.map((request) => (
-            <article id={`extra-request-${request.id}`} className={styles.taskCard} key={`mine:${request.id}:${request.updated_at}`} tabIndex={-1}>
+            <ExtraRequestCard key={request.id} request={request} memberId={member.id} focused={focusedRequestId === request.id}
+              action={request.status === "album_proposed" || request.status === "listening" ? "Écoute ou verdict attendu" : undefined}
+              summary={<p><strong>{request.requester_display_name}</strong> · Tirage {formatDraw(request.draw_number)} · demandé à {request.proposer_display_name}{request.album_title ? ` · ${request.album_title}` : ""}</p>}>
               <div className={styles.taskMeta}>
-                <p>Tirage {formatDraw(request.draw_number)} · demandé à <strong>{request.proposer_display_name}</strong></p>
-                <StatusBadge status={request.status} />
                 {request.status !== "reviewed" && request.status !== "cancelled" ? (
                   <button type="button" className={styles.cancelButton} disabled={savingId === request.id} onClick={() => void cancelRequest(request)}>
                     Annuler la demande
@@ -566,11 +612,11 @@ export function ExtraListeningWorkspace({
               ) : null}
 
               {request.status === "cancelled" ? <p className={styles.waiting}>Demande annulée et conservée dans l’historique.</p> : null}
-            </article>
+            </ExtraRequestCard>
           )) : <p className={styles.empty}>Tu n’as encore demandé aucune écoute supplémentaire.</p>}
         </div>
       </section>
-      </div>
+      </DisclosureContent>
     </section>
   );
 }

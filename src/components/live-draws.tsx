@@ -293,9 +293,11 @@ function LiveDraw({
       return;
     }
 
-    document
-      .getElementById(`draw-entry-${focusEntryId}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const frame = requestAnimationFrame(() => {
+      const target = document.getElementById(`draw-entry-${focusEntryId}`);
+      target?.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [focusEntryId, rows]);
 
   const editableEntry = member && draw.status === "locked" ? rows.find((entry) => assigned(entry, member, "listener") && Boolean(reviews.get(entry.id))) ?? null : null;
@@ -452,6 +454,7 @@ function LiveDraw({
         requests={extraRequests}
         member={member}
         isAdmin={isAdmin}
+        focusRequestId={focusEntryId}
         onOpen={onOpenExtra}
         onDelete={onDeleteExtra}
       />
